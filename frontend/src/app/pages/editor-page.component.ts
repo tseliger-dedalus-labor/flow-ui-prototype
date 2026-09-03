@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, debounceTime } from 'rxjs';
+import { Subject, Subscription, debounceTime } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { ComponentDescriptor, FlowDefinition, FlowNode, ValidationIssue } from '../models';
 
@@ -12,7 +12,7 @@ import { ComponentDescriptor, FlowDefinition, FlowNode, ValidationIssue } from '
   templateUrl: './editor-page.component.html',
   styleUrl: './editor-page.component.css'
 })
-export class EditorPageComponent implements OnInit {
+export class EditorPageComponent implements OnInit, OnDestroy {
   flows: Array<{ id: string; name: string }> = [];
   registry: ComponentDescriptor[] = [];
   flow?: FlowDefinition;
@@ -20,11 +20,13 @@ export class EditorPageComponent implements OnInit {
   selectedNodeId = '';
   issues: ValidationIssue[] = [];
   status = '';
+  validationPerformed = false;
 
   private readonly validationTrigger = new Subject<void>();
+  private readonly validationSubscription: Subscription;
 
   constructor(private readonly api: ApiService) {
-    this.validationTrigger.pipe(debounceTime(300)).subscribe(() => this.validate());
+    this.validationSubscription = this.validationTrigger.pipe(debounceTime(300)).subscribe(() => this.validate());
   }
 
   ngOnInit(): void {
@@ -48,6 +50,7 @@ export class EditorPageComponent implements OnInit {
       this.selectedNodeId = this.flow.nodes[0]?.id ?? '';
       this.issues = [];
       this.status = '';
+      this.validationPerformed = false;
       this.validationTrigger.next();
     });
   }
@@ -65,10 +68,12 @@ export class EditorPageComponent implements OnInit {
     if (!descriptor) {
       return;
     }
-    node.inputBindings ??= {};
+    const existing = node.inputBindings ?? {};
+    const nextBindings: Record<string, { source: 'STATIC' | 'CONTEXT'; staticValue?: unknown; contextKey?: string }> = {};
     for (const input of descriptor.inputs) {
-      node.inputBindings[input.name] ??= { source: 'STATIC', staticValue: '' };
+      nextBindings[input.name] = existing[input.name] ?? { source: 'STATIC', staticValue: '' };
     }
+    node.inputBindings = nextBindings;
     this.validationTrigger.next();
   }
 
@@ -110,6 +115,10 @@ export class EditorPageComponent implements OnInit {
     this.api.updateFlow(this.flow).subscribe({
       next: (saved) => {
         this.flow = saved;
+        this.flow.nodes.forEach((node) => this.ensureInputBindings(node));
+        const preferredNodeId = this.selectedNodeId;
+        const fallbackNodeId = this.flow.nodes[0]?.id ?? '';
+        this.selectedNodeId = this.flow.nodes.some((node) => node.id === preferredNodeId) ? preferredNodeId : fallbackNodeId;
         this.status = 'Flow gespeichert.';
         this.validate();
       },
@@ -123,7 +132,16 @@ export class EditorPageComponent implements OnInit {
     if (!this.flow) {
       return;
     }
-    this.api.validateFlow(this.flow).subscribe((result) => this.issues = result.issues);
+    this.api.validateFlow(this.flow).subscribe({
+      next: (result) => {
+        this.issues = result.issues;
+        this.validationPerformed = true;
+      },
+      error: () => {
+        this.issues = [{ path: 'flow', message: 'Validierung konnte nicht ausgeführt werden.' }];
+        this.validationPerformed = true;
+      }
+    });
   }
 
   triggerValidation(): void {
@@ -153,5 +171,9 @@ export class EditorPageComponent implements OnInit {
     }
     transition.contextMapping = next;
     this.validationTrigger.next();
+  }
+
+  ngOnDestroy(): void {
+    this.validationSubscription.unsubscribe();
   }
 }

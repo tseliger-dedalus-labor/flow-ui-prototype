@@ -70,7 +70,12 @@ public class FlowValidationService {
             }
 
             Map<String, OutputDescriptor> outputs = descriptor.getOutputs().stream().collect(Collectors.toMap(OutputDescriptor::getName, Function.identity()));
+            Set<String> seenTransitionOutputs = new HashSet<>();
             for (FlowTransition transition : node.getTransitions()) {
+                if (!seenTransitionOutputs.add(transition.getOnOutput())) {
+                    issues.add(new ValidationIssue("nodes." + node.getId() + ".transitions", "Mehrere Transitionen für Output '" + transition.getOnOutput() + "' sind nicht erlaubt."));
+                    continue;
+                }
                 if (!outputs.containsKey(transition.getOnOutput())) {
                     issues.add(new ValidationIssue("nodes." + node.getId() + ".transitions", "Transition referenziert unbekannten Output '" + transition.getOnOutput() + "'."));
                     continue;
@@ -94,9 +99,14 @@ public class FlowValidationService {
 
                 ComponentDescriptor targetDescriptor = descriptorsById.get(target.getComponentId());
                 if (targetDescriptor != null) {
+                    Map<String, InputBinding> targetBindings = target.getInputBindings() == null ? Map.of() : target.getInputBindings();
                     for (InputDescriptor requiredInput : targetDescriptor.getInputs().stream().filter(InputDescriptor::isRequired).toList()) {
-                        InputBinding targetBinding = target.getInputBindings().get(requiredInput.getName());
-                        if (targetBinding != null && targetBinding.getSource() == BindingSource.CONTEXT) {
+                        InputBinding targetBinding = targetBindings.get(requiredInput.getName());
+                        if (targetBinding == null) {
+                            issues.add(new ValidationIssue("nodes." + node.getId() + ".transitions", "Transition zu '" + target.getId() + "' erreicht Pflicht-Input '" + requiredInput.getName() + "' ohne Binding nicht."));
+                            continue;
+                        }
+                        if (targetBinding.getSource() == BindingSource.CONTEXT) {
                             SemanticType t = postTransitionContext.get(targetBinding.getContextKey());
                             if (t == null || !isCompatible(t, requiredInput.getSemanticType())) {
                                 issues.add(new ValidationIssue("nodes." + node.getId() + ".transitions", "Transition zu '" + target.getId() + "' stellt Pflicht-Input '" + requiredInput.getName() + "' nicht erreichbar bereit."));
@@ -112,16 +122,15 @@ public class FlowValidationService {
 
     private Map<String, Map<String, SemanticType>> computeContextTypes(FlowDefinition definition, Map<String, FlowNode> nodes, Map<String, ComponentDescriptor> descriptorsById, List<ValidationIssue> issues) {
         Map<String, Map<String, SemanticType>> contextByNode = new HashMap<>();
+        Set<String> reportedConflicts = new HashSet<>();
         if (definition.getEntryNodeId() == null || !nodes.containsKey(definition.getEntryNodeId())) {
             return contextByNode;
         }
         contextByNode.put(definition.getEntryNodeId(), new HashMap<>());
 
         boolean changed;
-        int guard = 0;
         do {
             changed = false;
-            guard++;
             for (FlowNode node : definition.getNodes()) {
                 Map<String, SemanticType> currentContext = contextByNode.get(node.getId());
                 if (currentContext == null) {
@@ -153,12 +162,15 @@ public class FlowValidationService {
                             existing.put(e.getKey(), e.getValue());
                             changed = true;
                         } else if (old != e.getValue()) {
-                            issues.add(new ValidationIssue("nodes." + targetNode.getId(), "Context-Key '" + e.getKey() + "' hat widersprüchliche Typen auf unterschiedlichen Pfaden."));
+                            String conflictId = targetNode.getId() + "::" + e.getKey();
+                            if (reportedConflicts.add(conflictId)) {
+                                issues.add(new ValidationIssue("nodes." + targetNode.getId(), "Context-Key '" + e.getKey() + "' hat widersprüchliche Typen auf unterschiedlichen Pfaden."));
+                            }
                         }
                     }
                 }
             }
-        } while (changed && guard < 20);
+        } while (changed);
 
         return contextByNode;
     }

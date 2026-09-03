@@ -1,5 +1,6 @@
-import { Component, Input, OnChanges, SimpleChanges, Type, ViewChild, ViewContainerRef, forwardRef } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, SimpleChanges, Type, ViewChild, ViewContainerRef, forwardRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { FlowNode, InputBinding } from '../../models';
 import { FlowEngineService } from '../../services/flow-engine.service';
 import { WardListComponent } from '../widgets/ward-list.component';
@@ -28,7 +29,7 @@ import { TransfusionsPanelComponent } from '../widgets/transfusions-panel.compon
   styles: ['.node-shell { margin-bottom: 1rem; } .children { margin-top: 0.75rem; padding-left: 0.75rem; border-left: 2px solid #e0e5f5; }'],
   imports: [CommonModule, forwardRef(() => FlowRendererComponent)]
 })
-export class FlowRendererComponent implements OnChanges {
+export class FlowRendererComponent implements OnChanges, OnDestroy {
   @Input() node!: FlowNode;
   @Input() context: Record<string, unknown> = {};
 
@@ -45,6 +46,7 @@ export class FlowRendererComponent implements OnChanges {
     'orders-panel': OrdersPanelComponent,
     'transfusions-panel': TransfusionsPanelComponent
   };
+  private subscriptions: Subscription[] = [];
 
   constructor(private readonly engine: FlowEngineService) {}
 
@@ -56,6 +58,7 @@ export class FlowRendererComponent implements OnChanges {
   }
 
   private renderNode(): void {
+    this.cleanupSubscriptions();
     this.host.clear();
     const componentType = this.componentMap[this.node.componentId];
     if (!componentType) {
@@ -68,8 +71,10 @@ export class FlowRendererComponent implements OnChanges {
 
     const instance = ref.instance as Record<string, unknown>;
     for (const transition of this.node.transitions ?? []) {
-      const emitter = instance[transition.onOutput] as { subscribe?: (fn: (value: unknown) => void) => { unsubscribe: () => void } } | undefined;
-      emitter?.subscribe?.((value) => this.engine.transition(transition.onOutput, value));
+      const emitter = instance[transition.onOutput];
+      if (emitter instanceof EventEmitter) {
+        this.subscriptions.push(emitter.subscribe((value) => this.engine.transition(transition.onOutput, value)));
+      }
     }
   }
 
@@ -78,5 +83,14 @@ export class FlowRendererComponent implements OnChanges {
       return this.context[binding.contextKey ?? ''];
     }
     return binding.staticValue;
+  }
+
+  ngOnDestroy(): void {
+    this.cleanupSubscriptions();
+  }
+
+  private cleanupSubscriptions(): void {
+    this.subscriptions.forEach((subscription) => subscription.unsubscribe());
+    this.subscriptions = [];
   }
 }

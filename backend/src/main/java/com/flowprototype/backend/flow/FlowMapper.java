@@ -31,7 +31,10 @@ public class FlowMapper {
         entity.setName(definition.getName());
         entity.setActive(active);
         try {
-            entity.setDefinitionJson(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(definition));
+            FlowDefinition payload = new FlowDefinition();
+            payload.setEntryNodeId(definition.getEntryNodeId());
+            payload.setNodes(definition.getNodes());
+            entity.setDefinitionJson(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(payload));
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Flow-Definition konnte nicht gespeichert werden", e);
         }

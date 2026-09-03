@@ -66,6 +66,57 @@ class FlowValidationServiceTest {
         assertFalse(result.isValid());
     }
 
+    @Test
+    void multiHopContextPropagationPasses() {
+        FlowDefinition def = buildValid();
+        FlowNode patients = def.getNodes().stream().filter(n -> n.getId().equals("patients")).findFirst().orElseThrow();
+        patients.getTransitions().get(0).setTargetNodeId("middle");
+
+        FlowNode middle = new FlowNode();
+        middle.setId("middle");
+        middle.setComponentId("ward-list");
+        FlowTransition toView = new FlowTransition();
+        toView.setOnOutput("wardSelected");
+        toView.setTargetNodeId("view");
+        toView.setContextMapping(Map.of("patientId", "$context.patientId"));
+        middle.setTransitions(List.of(toView));
+
+        def.getNodes().add(middle);
+
+        ValidationResult result = validator.validate(def);
+        assertTrue(result.isValid(), () -> "Expected valid multi-hop context, got: " + result.getIssues().stream().map(ValidationIssue::getMessage).toList());
+    }
+
+    @Test
+    void conflictingContextTypesAcrossPathsFail() {
+        FlowDefinition def = buildValid();
+        FlowNode wards = def.getNodes().stream().filter(n -> n.getId().equals("wards")).findFirst().orElseThrow();
+        FlowTransition wrongTypePath = new FlowTransition();
+        wrongTypePath.setOnOutput("wardSelected");
+        wrongTypePath.setTargetNodeId("view");
+        wrongTypePath.setContextMapping(Map.of("patientId", "$event.wardId"));
+        wards.getTransitions().add(wrongTypePath);
+
+        ValidationResult result = validator.validate(def);
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue -> issue.getMessage().contains("widersprüchliche Typen")));
+    }
+
+    @Test
+    void duplicateTransitionsForSameOutputFail() {
+        FlowDefinition def = buildValid();
+        FlowNode wards = def.getNodes().stream().filter(n -> n.getId().equals("wards")).findFirst().orElseThrow();
+        FlowTransition duplicate = new FlowTransition();
+        duplicate.setOnOutput("wardSelected");
+        duplicate.setTargetNodeId("view");
+        duplicate.setContextMapping(Map.of("patientId", "$event.wardId"));
+        wards.getTransitions().add(duplicate);
+
+        ValidationResult result = validator.validate(def);
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue -> issue.getMessage().contains("Mehrere Transitionen")));
+    }
+
     private FlowDefinition buildValid() {
         FlowDefinition def = new FlowDefinition();
         def.setId("f");
@@ -79,7 +130,7 @@ class FlowValidationServiceTest {
         toPatients.setOnOutput("wardSelected");
         toPatients.setTargetNodeId("patients");
         toPatients.setContextMapping(Map.of("wardId", "$event.wardId"));
-        wards.setTransitions(List.of(toPatients));
+        wards.setTransitions(new java.util.ArrayList<>(List.of(toPatients)));
 
         FlowNode patients = new FlowNode();
         patients.setId("patients");
@@ -96,7 +147,7 @@ class FlowValidationServiceTest {
         toView.setOnOutput("patientSelected");
         toView.setTargetNodeId("view");
         toView.setContextMapping(Map.of("patientId", "$event.patientId"));
-        patients.setTransitions(List.of(toView));
+        patients.setTransitions(new java.util.ArrayList<>(List.of(toView)));
 
         FlowNode view = new FlowNode();
         view.setId("view");

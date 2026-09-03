@@ -17,5 +17,8 @@ public class ValidationResult {
     public boolean isValid() { return valid; }
     public void setValid(boolean valid) { this.valid = valid; }
     public List<ValidationIssue> getIssues() { return issues; }
-    public void setIssues(List<ValidationIssue> issues) { this.issues = issues; }
+    public void setIssues(List<ValidationIssue> issues) {
+        this.issues = issues;
+        this.valid = issues == null || issues.isEmpty();
+    }
 }

@@ -76,7 +76,7 @@
       <button type="button" (click)="validate()">Jetzt validieren</button>
       <button type="button" (click)="save()">Speichern</button>
       <p>{{ status }}</p>
-      <p *ngIf="issues.length === 0" class="ok">Keine Validierungsfehler.</p>
+      <p *ngIf="validationPerformed && issues.length === 0" class="ok">Keine Validierungsfehler.</p>
       <ul *ngIf="issues.length > 0" class="error-list">
         <li *ngFor="let issue of issues"><code>{{ issue.path }}</code>: {{ issue.message }}</li>
       </ul>
