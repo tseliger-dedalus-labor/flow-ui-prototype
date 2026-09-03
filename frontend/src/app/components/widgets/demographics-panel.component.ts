@@ -1,12 +1,12 @@
 import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ApiService } from '../../services/api.service';
 import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-demographics-panel',
-    imports: [CommonModule],
-    template: '<article class="panel"><h3>Stammdaten</h3><p *ngIf="data">{{ data.name }} · {{ data.birthDate }}</p></article>',
+    imports: [],
+    template: '<article class="panel"><h3>Stammdaten</h3>@if (data) {<p>{{ data.name }} · {{ data.birthDate }}</p>}</article>',
     styles: ['.panel { border:1px solid #d8d8d8; padding:.75rem; border-radius:.25rem; background:#fff; }']
 })
 export class DemographicsPanelComponent implements OnChanges, OnDestroy {

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, SimpleChanges, Type, ViewChild, ViewContainerRef, forwardRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Subscription } from 'rxjs';
 import { FlowNode, InputBinding } from '../../models';
 import { FlowEngineService } from '../../services/flow-engine.service';
@@ -17,16 +17,19 @@ import { TransfusionsPanelComponent } from '../widgets/transfusions-panel.compon
     template: `
     <section class="node-shell">
       <ng-container #host />
-      <div class="children" *ngIf="node?.children?.length">
-        <app-flow-renderer
-          *ngFor="let child of node.children"
-          [node]="child"
-          [context]="context" />
-      </div>
+      @if (node.children.length) {
+        <div class="children">
+          @for (child of node.children; track child) {
+            <app-flow-renderer
+              [node]="child"
+              [context]="context" />
+          }
+        </div>
+      }
     </section>
-  `,
+    `,
     styles: ['.node-shell { margin-bottom: 1rem; } .children { margin-top: 0.75rem; padding-left: 0.75rem; border-left: 2px solid #e0e5f5; }'],
-    imports: [CommonModule, forwardRef(() => FlowRendererComponent)]
+    imports: [forwardRef(() => FlowRendererComponent)]
 })
 export class FlowRendererComponent implements OnChanges, OnDestroy {
   @Input() node!: FlowNode;

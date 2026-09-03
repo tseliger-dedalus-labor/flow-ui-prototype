@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, debounceTime } from 'rxjs';
 import { ApiService } from '../services/api.service';
@@ -7,7 +7,7 @@ import { ComponentDescriptor, FlowDefinition, FlowNode, ValidationIssue } from '
 
 @Component({
     selector: 'app-editor-page',
-    imports: [CommonModule, FormsModule],
+    imports: [FormsModule],
     templateUrl: './editor-page.component.html',
     styleUrl: './editor-page.component.css'
 })

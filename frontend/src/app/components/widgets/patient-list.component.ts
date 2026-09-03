@@ -1,20 +1,26 @@
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ApiService } from '../../services/api.service';
 import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-patient-list',
-    imports: [CommonModule],
+    imports: [],
     template: `
     <h2>Patientenliste <small>Modus: {{ mode }}</small></h2>
-    <p *ngIf="!wardId" class="hint">Bitte zuerst eine Station wählen.</p>
-    <ul class="cards" *ngIf="wardId">
-      <li *ngFor="let patient of patients">
-        <button type="button" (click)="selectPatient(patient.id)">{{ patient.name }} ({{ patient.id }})</button>
-      </li>
-    </ul>
-  `,
+    @if (!wardId) {
+      <p class="hint">Bitte zuerst eine Station wählen.</p>
+    }
+    @if (wardId) {
+      <ul class="cards">
+        @for (patient of patients; track patient) {
+          <li>
+            <button type="button" (click)="selectPatient(patient.id)">{{ patient.name }} ({{ patient.id }})</button>
+          </li>
+        }
+      </ul>
+    }
+    `,
     styles: ['.cards { list-style: none; padding: 0; } .cards button { width: 100%; text-align: left; margin-bottom: .5rem; padding: .75rem; } .hint{color:#666;}']
 })
 export class PatientListComponent implements OnChanges, OnDestroy {

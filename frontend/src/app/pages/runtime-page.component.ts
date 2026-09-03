@@ -13,12 +13,16 @@ import { FlowNode } from '../models';
     <section>
       <h2>Runtime</h2>
       <button type="button" (click)="back()" [disabled]="!engine.canGoBack()">Zurück</button>
-      <p class="error" *ngIf="error">{{ error }}</p>
-      <ng-container *ngIf="vm$ | async as vm">
-        <app-flow-renderer *ngIf="vm.node" [node]="vm.node" [context]="vm.context" />
-      </ng-container>
+      @if (error) {
+        <p class="error">{{ error }}</p>
+      }
+      @if (vm$ | async; as vm) {
+        @if (vm.node) {
+          <app-flow-renderer [node]="vm.node" [context]="vm.context" />
+        }
+      }
     </section>
-  `,
+    `,
     styles: ['.error { color: #a32727; }']
 })
 export class RuntimePageComponent implements OnInit {

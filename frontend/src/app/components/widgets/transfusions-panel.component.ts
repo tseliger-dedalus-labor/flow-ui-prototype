@@ -1,12 +1,12 @@
 import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ApiService } from '../../services/api.service';
 import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-transfusions-panel',
-    imports: [CommonModule],
-    template: '<article class="panel"><h3>Transfusionen</h3><ul><li *ngFor="let item of items">{{ item.text }}</li></ul></article>',
+    imports: [],
+    template: '<article class="panel"><h3>Transfusionen</h3><ul>@for (item of items; track item) {<li>{{ item.text }}</li>}</ul></article>',
     styles: ['.panel { border:1px solid #d8d8d8; padding:.75rem; border-radius:.25rem; background:#fff; }']
 })
 export class TransfusionsPanelComponent implements OnChanges, OnDestroy {
