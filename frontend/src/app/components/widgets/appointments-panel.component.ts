@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, Subscription } from 'rxjs';
 import { Appointment } from '../../models';
 import { ApiService } from '../../services/api.service';
+import { PermissionService } from '../../services/permission.service';
 
 @Component({
   selector: 'app-appointments-panel',
@@ -13,19 +14,21 @@ import { ApiService } from '../../services/api.service';
       @if (!wardId) {
         <p class="hint">Bitte zuerst eine Station wählen.</p>
       } @else {
-        <form (ngSubmit)="schedule()">
-          <label>Patient
-            <select name="patientId" [(ngModel)]="draft.patientId" required>
-              @for (patient of patients; track patient.id) {
-                <option [value]="patient.id">{{ patient.name }}</option>
-              }
-            </select>
-          </label>
-          <label>Datum <input name="date" type="date" [(ngModel)]="draft.date" required /></label>
-          <label>Uhrzeit <input name="time" type="time" [(ngModel)]="draft.time" required /></label>
-          <label>Grund <input name="reason" [(ngModel)]="draft.reason" required /></label>
-          <button type="submit" [disabled]="!isDraftComplete()">Termin anlegen</button>
-        </form>
+        @if (canSchedule) {
+          <form (ngSubmit)="schedule()">
+            <label>Patient
+              <select name="patientId" [(ngModel)]="draft.patientId" required>
+                @for (patient of patients; track patient.id) {
+                  <option [value]="patient.id">{{ patient.name }}</option>
+                }
+              </select>
+            </label>
+            <label>Datum <input name="date" type="date" [(ngModel)]="draft.date" required /></label>
+            <label>Uhrzeit <input name="time" type="time" [(ngModel)]="draft.time" required /></label>
+            <label>Grund <input name="reason" [(ngModel)]="draft.reason" required /></label>
+            <button type="submit" [disabled]="!isDraftComplete()">Termin anlegen</button>
+          </form>
+        }
         <ul class="appointments">
           @for (appointment of appointments; track appointment.id) {
             <li>
@@ -57,8 +60,11 @@ export class AppointmentsPanelComponent implements OnChanges, OnDestroy {
   draft = { patientId: '', date: '', time: '', reason: '' };
   private loadSubscription?: Subscription;
   private createSubscription?: Subscription;
+  readonly canSchedule: boolean;
 
-  constructor(private readonly api: ApiService) {}
+  constructor(private readonly api: ApiService, permissions: PermissionService) {
+    this.canSchedule = permissions.hasAll(['APPOINTMENTS_WRITE']);
+  }
 
   ngOnChanges(): void {
     this.loadSubscription?.unsubscribe();

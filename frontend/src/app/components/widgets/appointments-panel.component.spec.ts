@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { AppointmentsPanelComponent } from './appointments-panel.component';
+import { PermissionService } from '../../services/permission.service';
 
 class ApiServiceMock {
   getAppointments = jasmine.createSpy('getAppointments').and.returnValue(of([
@@ -41,5 +42,15 @@ describe('AppointmentsPanelComponent', () => {
 
     expect(TestBed.inject(ApiService).createAppointment).toHaveBeenCalled();
     expect(fixture.componentInstance.appointments.length).toBe(2);
+  });
+
+  it('hides appointment creation without write permission', () => {
+    spyOn(TestBed.inject(PermissionService), 'hasAll').and.returnValue(false);
+    const fixture = TestBed.createComponent(AppointmentsPanelComponent);
+    fixture.componentRef.setInput('wardId', 'ward-a');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('form')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Anna Weber');
   });
 });

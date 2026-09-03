@@ -1,6 +1,8 @@
 package com.flowprototype.backend.mock;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -51,23 +53,37 @@ public class MockDataController {
 
     @PostMapping("/wards/{id}/appointments")
     public Map<String, String> createAppointment(@PathVariable String id, @RequestBody Map<String, String> request) {
+        if (wards().stream().noneMatch(ward -> id.equals(ward.get("id")))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Station nicht gefunden");
+        }
         String patientId = request.getOrDefault("patientId", "");
         String patientName = patients(id).stream()
             .filter(patient -> patientId.equals(patient.get("id")))
             .map(patient -> patient.get("name"))
             .findFirst()
-            .orElse("Patient " + patientId);
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Patient gehört nicht zur Station"));
+        String date = requiredValue(request, "date");
+        String time = requiredValue(request, "time");
+        String reason = requiredValue(request, "reason");
         Map<String, String> appointment = Map.of(
             "id", "a-" + appointmentSequence.incrementAndGet(),
             "wardId", id,
             "patientId", patientId,
             "patientName", patientName,
-            "date", request.getOrDefault("date", ""),
-            "time", request.getOrDefault("time", ""),
-            "reason", request.getOrDefault("reason", "")
+            "date", date,
+            "time", time,
+            "reason", reason
         );
         appointments.add(appointment);
         return appointment;
+    }
+
+    private String requiredValue(Map<String, String> request, String field) {
+        String value = request.get(field);
+        if (value == null || value.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, field + " fehlt");
+        }
+        return value;
     }
 
     @GetMapping("/patients/{id}/findings")
