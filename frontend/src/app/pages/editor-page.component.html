@@ -1,0 +1,112 @@
+<section>
+  <h2>Flow-Editor</h2>
+
+  <label>
+    Flow auswählen
+    <select [(ngModel)]="selectedFlowId" (ngModelChange)="loadFlow()">
+      @for (flow of flows; track flow) {
+        <option [value]="flow.id">{{ flow.name }} ({{ flow.id }})</option>
+      }
+    </select>
+  </label>
+
+  @if (flow; as currentFlow) {
+    <div class="editor-grid">
+      <section class="card">
+        <h3>Flow</h3>
+        <label>ID <input [(ngModel)]="currentFlow.id" (ngModelChange)="triggerValidation()" /></label>
+        <label>Name <input [(ngModel)]="currentFlow.name" (ngModelChange)="triggerValidation()" /></label>
+        <label>Entry Node
+          <select [(ngModel)]="currentFlow.entryNodeId" (ngModelChange)="triggerValidation()">
+            @for (node of currentFlow.nodes; track node) {
+              <option [value]="node.id">{{ node.id }}</option>
+            }
+          </select>
+        </label>
+        <label>Knoten bearbeiten
+          <select [(ngModel)]="selectedNodeId">
+            @for (node of currentFlow.nodes; track node) {
+              <option [value]="node.id">{{ node.id }}</option>
+            }
+          </select>
+        </label>
+      </section>
+      @if (selectedNode; as node) {
+        <section class="card">
+          <h3>Knoten {{ node.id }}</h3>
+          <label>Komponente
+            <select [(ngModel)]="node.componentId" (ngModelChange)="ensureInputBindings(node)">
+              @for (descriptor of registry; track descriptor) {
+                <option [value]="descriptor.id">{{ descriptor.id }}</option>
+              }
+            </select>
+          </label>
+          @if (descriptor(node.componentId); as desc) {
+            <div>
+              <h4>Input-Bindings</h4>
+              @for (input of desc.inputs; track input) {
+                <div class="binding">
+                  <strong>{{ input.name }}</strong>
+                  <select [(ngModel)]="node.inputBindings[input.name].source" (ngModelChange)="triggerValidation()">
+                    <option value="STATIC">STATIC</option>
+                    <option value="CONTEXT">CONTEXT</option>
+                  </select>
+                  @if (node.inputBindings[input.name].source === 'STATIC') {
+                    <input [(ngModel)]="node.inputBindings[input.name].staticValue" (ngModelChange)="triggerValidation()" placeholder="statischer Wert" />
+                  }
+                  @if (node.inputBindings[input.name].source === 'CONTEXT') {
+                    <input [(ngModel)]="node.inputBindings[input.name].contextKey" (ngModelChange)="triggerValidation()" placeholder="context key" />
+                  }
+                </div>
+              }
+              <h4>Transitionen</h4>
+              <button type="button" (click)="addTransition(node)">Transition hinzufügen</button>
+              @for (transition of node.transitions; track transition; let i = $index) {
+                <div class="transition">
+                  <label>Output
+                    <select [(ngModel)]="transition.onOutput" (ngModelChange)="triggerValidation()">
+                      <option value="">-</option>
+                      @for (output of desc.outputs; track output) {
+                        <option [value]="output.name">{{ output.name }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>Ziel
+                    <select [(ngModel)]="transition.targetNodeId" (ngModelChange)="triggerValidation()">
+                      <option value="">-</option>
+                      @for (target of currentFlow.nodes; track target) {
+                        <option [value]="target.id">{{ target.id }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>Context-Mapping (key:value, pro Zeile)</label>
+                  <textarea
+                    [ngModel]="mappingAsText(transition.contextMapping)"
+                  (ngModelChange)="updateMappingFromText(transition, $event)"></textarea>
+                </div>
+              }
+            </div>
+          }
+          <h4>Kindknoten (IDs, Komma-getrennt)</h4>
+          <input [ngModel]="childIds(node)" (ngModelChange)="setChildren(node, $event)" />
+        </section>
+      }
+      <section class="card">
+        <h3>Validierung</h3>
+        <button type="button" (click)="validate()">Jetzt validieren</button>
+        <button type="button" (click)="save()">Speichern</button>
+        <p>{{ status }}</p>
+        @if (validationPerformed && issues.length === 0) {
+          <p class="ok">Keine Validierungsfehler.</p>
+        }
+        @if (issues.length > 0) {
+          <ul class="error-list">
+            @for (issue of issues; track issue) {
+              <li><code>{{ issue.path }}</code>: {{ issue.message }}</li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  }
+</section>
