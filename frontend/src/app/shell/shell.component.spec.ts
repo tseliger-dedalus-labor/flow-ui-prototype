@@ -15,7 +15,7 @@ describe('ShellComponent', () => {
     fixture.detectChanges();
 
     const links = Array.from(fixture.nativeElement.querySelectorAll('nav a')) as HTMLAnchorElement[];
-    expect(links.map((link) => link.textContent?.trim())).toEqual(['Benutzer-UI', 'Editor']);
-    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/runtime', '/editor']);
+    expect(links.map((link) => link.textContent?.trim())).toEqual(['Benutzer-UI', 'Stationstermine', 'Editor']);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/runtime', '/appointments', '/editor']);
   });
 });

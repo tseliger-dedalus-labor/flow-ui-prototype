@@ -116,9 +116,34 @@ public class FlowSeedData implements CommandLineRunner {
 
         ordersFlow.setNodes(List.of(wards2, patients2, patientView2, layout2, orders, transfusions));
 
+        FlowDefinition appointmentsFlow = new FlowDefinition();
+        appointmentsFlow.setId("flow-appointments");
+        appointmentsFlow.setName("Stationsbezogene Terminplanung");
+        appointmentsFlow.setEntryNodeId("appointmentWards");
+
+        FlowNode appointmentWards = new FlowNode();
+        appointmentWards.setId("appointmentWards");
+        appointmentWards.setComponentId("ward-list");
+        FlowTransition toAppointments = new FlowTransition();
+        toAppointments.setOnOutput("wardSelected");
+        toAppointments.setTargetNodeId("appointments");
+        toAppointments.setContextMapping(Map.of("wardId", "$event.wardId"));
+        appointmentWards.setTransitions(List.of(toAppointments));
+
+        FlowNode appointments = new FlowNode();
+        appointments.setId("appointments");
+        appointments.setComponentId("appointments-panel");
+        InputBinding appointmentWard = new InputBinding();
+        appointmentWard.setSource(BindingSource.CONTEXT);
+        appointmentWard.setContextKey("wardId");
+        appointments.setInputBindings(Map.of("wardId", appointmentWard));
+        appointments.setRequiredPermissions(List.of("APPOINTMENTS_READ"));
+        appointmentsFlow.setNodes(List.of(appointmentWards, appointments));
+
         FlowEntity first = mapper.toEntity(normalFlow, true);
         FlowEntity second = mapper.toEntity(ordersFlow, false);
-        repository.saveAll(List.of(first, second));
+        FlowEntity third = mapper.toEntity(appointmentsFlow, false);
+        repository.saveAll(List.of(first, second, third));
     }
 
     private FlowNode panel(String id, String componentId) {

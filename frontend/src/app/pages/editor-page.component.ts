@@ -89,6 +89,15 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     return (node.children ?? []).map((child) => child.id).join(', ');
   }
 
+  requiredPermissionsAsText(node: FlowNode): string {
+    return (node.requiredPermissions ?? []).join(', ');
+  }
+
+  setRequiredPermissions(node: FlowNode, value: string): void {
+    node.requiredPermissions = [...new Set(value.split(',').map((permission) => permission.trim()).filter(Boolean))];
+    this.validationTrigger.next();
+  }
+
   addTransition(node: FlowNode): void {
     node.transitions ??= [];
     node.transitions.push({ onOutput: '', targetNodeId: '', contextMapping: {} });

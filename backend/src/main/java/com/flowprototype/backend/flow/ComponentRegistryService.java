@@ -39,6 +39,9 @@ public class ComponentRegistryService {
                 List.of()),
             new ComponentDescriptor("transfusions-panel", "Transfusionen", false,
                 List.of(new InputDescriptor("patientId", SemanticType.PATIENT_ID, true, List.of())),
+                List.of()),
+            new ComponentDescriptor("appointments-panel", "Terminplanung", false,
+                List.of(new InputDescriptor("wardId", SemanticType.WARD_ID, true, List.of())),
                 List.of())
         );
     }
