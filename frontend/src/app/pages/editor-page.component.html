@@ -1,0 +1,85 @@
+<section>
+  <h2>Flow-Editor</h2>
+
+  <label>
+    Flow auswählen
+    <select [(ngModel)]="selectedFlowId" (ngModelChange)="loadFlow()">
+      <option *ngFor="let flow of flows" [value]="flow.id">{{ flow.name }} ({{ flow.id }})</option>
+    </select>
+  </label>
+
+  <div *ngIf="flow as currentFlow" class="editor-grid">
+    <section class="card">
+      <h3>Flow</h3>
+      <label>ID <input [(ngModel)]="currentFlow.id" (ngModelChange)="triggerValidation()" /></label>
+      <label>Name <input [(ngModel)]="currentFlow.name" (ngModelChange)="triggerValidation()" /></label>
+      <label>Entry Node
+        <select [(ngModel)]="currentFlow.entryNodeId" (ngModelChange)="triggerValidation()">
+          <option *ngFor="let node of currentFlow.nodes" [value]="node.id">{{ node.id }}</option>
+        </select>
+      </label>
+      <label>Knoten bearbeiten
+        <select [(ngModel)]="selectedNodeId">
+          <option *ngFor="let node of currentFlow.nodes" [value]="node.id">{{ node.id }}</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="card" *ngIf="selectedNode as node">
+      <h3>Knoten {{ node.id }}</h3>
+      <label>Komponente
+        <select [(ngModel)]="node.componentId" (ngModelChange)="ensureInputBindings(node)">
+          <option *ngFor="let descriptor of registry" [value]="descriptor.id">{{ descriptor.id }}</option>
+        </select>
+      </label>
+
+      <div *ngIf="descriptor(node.componentId) as desc">
+        <h4>Input-Bindings</h4>
+        <div class="binding" *ngFor="let input of desc.inputs">
+          <strong>{{ input.name }}</strong>
+          <select [(ngModel)]="node.inputBindings[input.name].source" (ngModelChange)="triggerValidation()">
+            <option value="STATIC">STATIC</option>
+            <option value="CONTEXT">CONTEXT</option>
+          </select>
+          <input *ngIf="node.inputBindings[input.name].source === 'STATIC'" [(ngModel)]="node.inputBindings[input.name].staticValue" (ngModelChange)="triggerValidation()" placeholder="statischer Wert" />
+          <input *ngIf="node.inputBindings[input.name].source === 'CONTEXT'" [(ngModel)]="node.inputBindings[input.name].contextKey" (ngModelChange)="triggerValidation()" placeholder="context key" />
+        </div>
+
+        <h4>Transitionen</h4>
+        <button type="button" (click)="addTransition(node)">Transition hinzufügen</button>
+        <div class="transition" *ngFor="let transition of node.transitions; index as i">
+          <label>Output
+            <select [(ngModel)]="transition.onOutput" (ngModelChange)="triggerValidation()">
+              <option value="">-</option>
+              <option *ngFor="let output of desc.outputs" [value]="output.name">{{ output.name }}</option>
+            </select>
+          </label>
+          <label>Ziel
+            <select [(ngModel)]="transition.targetNodeId" (ngModelChange)="triggerValidation()">
+              <option value="">-</option>
+              <option *ngFor="let target of currentFlow.nodes" [value]="target.id">{{ target.id }}</option>
+            </select>
+          </label>
+          <label>Context-Mapping (key:value, pro Zeile)</label>
+          <textarea
+            [ngModel]="mappingAsText(transition.contextMapping)"
+            (ngModelChange)="updateMappingFromText(transition, $event)"></textarea>
+        </div>
+      </div>
+
+      <h4>Kindknoten (IDs, Komma-getrennt)</h4>
+      <input [ngModel]="childIds(node)" (ngModelChange)="setChildren(node, $event)" />
+    </section>
+
+    <section class="card">
+      <h3>Validierung</h3>
+      <button type="button" (click)="validate()">Jetzt validieren</button>
+      <button type="button" (click)="save()">Speichern</button>
+      <p>{{ status }}</p>
+      <p *ngIf="issues.length === 0" class="ok">Keine Validierungsfehler.</p>
+      <ul *ngIf="issues.length > 0" class="error-list">
+        <li *ngFor="let issue of issues"><code>{{ issue.path }}</code>: {{ issue.message }}</li>
+      </ul>
+    </section>
+  </div>
+</section>
