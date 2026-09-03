@@ -4,11 +4,10 @@ import { ApiService } from '../../services/api.service';
 import { Subscription } from 'rxjs';
 
 @Component({
-  selector: 'app-orders-panel',
-  standalone: true,
-  imports: [CommonModule],
-  template: '<article class="panel"><h3>Aufträge</h3><ul><li *ngFor="let item of items">{{ item.text }}</li></ul></article>',
-  styles: ['.panel { border:1px solid #d8d8d8; padding:.75rem; border-radius:.25rem; background:#fff; }']
+    selector: 'app-orders-panel',
+    imports: [CommonModule],
+    template: '<article class="panel"><h3>Aufträge</h3><ul><li *ngFor="let item of items">{{ item.text }}</li></ul></article>',
+    styles: ['.panel { border:1px solid #d8d8d8; padding:.75rem; border-radius:.25rem; background:#fff; }']
 })
 export class OrdersPanelComponent implements OnChanges, OnDestroy {
   @Input() patientId = '';

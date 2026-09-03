@@ -23,9 +23,8 @@ class FlowEngineServiceMock {
 }
 
 @Component({
-  standalone: true,
-  imports: [FlowRendererComponent],
-  template: '<app-flow-renderer [node]="node" [context]="context" />'
+    imports: [FlowRendererComponent],
+    template: '<app-flow-renderer [node]="node" [context]="context" />'
 })
 class HostComponent {
   node!: FlowNode;

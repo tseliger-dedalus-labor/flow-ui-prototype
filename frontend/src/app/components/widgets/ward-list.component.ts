@@ -3,10 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 
 @Component({
-  selector: 'app-ward-list',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-ward-list',
+    imports: [CommonModule],
+    template: `
     <h2>Stationsliste</h2>
     <ul class="cards">
       <li *ngFor="let ward of wards">
@@ -14,7 +13,7 @@ import { ApiService } from '../../services/api.service';
       </li>
     </ul>
   `,
-  styles: ['.cards { list-style: none; padding: 0; } .cards button { width: 100%; text-align: left; margin-bottom: .5rem; padding: .75rem; }']
+    styles: ['.cards { list-style: none; padding: 0; } .cards button { width: 100%; text-align: left; margin-bottom: .5rem; padding: .75rem; }']
 })
 export class WardListComponent implements OnInit {
   @Output() readonly wardSelected = new EventEmitter<{ wardId: string }>();

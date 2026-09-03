@@ -7,10 +7,9 @@ import { FlowRendererComponent } from '../components/runtime/flow-renderer.compo
 import { FlowNode } from '../models';
 
 @Component({
-  selector: 'app-runtime-page',
-  standalone: true,
-  imports: [CommonModule, FlowRendererComponent],
-  template: `
+    selector: 'app-runtime-page',
+    imports: [CommonModule, FlowRendererComponent],
+    template: `
     <section>
       <h2>Runtime</h2>
       <button type="button" (click)="back()" [disabled]="!engine.canGoBack()">Zurück</button>
@@ -20,7 +19,7 @@ import { FlowNode } from '../models';
       </ng-container>
     </section>
   `,
-  styles: ['.error { color: #a32727; }']
+    styles: ['.error { color: #a32727; }']
 })
 export class RuntimePageComponent implements OnInit {
   error = '';

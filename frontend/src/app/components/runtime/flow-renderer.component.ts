@@ -13,9 +13,8 @@ import { OrdersPanelComponent } from '../widgets/orders-panel.component';
 import { TransfusionsPanelComponent } from '../widgets/transfusions-panel.component';
 
 @Component({
-  selector: 'app-flow-renderer',
-  standalone: true,
-  template: `
+    selector: 'app-flow-renderer',
+    template: `
     <section class="node-shell">
       <ng-container #host />
       <div class="children" *ngIf="node?.children?.length">
@@ -26,8 +25,8 @@ import { TransfusionsPanelComponent } from '../widgets/transfusions-panel.compon
       </div>
     </section>
   `,
-  styles: ['.node-shell { margin-bottom: 1rem; } .children { margin-top: 0.75rem; padding-left: 0.75rem; border-left: 2px solid #e0e5f5; }'],
-  imports: [CommonModule, forwardRef(() => FlowRendererComponent)]
+    styles: ['.node-shell { margin-bottom: 1rem; } .children { margin-top: 0.75rem; padding-left: 0.75rem; border-left: 2px solid #e0e5f5; }'],
+    imports: [CommonModule, forwardRef(() => FlowRendererComponent)]
 })
 export class FlowRendererComponent implements OnChanges, OnDestroy {
   @Input() node!: FlowNode;

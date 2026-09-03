@@ -6,11 +6,10 @@ import { ApiService } from '../services/api.service';
 import { ComponentDescriptor, FlowDefinition, FlowNode, ValidationIssue } from '../models';
 
 @Component({
-  selector: 'app-editor-page',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './editor-page.component.html',
-  styleUrl: './editor-page.component.css'
+    selector: 'app-editor-page',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './editor-page.component.html',
+    styleUrl: './editor-page.component.css'
 })
 export class EditorPageComponent implements OnInit, OnDestroy {
   flows: Array<{ id: string; name: string }> = [];

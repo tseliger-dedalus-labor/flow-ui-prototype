@@ -4,10 +4,9 @@ import { ApiService } from '../../services/api.service';
 import { Subscription } from 'rxjs';
 
 @Component({
-  selector: 'app-patient-list',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-patient-list',
+    imports: [CommonModule],
+    template: `
     <h2>Patientenliste <small>Modus: {{ mode }}</small></h2>
     <p *ngIf="!wardId" class="hint">Bitte zuerst eine Station wählen.</p>
     <ul class="cards" *ngIf="wardId">
@@ -16,7 +15,7 @@ import { Subscription } from 'rxjs';
       </li>
     </ul>
   `,
-  styles: ['.cards { list-style: none; padding: 0; } .cards button { width: 100%; text-align: left; margin-bottom: .5rem; padding: .75rem; } .hint{color:#666;}']
+    styles: ['.cards { list-style: none; padding: 0; } .cards button { width: 100%; text-align: left; margin-bottom: .5rem; padding: .75rem; } .hint{color:#666;}']
 })
 export class PatientListComponent implements OnChanges, OnDestroy {
   @Input() wardId = '';
