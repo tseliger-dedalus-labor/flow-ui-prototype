@@ -1,8 +1,21 @@
 import { Routes } from '@angular/router';
-import { RuntimePageComponent } from './pages/runtime-page.component';
-import { EditorPageComponent } from './pages/editor-page.component';
+import { ShellComponent } from './shell/shell.component';
 
 export const routes: Routes = [
-  { path: '', component: RuntimePageComponent },
-  { path: 'editor', component: EditorPageComponent }
+  {
+    path: '',
+    component: ShellComponent,
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'runtime' },
+      {
+        path: 'runtime',
+        loadChildren: () => import('./modules/user-ui/user-ui.routes').then((module) => module.USER_UI_ROUTES)
+      },
+      {
+        path: 'editor',
+        loadChildren: () => import('./modules/editor/editor.routes').then((module) => module.EDITOR_ROUTES)
+      }
+    ]
+  },
+  { path: '**', redirectTo: 'runtime' }
 ];
