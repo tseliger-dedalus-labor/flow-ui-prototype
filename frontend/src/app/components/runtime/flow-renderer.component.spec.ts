@@ -8,6 +8,7 @@ import { FlowEngineService } from '../../services/flow-engine.service';
 import { ApiService } from '../../services/api.service';
 import { PatientViewComponent } from '../widgets/patient-view.component';
 import { PatientListComponent } from '../widgets/patient-list.component';
+import { PermissionService } from '../../services/permission.service';
 
 class ApiServiceMock {
   getWards() { return of([]); }
@@ -16,6 +17,8 @@ class ApiServiceMock {
   getFindings() { return of([]); }
   getOrders() { return of([]); }
   getTransfusions() { return of([]); }
+  getAppointments() { return of([]); }
+  createAppointment() { return of({}); }
 }
 
 class FlowEngineServiceMock {
@@ -93,5 +96,23 @@ describe('FlowRendererComponent', () => {
 
     expect(engine.transition).toHaveBeenCalledTimes(1);
     expect(engine.transition).toHaveBeenCalledWith('patientSelected', { patientId: 'p-1' });
+  });
+
+  it('does not render a node without its required permission', () => {
+    const permissions = TestBed.inject(PermissionService);
+    spyOn(permissions, 'hasAll').and.returnValue(false);
+    host.node = {
+      id: 'view',
+      componentId: 'patient-view',
+      inputBindings: {},
+      children: [],
+      transitions: [],
+      requiredPermissions: ['PATIENT_READ']
+    };
+
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.directive(PatientViewComponent))).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Keine Berechtigung');
   });
 });

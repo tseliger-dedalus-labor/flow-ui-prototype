@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { EditorPageComponent } from './editor-page.component';
 import { ApiService } from '../services/api.service';
+import { FlowNode } from '../models';
 
 class ApiServiceMock {
   failValidation = false;
@@ -47,5 +48,14 @@ describe('EditorPageComponent', () => {
 
     expect(component.issues.length).toBe(1);
     expect(component.issues[0].message).toContain('Validierung konnte nicht ausgeführt werden');
+  });
+
+  it('normalizes configured node permissions', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const node: FlowNode = { id: 'n', componentId: 'ward-list', inputBindings: {}, children: [], transitions: [] };
+
+    fixture.componentInstance.setRequiredPermissions(node, ' APPOINTMENTS_READ, APPOINTMENTS_WRITE, APPOINTMENTS_READ ');
+
+    expect(node.requiredPermissions).toEqual(['APPOINTMENTS_READ', 'APPOINTMENTS_WRITE']);
   });
 });
