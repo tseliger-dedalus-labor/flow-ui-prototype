@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { FlowEngineService } from '../../flow-engine.service';
-import { FlowNode } from '../../models';
+import { EmbeddedFlowContainer, FlowNode } from '../../models';
 import { PermissionService } from '../../permission.service';
 import { FlowRendererComponent } from './flow-renderer.component';
 import { FLOW_WIDGET } from '../flow-widget';
@@ -28,6 +28,13 @@ class TestListComponent {
   @Input() wardId = '';
   @Input() mode = '';
   @Output() patientSelected = new EventEmitter<{ patientId: string; caseId: string }>();
+}
+
+/** Test-Container, der Kindknoten bewusst selbst übernimmt. */
+@Component({ selector: 'flow-test-container', template: '' })
+class TestContainerComponent implements EmbeddedFlowContainer {
+  flowChildren: FlowNode[] = [];
+  flowContext: Record<string, unknown> = {};
 }
 
 /** Host-Komponente für die Renderer-Integration; die Inputs simulieren den Laufzeitknoten aus dem Flow-Engine-Status. */
@@ -56,7 +63,8 @@ describe('FlowRendererComponent', () => {
       providers: [
         { provide: FlowEngineService, useClass: FlowEngineServiceMock },
         { provide: FLOW_WIDGET, useValue: { componentId: 'patient-view', descriptor: { id: 'patient-view' }, component: TestViewComponent }, multi: true },
-        { provide: FLOW_WIDGET, useValue: { componentId: 'patient-list', descriptor: { id: 'patient-list' }, component: TestListComponent }, multi: true }
+        { provide: FLOW_WIDGET, useValue: { componentId: 'patient-list', descriptor: { id: 'patient-list' }, component: TestListComponent }, multi: true },
+        { provide: FLOW_WIDGET, useValue: { componentId: 'test-container', descriptor: { id: 'test-container' }, component: TestContainerComponent }, multi: true }
       ]
     }).compileComponents();
 
@@ -119,6 +127,31 @@ describe('FlowRendererComponent', () => {
       'patientSelected',
       { patientId: 'p-1', caseId: 'F-1' }
     );
+  });
+
+  it('lets embedded containers render their own child nodes', () => {
+    const child: FlowNode = {
+      id: 'child',
+      componentId: 'patient-view',
+      inputBindings: {},
+      children: [],
+      transitions: []
+    };
+    host.node = {
+      id: 'container',
+      componentId: 'test-container',
+      inputBindings: {},
+      children: [child],
+      transitions: []
+    };
+    host.context = { patientId: 'p-1', caseId: 'F-1' };
+
+    fixture.detectChanges();
+
+    const container = fixture.debugElement.query(By.directive(TestContainerComponent));
+    expect(container.componentInstance.flowChildren).toEqual([child]);
+    expect(container.componentInstance.flowContext).toEqual(host.context);
+    expect(fixture.debugElement.query(By.directive(TestViewComponent))).toBeNull();
   });
 
   it('does not render a node without its required permission', () => {

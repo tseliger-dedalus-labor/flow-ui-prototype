@@ -1,8 +1,12 @@
 <article class="panel">
   <h3>Aufträge</h3>
   <ul>
-    @for (item of items; track item) {
-      <li>{{ item.text }}</li>
+    @for (item of items; track item.RecordId) {
+      <li>
+        <button type="button" (click)="openOrder(item)">
+          {{ item.text }} ({{ item.RecordId }})
+        </button>
+      </li>
     }
   </ul>
 </article>

@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Inject, Input, OnChanges, OnDestroy, Optional, SimpleChanges, Type, ViewChild, ViewContainerRef, forwardRef } from '@angular/core';
 
 import { Subscription } from 'rxjs';
-import { FlowNode, InputBinding } from '../../models';
+import { EmbeddedFlowContainer, FlowNode, InputBinding } from '../../models';
 import { FlowEngineService } from '../../flow-engine.service';
 import { PermissionService } from '../../permission.service';
 import { FLOW_WIDGET, FlowWidgetRegistration } from '../flow-widget';
@@ -25,6 +25,7 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
   private readonly componentMap: Record<string, Type<unknown>>;
   private subscriptions: Subscription[] = [];
   hasAccess = true;
+  rendersOwnChildren = false;
 
   constructor(
     private readonly engine: FlowEngineService,
@@ -53,6 +54,7 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
   private renderNode(): void {
     this.cleanupSubscriptions();
     this.host.clear();
+    this.rendersOwnChildren = false;
     this.hasAccess = this.permissions.hasAll(this.node.requiredPermissions ?? []);
     if (!this.hasAccess) {
       return;
@@ -68,6 +70,11 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
     }
 
     const instance = ref.instance as Record<string, unknown>;
+    if (this.isEmbeddedContainer(instance)) {
+      instance.flowChildren = this.node.children ?? [];
+      instance.flowContext = this.context;
+      this.rendersOwnChildren = true;
+    }
     for (const transition of this.node.transitions ?? []) {
       const emitter = instance[transition.onOutput];
       if (emitter instanceof EventEmitter) {
@@ -87,6 +94,13 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
       return this.context[binding.contextKey ?? ''];
     }
     return binding.staticValue;
+  }
+
+  /**
+   * Erkennt Container, die Kindknoten über ihre eigene Darstellung organisieren.
+   */
+  private isEmbeddedContainer(instance: Record<string, unknown>): instance is Record<string, unknown> & EmbeddedFlowContainer {
+    return 'flowChildren' in instance && 'flowContext' in instance;
   }
 
   /**

@@ -1,10 +1,12 @@
 import { defineFlowComponent, IxtDisplayType } from 'flow-platform';
 import { DemographicsPanelComponent } from './widgets/demographics-panel/demographics-panel.component';
 import { FindingsPanelComponent } from './widgets/findings-panel/findings-panel.component';
+import { OrderComponent } from './widgets/order/order.component';
 import { OrdersPanelComponent } from './widgets/orders-panel/orders-panel.component';
 import { PatientListComponent } from './widgets/patient-list/patient-list.component';
 import { PatientViewComponent } from './widgets/patient-view/patient-view.component';
 import { StackLayoutComponent } from './widgets/stack-layout/stack-layout.component';
+import { TabPanelComponent } from './widgets/tab-panel/tab-panel.component';
 import { TransfusionsPanelComponent } from './widgets/transfusions-panel/transfusions-panel.component';
 import { WardListComponent } from './widgets/ward-list/ward-list.component';
 
@@ -88,6 +90,13 @@ export const FLOW_COMPONENTS = [
     inputs: [],
     outputs: []
   }),
+  defineFlowComponent(TabPanelComponent, {
+    id: 'tab-panel',
+    title: 'Tab-Panel',
+    container: true,
+    inputs: [],
+    outputs: []
+  }),
   defineFlowComponent(DemographicsPanelComponent, {
     id: 'demographics-panel',
     title: 'Stammdaten',
@@ -133,6 +142,45 @@ export const FLOW_COMPONENTS = [
       {
         name: 'patientId',
         semanticType: 'PATIENT_ID',
+        required: true,
+        allowedValues: []
+      },
+      {
+        name: 'caseId',
+        semanticType: 'CASE_ID',
+        required: true,
+        allowedValues: []
+      }
+    ],
+    outputs: [
+      {
+        name: 'orderSelected',
+        payload: {
+          RecordId: 'RECORD_ID'
+        }
+      }
+    ]
+  }),
+  defineFlowComponent(OrderComponent, {
+    id: 'order-view',
+    title: 'Auftrag',
+    container: false,
+    inputs: [
+      {
+        name: 'patientId',
+        semanticType: 'PATIENT_ID',
+        required: true,
+        allowedValues: []
+      },
+      {
+        name: 'caseId',
+        semanticType: 'CASE_ID',
+        required: true,
+        allowedValues: []
+      },
+      {
+        name: 'RecordId',
+        semanticType: 'RECORD_ID',
         required: true,
         allowedValues: []
       }

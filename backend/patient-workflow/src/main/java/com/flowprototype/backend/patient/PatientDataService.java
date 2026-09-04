@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Liefert reproduzierbare Beispieldaten für den Patienten-Workflow.
@@ -124,17 +125,33 @@ public class PatientDataService {
     }
 
     /**
-     * Liefert Beispielaufträge zu einem Patienten.
+     * Liefert Beispielaufträge zu einem Patientenfall.
      *
      * @param patientId Technische Patienten-ID.
-     * @return Auftragsliste.
+     * @param caseId Technische Fall-ID.
+     * @return Auftragsliste mit RecordId als Schlüssel.
      */
-    public List<Map<String, String>> orders(String patientId) {
+    public List<Map<String, String>> orders(String patientId, String caseId) {
         return List.of(
-            Map.of("id", patientId + "-o-1", "text", "Laborauftrag: kleines Blutbild – in Bearbeitung"),
-            Map.of("id", patientId + "-o-2", "text", "Konsil: Kardiologie – Termin bestätigt"),
-            Map.of("id", patientId + "-o-3", "text", "Diagnostik: Sonografie Abdomen – geplant für 05.09.2026")
+            order(patientId, caseId, "001", "Laborauftrag: kleines Blutbild", "In Bearbeitung", "2026-09-04"),
+            order(patientId, caseId, "002", "Konsil: Kardiologie", "Termin bestätigt", "2026-09-04"),
+            order(patientId, caseId, "003", "Diagnostik: Sonografie Abdomen", "Geplant", "2026-09-05"),
+            order(patientId, caseId, "004", "Medikationsprüfung", "Offen", "2026-09-05")
         );
+    }
+
+    /**
+     * Liefert einen einzelnen Auftrag innerhalb eines Patientenfalls.
+     *
+     * @param patientId Technische Patienten-ID.
+     * @param caseId Technische Fall-ID.
+     * @param recordId RecordId des Auftrags.
+     * @return Auftrag, sofern die RecordId in diesem Fall existiert.
+     */
+    public Optional<Map<String, String>> order(String patientId, String caseId, String recordId) {
+        return orders(patientId, caseId).stream()
+            .filter(order -> recordId.equals(order.get("RecordId")))
+            .findFirst();
     }
 
     /**
@@ -188,6 +205,25 @@ public class PatientDataService {
             id,
             name,
             Arrays.stream(caseIds).map(PatientCase::new).toList()
+        );
+    }
+
+    /**
+     * Erzeugt einen fallbezogenen Auftrag mit stabiler RecordId.
+     */
+    private static Map<String, String> order(
+        String patientId,
+        String caseId,
+        String sequence,
+        String text,
+        String status,
+        String createdAt
+    ) {
+        return Map.of(
+            "RecordId", "ORD-" + patientId + "-" + caseId + "-" + sequence,
+            "text", text,
+            "status", status,
+            "createdAt", createdAt
         );
     }
 

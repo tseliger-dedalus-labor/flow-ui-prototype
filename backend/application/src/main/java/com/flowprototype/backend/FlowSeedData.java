@@ -149,8 +149,8 @@ public class FlowSeedData implements CommandLineRunner {
 
         FlowNode layout2 = new FlowNode();
         layout2.setId("layout2");
-        layout2.setComponentId("stack-layout");
-        FlowNode orders = panel("orders", "orders-panel");
+        layout2.setComponentId("tab-panel");
+        FlowNode orders = casePanel("orders", "orders-panel");
         FlowNode transfusions = panel("transfusions", "transfusions-panel");
         layout2.setChildren(List.of(orders, transfusions));
         patientView2.setChildren(List.of(layout2));

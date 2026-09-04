@@ -3,7 +3,7 @@ import { IxtDisplayType } from './ixt-display-type';
 /**
  * Fachliche Typisierung für Flow-Inputs und Output-Payloads.
  */
-export type SemanticType = 'STRING' | 'MODE' | 'WARD_ID' | 'PATIENT_ID' | 'CASE_ID';
+export type SemanticType = 'STRING' | 'MODE' | 'WARD_ID' | 'PATIENT_ID' | 'CASE_ID' | 'RECORD_ID';
 /**
  * Herkunft eines Input-Bindings innerhalb einer Flow-Definition.
  */
@@ -81,6 +81,14 @@ export interface FlowNode {
   requiredPermissions?: string[];
   /** Sidebar, die angezeigt wird, solange dieser Knoten der aktive Hauptknoten ist. */
   sidebar?: FlowSidebar;
+}
+
+/**
+ * Vertrag für Container-Komponenten, die ihre Flow-Kindknoten selbst rendern.
+ */
+export interface EmbeddedFlowContainer {
+  flowChildren: FlowNode[];
+  flowContext: Record<string, unknown>;
 }
 
 /**

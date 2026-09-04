@@ -20,4 +20,15 @@ class PatientDataServiceTest {
                 .extracting(PatientDataService.PatientCase::id)
                 .containsExactly("F-2026-1001", "F-2024-0815"));
     }
+
+    @Test
+    void identifiesCaseOrdersByRecordId() {
+        var orders = service.orders("p-100", "F-2026-1001");
+        var recordId = orders.getFirst().get("RecordId");
+
+        assertThat(recordId).startsWith("ORD-p-100-F-2026-1001-");
+        assertThat(service.order("p-100", "F-2026-1001", recordId).orElseThrow())
+            .containsEntry("RecordId", recordId)
+            .containsKeys("text", "status", "createdAt");
+    }
 }

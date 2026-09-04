@@ -15,6 +15,14 @@ export interface PatientSummary {
   cases: PatientCase[];
 }
 
+/** Auftragsdaten mit dem fachlich vorgegebenen Primärschlüssel. */
+export interface PatientOrder {
+  RecordId: string;
+  text: string;
+  status: string;
+  createdAt: string;
+}
+
 /**
  * Kapselt alle lesenden Patient-Workflow-Endpunkte des Backends.
  */
@@ -68,8 +76,19 @@ export class PatientApiService {
   /**
    * Lädt die Aufträge eines Patienten.
    */
-  getOrders(patientId: string): Observable<Array<{ id: string; text: string }>> {
-    return this.http.get<Array<{ id: string; text: string }>>(`${this.baseUrl}/patients/${patientId}/orders`);
+  getOrders(patientId: string, caseId: string): Observable<PatientOrder[]> {
+    return this.http.get<PatientOrder[]>(
+      `${this.baseUrl}/patients/${patientId}/cases/${caseId}/orders`
+    );
+  }
+
+  /**
+   * Lädt einen einzelnen Auftrag über seinen RecordId.
+   */
+  getOrder(patientId: string, caseId: string, RecordId: string): Observable<PatientOrder> {
+    return this.http.get<PatientOrder>(
+      `${this.baseUrl}/patients/${patientId}/cases/${caseId}/orders/${RecordId}`
+    );
   }
 
   /**

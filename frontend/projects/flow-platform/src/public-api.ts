@@ -7,5 +7,6 @@ export * from './lib/models';
 export * from './lib/permission.service';
 export * from './lib/runtime/flow-layout/flow-layout.component';
 export * from './lib/runtime/flow-renderer/flow-renderer.component';
+export * from './lib/runtime/flow-tab.service';
 export * from './lib/runtime/tool-runtime-page';
 export * from './lib/runtime/flow-widget';

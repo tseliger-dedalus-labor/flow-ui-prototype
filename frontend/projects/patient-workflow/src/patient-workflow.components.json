@@ -80,6 +80,13 @@
       "outputs": []
     },
     {
+      "id": "tab-panel",
+      "title": "Tab-Panel",
+      "container": true,
+      "inputs": [],
+      "outputs": []
+    },
+    {
       "id": "demographics-panel",
       "title": "Stammdaten",
       "displayType": "DISPTYPE_WEC_CAVE",
@@ -124,6 +131,45 @@
         {
           "name": "patientId",
           "semanticType": "PATIENT_ID",
+          "required": true,
+          "allowedValues": []
+        },
+        {
+          "name": "caseId",
+          "semanticType": "CASE_ID",
+          "required": true,
+          "allowedValues": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "orderSelected",
+          "payload": {
+            "RecordId": "RECORD_ID"
+          }
+        }
+      ]
+    },
+    {
+      "id": "order-view",
+      "title": "Auftrag",
+      "container": false,
+      "inputs": [
+        {
+          "name": "patientId",
+          "semanticType": "PATIENT_ID",
+          "required": true,
+          "allowedValues": []
+        },
+        {
+          "name": "caseId",
+          "semanticType": "CASE_ID",
+          "required": true,
+          "allowedValues": []
+        },
+        {
+          "name": "RecordId",
+          "semanticType": "RECORD_ID",
           "required": true,
           "allowedValues": []
         }

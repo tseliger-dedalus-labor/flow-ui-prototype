@@ -19,7 +19,7 @@ class PatientComponentDescriptorProviderTest {
         var descriptors = new PatientComponentDescriptorProvider(loader).descriptors();
 
         assertThat(descriptors).extracting("id")
-            .contains("ward-list", "patient-list", "patient-view", "demographics-panel");
+            .contains("ward-list", "patient-list", "patient-view", "tab-panel", "order-view", "demographics-panel");
         assertThat(descriptors).filteredOn(descriptor -> descriptor.getId().equals("patient-list"))
             .singleElement()
             .satisfies(descriptor -> {
@@ -38,5 +38,12 @@ class PatientComponentDescriptorProviderTest {
             .singleElement()
             .extracting("displayType")
             .isEqualTo(IxtDisplayType.DISPTYPE_WEC_INDEX_TRAFU);
+        assertThat(descriptors).filteredOn(descriptor -> descriptor.getId().equals("order-view"))
+            .singleElement()
+            .satisfies(descriptor -> assertThat(descriptor.getInputs())
+                .anySatisfy(input -> {
+                    assertThat(input.getName()).isEqualTo("RecordId");
+                    assertThat(input.getSemanticType()).isEqualTo(SemanticType.RECORD_ID);
+                }));
     }
 }

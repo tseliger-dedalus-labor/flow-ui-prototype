@@ -1,9 +1,11 @@
 package com.flowprototype.backend.patient;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -72,14 +74,39 @@ public class PatientDataController {
     }
 
     /**
-     * Liefert Aufträge eines Patienten.
+     * Liefert alle Aufträge eines Patientenfalls.
      *
-     * @param id Technische Patienten-ID.
-     * @return Auftragsliste für den Beispielbereich.
+     * @param patientId Technische Patienten-ID.
+     * @param caseId Technische Fall-ID.
+     * @return Auftragsliste für den ausgewählten Fall.
      */
-    @GetMapping("/patients/{id}/orders")
-    public List<Map<String, String>> orders(@PathVariable String id) {
-        return patientData.orders(id);
+    @GetMapping("/patients/{patientId}/cases/{caseId}/orders")
+    public List<Map<String, String>> orders(
+        @PathVariable String patientId,
+        @PathVariable String caseId
+    ) {
+        return patientData.orders(patientId, caseId);
+    }
+
+    /**
+     * Liefert einen Auftrag anhand seiner RecordId.
+     *
+     * @param patientId Technische Patienten-ID.
+     * @param caseId Technische Fall-ID.
+     * @param recordId RecordId des Auftrags.
+     * @return Auftragsdetails.
+     */
+    @GetMapping("/patients/{patientId}/cases/{caseId}/orders/{recordId}")
+    public Map<String, String> order(
+        @PathVariable String patientId,
+        @PathVariable String caseId,
+        @PathVariable String recordId
+    ) {
+        return patientData.order(patientId, caseId, recordId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Auftrag mit RecordId '" + recordId + "' wurde nicht gefunden."
+            ));
     }
 
     /**

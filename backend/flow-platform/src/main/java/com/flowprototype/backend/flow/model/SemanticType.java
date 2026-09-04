@@ -13,5 +13,7 @@ public enum SemanticType {
     /** Identifikator eines Patienten. */
     PATIENT_ID,
     /** Identifikator eines Patientenfalls. */
-    CASE_ID
+    CASE_ID,
+    /** Identifikator eines fachlichen Datensatzes. */
+    RECORD_ID
 }
