@@ -1,10 +1,10 @@
 package com.flowprototype.backend.flow;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowprototype.backend.flow.model.FlowDefinition;
 import com.flowprototype.backend.persistence.FlowEntity;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class FlowMapper {
@@ -20,7 +20,7 @@ public class FlowMapper {
             definition.setId(entity.getId());
             definition.setName(entity.getName());
             return definition;
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Flow-Definition konnte nicht gelesen werden", e);
         }
     }
@@ -35,7 +35,7 @@ public class FlowMapper {
             payload.setEntryNodeId(definition.getEntryNodeId());
             payload.setNodes(definition.getNodes());
             entity.setDefinitionJson(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(payload));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Flow-Definition konnte nicht gespeichert werden", e);
         }
         return entity;
