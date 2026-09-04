@@ -34,4 +34,16 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>${project.basedir}/../../frontend/projects/appointments/src</directory>
+                <includes>
+                    <include>appointments.components.json</include>
+                </includes>
+                <targetPath>META-INF/flow-components</targetPath>
+            </resource>
+        </resources>
+    </build>
 </project>

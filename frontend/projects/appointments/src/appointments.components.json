@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "module": "appointments",
+  "moduleVersion": "1.0.0",
+  "components": [
+    {
+      "id": "appointments-panel",
+      "title": "Terminplanung",
+      "container": false,
+      "inputs": [
+        {
+          "name": "wardId",
+          "semanticType": "WARD_ID",
+          "required": true,
+          "allowedValues": []
+        }
+      ],
+      "outputs": []
+    }
+  ]
+}

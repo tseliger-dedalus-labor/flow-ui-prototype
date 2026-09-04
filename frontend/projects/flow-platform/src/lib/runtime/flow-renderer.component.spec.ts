@@ -42,8 +42,8 @@ describe('FlowRendererComponent', () => {
       imports: [HostComponent],
       providers: [
         { provide: FlowEngineService, useClass: FlowEngineServiceMock },
-        { provide: FLOW_WIDGET, useValue: { componentId: 'patient-view', component: TestViewComponent }, multi: true },
-        { provide: FLOW_WIDGET, useValue: { componentId: 'patient-list', component: TestListComponent }, multi: true }
+        { provide: FLOW_WIDGET, useValue: { componentId: 'patient-view', descriptor: { id: 'patient-view' }, component: TestViewComponent }, multi: true },
+        { provide: FLOW_WIDGET, useValue: { componentId: 'patient-list', descriptor: { id: 'patient-list' }, component: TestListComponent }, multi: true }
       ]
     }).compileComponents();
 

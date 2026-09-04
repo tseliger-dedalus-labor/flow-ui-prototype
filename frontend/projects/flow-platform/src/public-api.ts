@@ -1,4 +1,5 @@
 export * from './lib/api-base-url';
+export * from './lib/component-manifest';
 export * from './lib/flow-api.service';
 export * from './lib/flow-engine.service';
 export * from './lib/models';

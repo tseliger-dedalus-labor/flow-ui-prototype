@@ -103,6 +103,25 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     this.validationTrigger.next();
   }
 
+  compatibleTargets(source: FlowNode, outputName: string): FlowNode[] {
+    const output = this.descriptor(source.componentId)?.outputs.find((candidate) => candidate.name === outputName);
+    if (!this.flow || !output) {
+      return [];
+    }
+    const availableTypes = Object.values(output.payload);
+    return this.flow.nodes.filter((target) => {
+      const descriptor = this.descriptor(target.componentId);
+      if (!descriptor) {
+        return false;
+      }
+      return descriptor.inputs.filter((input) => input.required).every((input) => {
+        const binding = target.inputBindings?.[input.name];
+        return binding?.source === 'STATIC'
+          || availableTypes.some((type) => type === input.semanticType || input.semanticType === 'STRING');
+      });
+    });
+  }
+
   addMapping(transition: { contextMapping: Record<string, string> }, key: string, value: string): void {
     if (key) {
       transition.contextMapping[key] = value;

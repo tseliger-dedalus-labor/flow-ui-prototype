@@ -1,6 +1,7 @@
 {
   "name": "patient-workflow",
   "version": "1.0.0",
+  "flowComponents": "./patient-workflow.components.json",
   "peerDependencies": {
     "@angular/common": "^21.2.0",
     "@angular/core": "^21.2.0",

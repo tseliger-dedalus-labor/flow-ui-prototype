@@ -1,14 +1,17 @@
 package com.flowprototype.backend.appointments;
 
+import com.flowprototype.backend.flow.ComponentManifestLoader;
 import com.flowprototype.backend.flow.model.SemanticType;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AppointmentsComponentDescriptorProviderTest {
     @Test
     void contributesAppointmentsComponent() {
-        var descriptor = new AppointmentsComponentDescriptorProvider().descriptors().get(0);
+        var loader = new ComponentManifestLoader(new ObjectMapper());
+        var descriptor = new AppointmentsComponentDescriptorProvider(loader).descriptors().get(0);
 
         assertThat(descriptor.getId()).isEqualTo("appointments-panel");
         assertThat(descriptor.getInputs()).singleElement().satisfies(input -> {

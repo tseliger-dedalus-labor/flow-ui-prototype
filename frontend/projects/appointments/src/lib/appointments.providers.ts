@@ -1,7 +1,8 @@
 import { Provider } from '@angular/core';
 import { provideFlowWidget } from 'flow-platform';
 import { AppointmentsPanelComponent } from './appointments-panel.component';
+import { appointmentsComponent } from './component-manifest';
 
 export function provideAppointmentsWidgets(): Provider[] {
-  return [provideFlowWidget('appointments-panel', AppointmentsPanelComponent)];
+  return [provideFlowWidget(appointmentsComponent('appointments-panel'), AppointmentsPanelComponent)];
 }

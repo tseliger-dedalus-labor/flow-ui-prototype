@@ -57,4 +57,39 @@ describe('EditorPageComponent', () => {
 
     expect(node.requiredPermissions).toEqual(['APPOINTMENTS_READ', 'APPOINTMENTS_WRITE']);
   });
+
+  it('suggests targets whose required inputs match an output type', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    component.registry = [
+      {
+        id: 'source', title: 'Source', container: false, inputs: [],
+        outputs: [{ name: 'selected', payload: { patientId: 'PATIENT_ID' } }]
+      },
+      {
+        id: 'matching', title: 'Matching', container: false,
+        inputs: [{ name: 'patientId', semanticType: 'PATIENT_ID', required: true, allowedValues: [] }],
+        outputs: []
+      },
+      {
+        id: 'other', title: 'Other', container: false,
+        inputs: [{ name: 'wardId', semanticType: 'WARD_ID', required: true, allowedValues: [] }],
+        outputs: []
+      }
+    ];
+    const source: FlowNode = { id: 's', componentId: 'source', inputBindings: {}, children: [], transitions: [] };
+    const matching: FlowNode = {
+      id: 'm', componentId: 'matching',
+      inputBindings: { patientId: { source: 'CONTEXT', contextKey: 'patientId' } },
+      children: [], transitions: []
+    };
+    const other: FlowNode = {
+      id: 'o', componentId: 'other',
+      inputBindings: { wardId: { source: 'CONTEXT', contextKey: 'wardId' } },
+      children: [], transitions: []
+    };
+    component.flow = { id: 'flow', name: 'Test', entryNodeId: 's', nodes: [source, matching, other] };
+
+    expect(component.compatibleTargets(source, 'selected').map((node) => node.id)).toEqual(['s', 'm']);
+  });
 });
