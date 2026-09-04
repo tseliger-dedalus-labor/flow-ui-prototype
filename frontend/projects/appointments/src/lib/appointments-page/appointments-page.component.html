@@ -1,0 +1,12 @@
+<section>
+  <h2>Stationstermine</h2>
+  <button type="button" (click)="back()" [disabled]="!engine.canGoBack()">Zurück</button>
+  @if (error) {
+    <p class="error">{{ error }}</p>
+  }
+  @if (vm$ | async; as vm) {
+    @if (vm.node) {
+      <app-flow-renderer [node]="vm.node" [context]="vm.context" />
+    }
+  }
+</section>

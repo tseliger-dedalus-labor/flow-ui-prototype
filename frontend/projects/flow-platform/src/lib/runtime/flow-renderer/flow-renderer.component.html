@@ -1,0 +1,16 @@
+<section class="node-shell">
+  <ng-container #host />
+  @if (hasAccess) {
+    @if (node.children.length) {
+      <div class="children">
+        @for (child of node.children; track child) {
+          <app-flow-renderer
+            [node]="child"
+            [context]="context" />
+        }
+      </div>
+    }
+  } @else {
+    <p class="access-denied">Keine Berechtigung für diese Komponente.</p>
+  }
+</section>

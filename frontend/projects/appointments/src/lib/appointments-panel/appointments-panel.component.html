@@ -1,0 +1,33 @@
+<section>
+  <h2>Terminplanung</h2>
+  @if (!wardId) {
+    <p class="hint">Bitte zuerst eine Station wählen.</p>
+  } @else {
+    @if (canSchedule) {
+      <form (ngSubmit)="schedule()">
+        <label>Patient
+          <select name="patientId" [(ngModel)]="draft.patientId" required>
+            @for (patient of patients; track patient.id) {
+              <option [value]="patient.id">{{ patient.name }}</option>
+            }
+          </select>
+        </label>
+        <label>Datum <input name="date" type="date" [(ngModel)]="draft.date" required /></label>
+        <label>Uhrzeit <input name="time" type="time" [(ngModel)]="draft.time" required /></label>
+        <label>Grund <input name="reason" [(ngModel)]="draft.reason" required /></label>
+        <button type="submit" [disabled]="!isDraftComplete()">Termin anlegen</button>
+      </form>
+    }
+    <ul class="appointments">
+      @for (appointment of appointments; track appointment.id) {
+        <li>
+          <strong>{{ appointment.date }} · {{ appointment.time }}</strong>
+          <span>{{ appointment.patientName }}</span>
+          <span>{{ appointment.reason }}</span>
+        </li>
+      } @empty {
+        <li>Keine Termine für diese Station.</li>
+      }
+    </ul>
+  }
+</section>

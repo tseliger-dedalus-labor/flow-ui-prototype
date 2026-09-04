@@ -1,0 +1,35 @@
+form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: .75rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+label {
+  display: grid;
+  gap: .25rem;
+}
+
+input, select, button {
+  padding: .5rem;
+}
+
+.appointments {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: .5rem;
+}
+
+.appointments li {
+  display: grid;
+  grid-template-columns: 10rem 1fr 1fr;
+  gap: .75rem;
+  border: 1px solid #d8d8d8;
+  padding: .75rem;
+}
+
+.hint {
+  color: #666;
+}

@@ -1,0 +1,8 @@
+<h2>Stationsliste</h2>
+<ul class="cards">
+  @for (ward of wards; track ward) {
+    <li>
+      <button type="button" (click)="selectWard(ward.id)">{{ ward.name }} ({{ ward.id }})</button>
+    </li>
+  }
+</ul>
