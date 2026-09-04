@@ -1,27 +1,35 @@
-# Frontend
+# Flow UI Frontend Workspace
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 18.2.21.
+Die Angular-Workspace besteht aus einer dünnen Demo-Shell und unabhängig versionierten Bibliotheken:
 
-## Development server
+- `flow-platform`: Flow-Verträge, HTTP-Client, Engine, Berechtigungen und dynamischer Renderer
+- `patient-workflow`: Patienten-API, Runtime-Route und Patienten-Widgets
+- `appointments`: Termin-API, Route und Termin-Widget
+- `flow-editor`: Editor-Route und Editor-Oberfläche
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+Die Pakete registrieren Widgets über `provideFlowWidget`; der Renderer importiert keine Fachkomponenten. Die Basis-URL kann im Host mit `provideFlowUiApiBaseUrl` konfiguriert werden.
 
-## Code scaffolding
+## Entwicklung
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+```bash
+npm install
+npm start
+```
 
-## Build
+## Builds
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+```bash
+npm run build
+npm run build:flow-platform
+npm run build:patient-workflow
+npm run build:appointments
+npm run build:flow-editor
+```
 
-## Running unit tests
+Die Einzel-Builds erstellen veröffentlichbare Pakete unter `dist/<paket>`. Abhängige Build-Skripte bauen ihre lokalen Peer-Pakete zuerst.
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+## Tests
 
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+```bash
+npm test
+```
