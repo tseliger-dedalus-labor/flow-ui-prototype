@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "npm run build:modules && ng serve",
     "build": "npm run build:modules && ng build frontend",
     "build:modules": "ng build flow-platform && ng build patient-workflow && ng build appointments && ng build flow-editor",
     "build:flow-platform": "ng build flow-platform",
     "build:patient-workflow": "npm run build:flow-platform && ng build patient-workflow",
     "build:appointments": "npm run build:patient-workflow && ng build appointments",
     "build:flow-editor": "npm run build:flow-platform && ng build flow-editor",
-    "watch": "ng build --watch --configuration development",
+    "watch": "npm run build:modules && ng build frontend --watch --configuration development",
     "test": "npm run build:modules && ng test frontend --watch=false && ng test flow-platform --watch=false && ng test patient-workflow --watch=false && ng test appointments --watch=false && ng test flow-editor --watch=false"
   },
   "private": true,
