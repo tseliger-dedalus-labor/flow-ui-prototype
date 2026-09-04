@@ -1,0 +1,12 @@
+<article class="order">
+  <h3>Auftrag</h3>
+  @if (order) {
+    <dl>
+      <div><dt>RecordId</dt><dd>{{ order.RecordId }}</dd></div>
+      <div><dt>Beschreibung</dt><dd>{{ order.text }}</dd></div>
+      <div><dt>Status</dt><dd>{{ order.status }}</dd></div>
+      <div><dt>Erstellt am</dt><dd>{{ order.createdAt }}</dd></div>
+      <div><dt>Fall</dt><dd>{{ caseId }}</dd></div>
+    </dl>
+  }
+</article>

@@ -1,0 +1,41 @@
+@if (tabs.length) {
+  <div class="tab-list" role="tablist" aria-label="Patientenbereiche">
+    @for (tab of tabs; track tab.key; let index = $index) {
+      <div class="tab-entry">
+        <button
+          #tabButton
+          type="button"
+          role="tab"
+          [id]="'tab-' + tab.node.id"
+          [attr.aria-controls]="'tab-panel-' + tab.node.id"
+          [attr.aria-selected]="activeKey === tab.key"
+          [attr.tabindex]="activeKey === tab.key ? 0 : -1"
+          (click)="selectTab(tab.key)"
+          (keydown)="handleKeydown($event, index)">
+          {{ tab.title }}
+        </button>
+        @if (tab.closable) {
+          <button
+            class="close-tab"
+            type="button"
+            [attr.aria-label]="tab.title + ' schließen'"
+            (click)="closeTab(tab, $event)">
+            &times;
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  @for (tab of tabs; track tab.key) {
+    @if (activeKey === tab.key) {
+      <section
+        class="tab-content"
+        role="tabpanel"
+        [id]="'tab-panel-' + tab.node.id"
+        [attr.aria-labelledby]="'tab-' + tab.node.id">
+        <app-flow-renderer [node]="tab.node" [context]="flowContext" />
+      </section>
+    }
+  }
+}
