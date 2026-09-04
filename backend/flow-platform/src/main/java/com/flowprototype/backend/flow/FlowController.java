@@ -1,10 +1,10 @@
 package com.flowprototype.backend.flow;
 
 import com.flowprototype.backend.flow.model.FlowDefinition;
-import com.flowprototype.backend.flow.model.ValidationResult;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/flows")
@@ -13,11 +13,6 @@ public class FlowController {
 
     public FlowController(FlowService service) {
         this.service = service;
-    }
-
-    @GetMapping
-    public List<FlowSummary> list() {
-        return service.list();
     }
 
     @GetMapping("/{id}")
@@ -30,19 +25,4 @@ public class FlowController {
         return service.getEffective();
     }
 
-    @PostMapping
-    public FlowDefinition create(@RequestBody FlowDefinition definition) {
-        return service.create(definition);
-    }
-
-    @PutMapping("/{id}")
-    public FlowDefinition update(@PathVariable String id, @RequestBody FlowDefinition definition) {
-        return service.update(id, definition);
-    }
-
-    @PostMapping("/{id}/validate")
-    public ValidationResult validate(@PathVariable String id, @RequestBody FlowDefinition definition) {
-        definition.setId(id);
-        return service.validate(definition);
-    }
 }

@@ -2,19 +2,22 @@
 
 Vollständig lauffähiger End-to-End-Prototyp einer deklarativen, benutzerkonfigurierbaren UI-Flow-Engine mit Spring Boot (Backend) und Angular (Frontend).
 
-## Architektur
+## Modulare Architektur
 
-- **Component Registry** (Backend): zentrale Deskriptoren für Komponenten mit
-  - `id`, `title`, `container`
-  - Inputs (`required`, semantischer Typ, erlaubte Enum-Werte)
-  - Outputs (Payload-Felder mit semantischen Typen)
-- **FlowDefinition**: gerichteter Graph aus `FlowNode`s mit
-  - `componentId`
-  - `inputBindings` (`STATIC` oder `CONTEXT`)
-  - `children` (nur für Container-Komponenten)
-  - `transitions` (`onOutput` → `targetNodeId` + `contextMapping`)
-- **FlowEngineService** (Frontend): hält aktuellen Knoten, akkumulierten Context (`wardId`, `patientId`) und Zurück-Navigation.
-- **FlowRendererComponent** (Frontend): erzeugt Komponenten dynamisch, setzt Inputs, hört Outputs, führt Transitionen aus und rendert Kindknoten rekursiv.
+Backend und Frontend sind als getrennt baubare, versionierte Artefakte organisiert:
+
+| Fachmodul | Backend-Artefakt | Frontend-Paket | Verantwortung |
+| --- | --- | --- | --- |
+| Flow-Plattform | `com.flowprototype:flow-platform` | `flow-platform` | Flow-Verträge, Registry, Validierung, Persistenz, Engine und Renderer |
+| Patienten-Workflow | `com.flowprototype:patient-workflow` | `patient-workflow` | Stations-/Patientendaten und zugehörige Widgets |
+| Terminplanung | `com.flowprototype:appointments` | `appointments` | Termin-API, Termin-Widget und Feature-Route |
+| Flow-Editor | `com.flowprototype:flow-editor` | `flow-editor` | Flow-Management-API und Editor-Oberfläche |
+
+`backend/application` und die Angular-Anwendung unter `frontend/src` sind ausschließlich Composition Hosts. Sie wählen die einzubindenden Module aus, liefern Demo-Seed-Daten und stellen die gemeinsame Navigation bereit.
+
+Backend-Module erweitern die Registry über `ComponentDescriptorProvider`. Frontend-Module registrieren dynamische Komponenten über den Multi-Provider `FLOW_WIDGET`. Dadurch kennen Plattform und Renderer keine konkreten Fachmodule.
+
+Jedes `pom.xml` beziehungsweise `projects/*/package.json` enthält eine eigene Artefaktversion. Abhängigkeiten zwischen Modulen referenzieren explizite Versionen und können bei Releases einzeln angehoben werden.
 
 ## Datenmodell (Backend)
 
@@ -61,13 +64,19 @@ Relationale Metadaten + CLOB/JSON:
 
 ```bash
 cd backend
-mvn spring-boot:run
+mvn -pl application -am package
+java -jar application/target/application-1.0.0.jar
 ```
 
-### Build & Tests
+### Module einzeln bauen
 
 ```bash
 mvn test package
+mvn -pl flow-platform -am test package
+mvn -pl patient-workflow -am test package
+mvn -pl appointments -am test package
+mvn -pl flow-editor -am test package
+mvn -pl application -am test package
 ```
 
 ## Frontend starten (`frontend/`)
@@ -82,17 +91,21 @@ npm start
 
 ```bash
 npm run build
+npm run build:flow-platform
+npm run build:patient-workflow
+npm run build:appointments
+npm run build:flow-editor
 ```
 
 ## Frontend-Module
 
-Die Shell stellt die gemeinsame Toolbar bereit und lädt die Module unabhängig:
+Die Shell stellt nur die gemeinsame Toolbar und die Composition-Routen bereit. Sie lädt die separat gebauten Pakete lazy:
 
 - Benutzer-UI: `/runtime`
 - Stationsbezogene Terminplanung: `/appointments`
 - Editor: `/editor`
 
-Weitere Module können als eigene Feature-Routen in der Shell registriert werden.
+Weitere Module können eigene Routen, API-Clients und Widget-Provider exportieren, ohne die Flow-Plattform zu ändern.
 Die Berechtigungen eines Flow-Knotens werden im Editor als kommaseparierte Werte konfiguriert.
 Das Terminplanungsmodul verwendet beispielhaft `APPOINTMENTS_READ`; die Berechtigungen sind im Prototyp clientseitig gemockt.
 
@@ -118,13 +131,17 @@ Das Terminplanungsmodul verwendet beispielhaft `APPOINTMENTS_READ`; die Berechti
 - `PUT /api/flows/{id}`
 - `POST /api/flows/{id}/validate`
 
-### Mock-Daten
+### Patienten-Workflow
 - `GET /api/wards`
 - `GET /api/wards/{id}/patients`
 - `GET /api/patients/{id}`
 - `GET /api/patients/{id}/findings`
 - `GET /api/patients/{id}/orders`
 - `GET /api/patients/{id}/transfusions`
+
+### Terminplanung
+- `GET /api/wards/{id}/appointments`
+- `POST /api/wards/{id}/appointments`
 
 ## Fehlende Produktionsreife (bewusst)
 

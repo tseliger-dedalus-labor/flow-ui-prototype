@@ -9,15 +9,15 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'runtime' },
       {
         path: 'runtime',
-        loadChildren: () => import('./modules/user-ui/user-ui.routes').then((module) => module.USER_UI_ROUTES)
+        loadChildren: () => import('patient-workflow').then((module) => module.USER_UI_ROUTES)
       },
       {
         path: 'appointments',
-        loadChildren: () => import('./modules/appointments/appointments.routes').then((module) => module.APPOINTMENTS_ROUTES)
+        loadChildren: () => import('appointments').then((module) => module.APPOINTMENTS_ROUTES)
       },
       {
         path: 'editor',
-        loadChildren: () => import('./modules/editor/editor.routes').then((module) => module.EDITOR_ROUTES)
+        loadChildren: () => import('flow-editor').then((module) => module.EDITOR_ROUTES)
       }
     ]
   },

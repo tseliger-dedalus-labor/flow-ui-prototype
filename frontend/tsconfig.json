@@ -6,6 +6,20 @@
     "outDir": "./dist/out-tsc",
     "strict": true,
     "noImplicitOverride": true,
+    "paths": {
+      "appointments": [
+        "./dist/appointments"
+      ],
+      "flow-editor": [
+        "./dist/flow-editor"
+      ],
+      "flow-platform": [
+        "./dist/flow-platform"
+      ],
+      "patient-workflow": [
+        "./dist/patient-workflow"
+      ]
+    },
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
@@ -25,5 +39,31 @@
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true
-  }
+  },
+  "references": [
+    {
+      "path": "./projects/flow-platform/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/flow-platform/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/patient-workflow/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/patient-workflow/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/appointments/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/appointments/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/flow-editor/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/flow-editor/tsconfig.spec.json"
+    }
+  ]
 }

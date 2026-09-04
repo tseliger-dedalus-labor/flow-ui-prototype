@@ -94,6 +94,126 @@
           }
         }
       }
+    },
+    "flow-platform": {
+      "projectType": "library",
+      "root": "projects/flow-platform",
+      "sourceRoot": "projects/flow-platform/src",
+      "prefix": "flow",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/flow-platform/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/flow-platform/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:karma",
+          "options": {
+            "tsConfig": "projects/flow-platform/tsconfig.spec.json",
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ]
+          }
+        }
+      }
+    },
+    "patient-workflow": {
+      "projectType": "library",
+      "root": "projects/patient-workflow",
+      "sourceRoot": "projects/patient-workflow/src",
+      "prefix": "patient",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/patient-workflow/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/patient-workflow/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:karma",
+          "options": {
+            "tsConfig": "projects/patient-workflow/tsconfig.spec.json",
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ]
+          }
+        }
+      }
+    },
+    "appointments": {
+      "projectType": "library",
+      "root": "projects/appointments",
+      "sourceRoot": "projects/appointments/src",
+      "prefix": "appointments",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/appointments/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/appointments/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:karma",
+          "options": {
+            "tsConfig": "projects/appointments/tsconfig.spec.json",
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ]
+          }
+        }
+      }
+    },
+    "flow-editor": {
+      "projectType": "library",
+      "root": "projects/flow-editor",
+      "sourceRoot": "projects/flow-editor/src",
+      "prefix": "editor",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/flow-editor/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/flow-editor/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:karma",
+          "options": {
+            "tsConfig": "projects/flow-editor/tsconfig.spec.json",
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ]
+          }
+        }
+      }
     }
   },
   "schematics": {
