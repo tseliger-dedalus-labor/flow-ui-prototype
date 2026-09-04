@@ -74,28 +74,30 @@ Jeder Knoten kann eine eigene `sidebar`-Konfiguration besitzen. Dadurch zeigt di
 
 ```bash
 cd backend
-mvn -pl application -am package
+mvn -o -pl application -am package
 java -jar application/target/application-1.0.0.jar
 ```
 
 ### Module einzeln bauen
 
 ```bash
-mvn test package
-mvn -pl flow-platform -am test package
-mvn -pl patient-workflow -am test package
-mvn -pl appointments -am test package
-mvn -pl flow-editor -am test package
-mvn -pl application -am test package
+mvn -o test package
+mvn -o -pl flow-platform -am test package
+mvn -o -pl patient-workflow -am test package
+mvn -o -pl appointments -am test package
+mvn -o -pl flow-editor -am test package
+mvn -o -pl application -am test package
 ```
 
 ## Frontend starten (`frontend/`)
 
 ```bash
 cd frontend
-npm install
 npm start
 ```
+
+Die Frontend-Befehle verwenden die lokal installierten Abhängigkeiten. Falls `node_modules` noch nicht vorhanden ist,
+kann die Installation ohne Netzwerkzugriff mit `npm install --offline` versucht werden.
 
 ### Build
 
@@ -119,12 +121,27 @@ Weitere Module können eigene Routen, API-Clients und Widget-Provider exportiere
 Die Berechtigungen eines Flow-Knotens werden im Editor als kommaseparierte Werte konfiguriert.
 Das Terminplanungsmodul verwendet beispielhaft `APPOINTMENTS_READ`; die Berechtigungen sind im Prototyp clientseitig gemockt.
 
-Die aktuelle Ansicht wird durch den zentralen `ViewRouterService` im Query-Parameter `view` der jeweiligen Modulroute
-gespeichert. Runtime-Routen sichern den ausgewählten Flow, den aktiven Knoten, Kontext und Rücksprunghistorie.
-Tab-Container ergänzen aktive und dynamisch geöffnete Tabs unter ihrer Flow-Knoten-ID; der Editor sichert Flow- und
-Knotenauswahl. Dadurch kann die aktuelle URL direkt als Lesezeichen oder Link gespeichert und vollständig
-wiederhergestellt werden. Weitere Module können eigene Zustandsbereiche über `ViewRouterService.read(...)` und
-`ViewRouterService.write(...)` ergänzen.
+### Speicherbare Ansichtslinks
+
+Der zentrale `ViewRouterService` speichert die aktuelle Ansicht kompakt Base64URL-kodiert im Query-Parameter `view`
+der jeweiligen Modulroute. Das Format ist versioniert und an den Routenpfad gebunden. Bereits erzeugte Links mit dem
+früheren JSON-Format bleiben lesbar und werden bei der nächsten Zustandsänderung in das kompakte Format überführt.
+
+Gespeichert werden:
+
+- Runtime-Routen: ausgewählter Flow, aktiver Knoten, Flow-Kontext und Rücksprunghistorie
+- Tab-Container: aktiver Tab sowie alle dynamisch geöffneten Tabs, getrennt nach Flow-Container-ID
+- Editor: ausgewählter Flow und ausgewählter Knoten
+
+Dadurch kann die aktuelle URL als Lesezeichen oder Link gespeichert werden. Beim erneuten Öffnen lädt das jeweilige
+Lazy-Load-Modul zunächst seine Daten und stellt anschließend den gültigen URL-Zustand wieder her. Nicht mehr vorhandene
+Flows oder Knoten werden auf die reguläre Startansicht zurückgeführt. Ein bewusst neu gestarteter Flow verwirft alte
+dynamische Tab-Zustände.
+
+Der Query-Parameter ist kodiert, aber nicht verschlüsselt. Zustandsbereiche dürfen deshalb keine Zugangsdaten oder
+anderen Geheimnisse enthalten. Auch große fachliche Datenmengen gehören nicht in die URL; die Runtime speichert nur
+den für die Navigation erforderlichen Kontext. Weitere Module können validierte, JSON-serialisierbare Zustandsbereiche
+über `ViewRouterService.read(...)` und `ViewRouterService.write(...)` ergänzen.
 
 ### Komponenten-Metadaten
 

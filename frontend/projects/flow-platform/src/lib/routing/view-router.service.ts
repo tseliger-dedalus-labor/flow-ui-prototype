@@ -7,12 +7,22 @@ const VIEW_STATE_VERSION = 1;
 
 interface RoutedViewState {
   version: number;
-  path: string;
   scopes: Record<string, unknown>;
 }
 
+interface CompactRoutedViewState {
+  v: number;
+  p: string;
+  s: Record<string, unknown>;
+}
+
+interface LegacyRoutedViewState extends RoutedViewState {
+  path: string;
+}
+
 /**
- * Speichert modulübergreifende UI-Zustände versioniert in der aktuellen URL.
+ * Speichert modulübergreifende UI-Zustände versioniert und kompakt Base64URL-kodiert in der aktuellen URL.
+ * Zustände sind an den aktuellen Routenpfad gebunden; ältere JSON-Links bleiben lesbar.
  */
 @Injectable({ providedIn: 'root' })
 export class ViewRouterService implements OnDestroy {
@@ -89,8 +99,10 @@ export class ViewRouterService implements OnDestroy {
       return;
     }
     try {
-      const parsed: unknown = JSON.parse(serialized);
-      if (this.isRoutedViewState(parsed) && parsed.path === this.path) {
+      const parsed = this.decode(serialized);
+      if (this.isCompactRoutedViewState(parsed) && parsed.p === this.path) {
+        this.scopes = parsed.s;
+      } else if (this.isLegacyRoutedViewState(parsed) && parsed.path === this.path) {
         this.scopes = parsed.scopes;
       } else {
         console.warn('Der gespeicherte Ansichtslink ist ungültig oder gehört zu einer anderen Route.');
@@ -105,14 +117,14 @@ export class ViewRouterService implements OnDestroy {
       return;
     }
     const tree = this.router.parseUrl(this.router.url);
-    const state: RoutedViewState = {
-      version: VIEW_STATE_VERSION,
-      path: this.path,
-      scopes: this.scopes
+    const state: CompactRoutedViewState = {
+      v: VIEW_STATE_VERSION,
+      p: this.path,
+      s: this.scopes
     };
     tree.queryParams = {
       ...tree.queryParams,
-      [VIEW_STATE_QUERY_PARAM]: JSON.stringify(state)
+      [VIEW_STATE_QUERY_PARAM]: this.encode(state)
     };
     void this.router.navigateByUrl(tree, { replaceUrl: true }).catch((error) => {
       console.error('Der Ansichtslink konnte nicht aktualisiert werden.', error);
@@ -123,7 +135,41 @@ export class ViewRouterService implements OnDestroy {
     return url.split(/[?#]/, 1)[0] || '/';
   }
 
-  private isRoutedViewState(value: unknown): value is RoutedViewState {
+  private encode(state: CompactRoutedViewState): string {
+    const bytes = new TextEncoder().encode(JSON.stringify(state));
+    let binary = '';
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte);
+    }
+    return btoa(binary)
+      .replaceAll('+', '-')
+      .replaceAll('/', '_')
+      .replace(/=+$/, '');
+  }
+
+  private decode(value: string): unknown {
+    if (value.startsWith('{')) {
+      return JSON.parse(value);
+    }
+    const base64 = value
+      .replaceAll('-', '+')
+      .replaceAll('_', '/')
+      .padEnd(Math.ceil(value.length / 4) * 4, '=');
+    const binary = atob(base64);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+
+  private isCompactRoutedViewState(value: unknown): value is CompactRoutedViewState {
+    if (!isRecord(value)) {
+      return false;
+    }
+    return value['v'] === VIEW_STATE_VERSION
+      && typeof value['p'] === 'string'
+      && isRecord(value['s']);
+  }
+
+  private isLegacyRoutedViewState(value: unknown): value is LegacyRoutedViewState {
     if (!isRecord(value)) {
       return false;
     }
