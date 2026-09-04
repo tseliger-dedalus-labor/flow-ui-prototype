@@ -1,10 +1,11 @@
-import { defineFlowComponent } from 'flow-platform';
+import { defineFlowComponent, IxtDisplayType } from 'flow-platform';
 import { AppointmentsPanelComponent } from './widgets/appointments-panel/appointments-panel.component';
 
 export const FLOW_COMPONENTS = [
   defineFlowComponent(AppointmentsPanelComponent, {
     id: 'appointments-panel',
     title: 'Terminplanung',
+    displayType: IxtDisplayType.DISPTYPE_APP_WARD_OVERVIEW,
     container: false,
     inputs: [
       {

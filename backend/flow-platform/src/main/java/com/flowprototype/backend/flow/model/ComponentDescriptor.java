@@ -6,6 +6,7 @@ import java.util.List;
 public class ComponentDescriptor {
     private String id;
     private String title;
+    private IxtDisplayType displayType;
     private boolean container;
     private List<InputDescriptor> inputs = new ArrayList<>();
     private List<OutputDescriptor> outputs = new ArrayList<>();
@@ -28,6 +29,8 @@ public class ComponentDescriptor {
     public void setId(String id) { this.id = id; }
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
+    public IxtDisplayType getDisplayType() { return displayType; }
+    public void setDisplayType(IxtDisplayType displayType) { this.displayType = displayType; }
     public boolean isContainer() { return container; }
     public void setContainer(boolean container) { this.container = container; }
     public List<InputDescriptor> getInputs() { return inputs; }

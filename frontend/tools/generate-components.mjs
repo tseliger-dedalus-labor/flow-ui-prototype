@@ -8,6 +8,7 @@ const frontendRoot = process.cwd();
 const checkOnly = process.argv.includes('--check');
 const projectsRoot = path.join(frontendRoot, 'projects');
 const semanticTypes = loadSemanticTypes();
+const ixtDisplayTypes = loadIxtDisplayTypes();
 const generatedManifests = [];
 const errors = [];
 
@@ -116,11 +117,24 @@ function validateProject(projectRoot, packageJson) {
   }
 
   const ids = new Set();
+  const displayTypes = new Map();
   for (const definition of definitions) {
     if (ids.has(definition.descriptor.id)) {
       errors.push(`${definition.location}: Komponenten-ID '${definition.descriptor.id}' ist mehrfach definiert.`);
     }
     ids.add(definition.descriptor.id);
+    const displayType = definition.descriptor.displayType;
+    if (displayType !== undefined) {
+      const existing = displayTypes.get(displayType);
+      if (existing) {
+        errors.push(
+          `${definition.location}: IxtDisplayType '${displayType}' ist bereits ` +
+          `der Komponente '${existing}' zugeordnet.`
+        );
+      } else {
+        displayTypes.set(displayType, definition.descriptor.id);
+      }
+    }
   }
 
   const manifestName = path.basename(packageJson.flowComponents);
@@ -232,7 +246,7 @@ function parseDefinition(call, checker) {
 
   let descriptor;
   try {
-    descriptor = evaluateLiteral(call.arguments[1]);
+    descriptor = evaluateLiteral(call.arguments[1], checker);
   } catch (error) {
     errors.push(`${location}: ${error.message}`);
     return undefined;
@@ -306,9 +320,17 @@ function validateDescriptors(definitions, checker) {
     }
 
     const errorCount = errors.length;
-    validateExactKeys(descriptor, ['id', 'title', 'container', 'inputs', 'outputs'], location);
+    validateExactKeys(
+      descriptor,
+      ['id', 'title', 'container', 'inputs', 'outputs'],
+      ['displayType'],
+      location
+    );
     validateNonEmptyString(descriptor.id, `${location}: id`);
     validateNonEmptyString(descriptor.title, `${location}: title`);
+    if (descriptor.displayType !== undefined) {
+      validateNonEmptyString(descriptor.displayType, `${location}: displayType`);
+    }
     if (typeof descriptor.container !== 'boolean') {
       errors.push(`${location}: container muss boolean sein.`);
     }
@@ -514,7 +536,7 @@ function compareBindingNames(kind, angularBindings, descriptorBindings, location
   }
 }
 
-function evaluateLiteral(node) {
+function evaluateLiteral(node, checker) {
   const expression = unwrapExpression(node);
   if (!expression) {
     throw new Error('Metadaten-Ausdruck fehlt.');
@@ -524,6 +546,19 @@ function evaluateLiteral(node) {
   }
   if (ts.isNumericLiteral(expression)) {
     return Number(expression.text);
+  }
+  if (ts.isPropertyAccessExpression(expression)) {
+    if (ts.isIdentifier(expression.expression) && expression.expression.text === 'IxtDisplayType') {
+      const value = ixtDisplayTypes.get(expression.name.text);
+      if (value === undefined) {
+        throw new Error(`Unbekannter IxtDisplayType '${expression.name.text}'.`);
+      }
+      return value;
+    }
+    const value = checker.getConstantValue(expression);
+    if (typeof value === 'string' || typeof value === 'number') {
+      return value;
+    }
   }
   if (expression.kind === ts.SyntaxKind.TrueKeyword) {
     return true;
@@ -535,7 +570,7 @@ function evaluateLiteral(node) {
     return null;
   }
   if (ts.isArrayLiteralExpression(expression)) {
-    return expression.elements.map(evaluateLiteral);
+    return expression.elements.map((element) => evaluateLiteral(element, checker));
   }
   if (ts.isObjectLiteralExpression(expression)) {
     const result = {};
@@ -547,11 +582,13 @@ function evaluateLiteral(node) {
       if (!name) {
         throw new Error('Metadaten dürfen keine berechneten Property-Namen enthalten.');
       }
-      result[name] = evaluateLiteral(property.initializer);
+      result[name] = evaluateLiteral(property.initializer, checker);
     }
     return result;
   }
-  throw new Error('Metadaten müssen aus statischen String-, Boolean-, Array- und Objekt-Literalen bestehen.');
+  throw new Error(
+    'Metadaten müssen aus statischen String-, Number-, Boolean-, Enum-, Array- und Objekt-Literalen bestehen.'
+  );
 }
 
 function inputDecoratorMetadata(decorator, fallbackName) {
@@ -781,16 +818,18 @@ function booleanProperty(objectLiteral, name) {
   return undefined;
 }
 
-function validateExactKeys(value, keys, location) {
-  const expected = new Set(keys);
-  for (const key of keys) {
+function validateExactKeys(value, requiredKeys, optionalKeysOrLocation, location) {
+  const optionalKeys = Array.isArray(optionalKeysOrLocation) ? optionalKeysOrLocation : [];
+  const resolvedLocation = Array.isArray(optionalKeysOrLocation) ? location : optionalKeysOrLocation;
+  const expected = new Set([...requiredKeys, ...optionalKeys]);
+  for (const key of requiredKeys) {
     if (!Object.hasOwn(value, key)) {
-      errors.push(`${location}: Pflichtfeld '${key}' fehlt.`);
+      errors.push(`${resolvedLocation}: Pflichtfeld '${key}' fehlt.`);
     }
   }
   for (const key of Object.keys(value)) {
     if (!expected.has(key)) {
-      errors.push(`${location}: Unbekanntes Feld '${key}'.`);
+      errors.push(`${resolvedLocation}: Unbekanntes Feld '${key}'.`);
     }
   }
 }
@@ -838,6 +877,40 @@ function loadSemanticTypes() {
     }
   }
   throw new Error(`SemanticType konnte nicht aus ${relativePath(modelsPath)} gelesen werden.`);
+}
+
+function loadIxtDisplayTypes() {
+  const enumPath = path.join(
+    frontendRoot,
+    'projects',
+    'flow-platform',
+    'src',
+    'lib',
+    'ixt-display-type.ts'
+  );
+  const sourceFile = ts.createSourceFile(
+    enumPath,
+    fs.readFileSync(enumPath, 'utf8'),
+    ts.ScriptTarget.ES2022,
+    true,
+    ts.ScriptKind.TS
+  );
+  for (const statement of sourceFile.statements) {
+    if (!ts.isEnumDeclaration(statement) || statement.name.text !== 'IxtDisplayType') {
+      continue;
+    }
+    const values = new Map();
+    for (const member of statement.members) {
+      const name = propertyNameOf(member.name);
+      const initializer = unwrapExpression(member.initializer);
+      if (!name || !initializer || !ts.isStringLiteralLike(initializer)) {
+        throw new Error(`IxtDisplayType muss String-Literale in ${relativePath(enumPath)} verwenden.`);
+      }
+      values.set(name, initializer.text);
+    }
+    return values;
+  }
+  throw new Error(`IxtDisplayType konnte nicht aus ${relativePath(enumPath)} gelesen werden.`);
 }
 
 function collectFiles(directory, predicate) {

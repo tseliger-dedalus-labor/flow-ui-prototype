@@ -17,6 +17,8 @@ Backend und Frontend sind als getrennt baubare, versionierte Artefakte organisie
 
 Frontend-Module beschreiben ihre Flow-Komponenten in typisierten TypeScript-Definitionen und registrieren sie über den Multi-Provider `FLOW_WIDGET`. Daraus wird ein versioniertes `*.components.json`-Manifest generiert, beim Paketbau mit ausgeliefert und von den korrespondierenden Backend-Modulen über `ComponentDescriptorProvider` in die Registry geladen. Dadurch verwenden Renderer, Backend-Validierung und Editor dieselbe Metadatenquelle.
 
+Flow-Komponenten können zusätzlich direkt an den lokalen Mock des ixserv-Typs `IxtDisplayType` gebunden werden. Der Mock spiegelt Namen und Datenbankwerte aus `Constants.XmfIxservType.IxtDisplayType`, erzeugt aber keine Abhängigkeit auf ixserv. Beim Aufbau der zentralen Komponenten-Registry bricht der Anwendungsstart ab, wenn derselbe `IxtDisplayType` mehr als einer Komponente zugeordnet wurde. Komponenten ohne Zuordnung, beispielsweise reine Layout-Komponenten, bleiben zulässig.
+
 Jedes `pom.xml` beziehungsweise `projects/*/package.json` enthält eine eigene Artefaktversion. Abhängigkeiten zwischen Modulen referenzieren explizite Versionen und können bei Releases einzeln angehoben werden.
 
 ## Datenmodell (Backend)

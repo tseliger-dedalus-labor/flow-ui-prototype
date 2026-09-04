@@ -1,4 +1,4 @@
-import { defineFlowComponent } from 'flow-platform';
+import { defineFlowComponent, IxtDisplayType } from 'flow-platform';
 import { DemographicsPanelComponent } from './widgets/demographics-panel/demographics-panel.component';
 import { FindingsPanelComponent } from './widgets/findings-panel/findings-panel.component';
 import { OrdersPanelComponent } from './widgets/orders-panel/orders-panel.component';
@@ -26,6 +26,7 @@ export const FLOW_COMPONENTS = [
   defineFlowComponent(PatientListComponent, {
     id: 'patient-list',
     title: 'Patientenliste',
+    displayType: IxtDisplayType.DISPTYPE_WEC_PAT_LIST,
     container: false,
     inputs: [
       {
@@ -58,6 +59,7 @@ export const FLOW_COMPONENTS = [
   defineFlowComponent(PatientViewComponent, {
     id: 'patient-view',
     title: 'Patientenansicht',
+    displayType: IxtDisplayType.DISPTYPE_WEC_INDEX,
     container: true,
     inputs: [
       {
@@ -79,6 +81,7 @@ export const FLOW_COMPONENTS = [
   defineFlowComponent(DemographicsPanelComponent, {
     id: 'demographics-panel',
     title: 'Stammdaten',
+    displayType: IxtDisplayType.DISPTYPE_WEC_CAVE,
     container: false,
     inputs: [
       {
@@ -93,6 +96,7 @@ export const FLOW_COMPONENTS = [
   defineFlowComponent(FindingsPanelComponent, {
     id: 'findings-panel',
     title: 'Befunde',
+    displayType: IxtDisplayType.DISPTYPE_REPORT,
     container: false,
     inputs: [
       {
@@ -107,6 +111,7 @@ export const FLOW_COMPONENTS = [
   defineFlowComponent(OrdersPanelComponent, {
     id: 'orders-panel',
     title: 'Aufträge',
+    displayType: IxtDisplayType.DISPTYPE_FORM,
     container: false,
     inputs: [
       {
@@ -121,6 +126,7 @@ export const FLOW_COMPONENTS = [
   defineFlowComponent(TransfusionsPanelComponent, {
     id: 'transfusions-panel',
     title: 'Transfusionen',
+    displayType: IxtDisplayType.DISPTYPE_WEC_INDEX_TRAFU,
     container: false,
     inputs: [
       {

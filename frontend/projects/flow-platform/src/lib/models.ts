@@ -1,3 +1,5 @@
+import { IxtDisplayType } from './ixt-display-type';
+
 export type SemanticType = 'STRING' | 'MODE' | 'WARD_ID' | 'PATIENT_ID';
 export type BindingSource = 'STATIC' | 'CONTEXT';
 
@@ -16,6 +18,7 @@ export interface OutputDescriptor {
 export interface ComponentDescriptor {
   id: string;
   title: string;
+  displayType?: IxtDisplayType;
   container: boolean;
   inputs: InputDescriptor[];
   outputs: OutputDescriptor[];

@@ -1,3 +1,4 @@
+import { IxtDisplayType } from 'flow-platform';
 import { patientWorkflowComponent, patientWorkflowComponentManifest } from './component-manifest';
 import { FLOW_COMPONENTS } from './flow-components';
 
@@ -11,6 +12,10 @@ describe('patient workflow component manifest', () => {
       .toEqual(FLOW_COMPONENTS.map((definition) => definition.descriptor));
     expect(patientWorkflowComponent('patient-list').inputs.map((input) => input.name))
       .toEqual(['wardId', 'mode']);
+    expect(patientWorkflowComponent('patient-list').displayType)
+      .toBe(IxtDisplayType.DISPTYPE_WEC_PAT_LIST);
+    expect(patientWorkflowComponent('patient-view').displayType)
+      .toBe(IxtDisplayType.DISPTYPE_WEC_INDEX);
   });
 
   it('rejects registrations without metadata', () => {

@@ -65,7 +65,9 @@
           <label>Komponente
             <select [(ngModel)]="node.componentId" (ngModelChange)="ensureInputBindings(node)">
               @for (descriptor of registry; track descriptor) {
-                <option [value]="descriptor.id">{{ descriptor.id }}</option>
+                <option [value]="descriptor.id">
+                  {{ descriptor.id }}{{ descriptor.displayType ? ' (' + descriptor.displayType + ')' : '' }}
+                </option>
               }
             </select>
           </label>

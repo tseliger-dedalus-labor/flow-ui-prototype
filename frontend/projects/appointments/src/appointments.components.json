@@ -6,6 +6,7 @@
     {
       "id": "appointments-panel",
       "title": "Terminplanung",
+      "displayType": "DISPTYPE_APP_WARD_OVERVIEW",
       "container": false,
       "inputs": [
         {

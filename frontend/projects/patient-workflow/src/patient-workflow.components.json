@@ -20,6 +20,7 @@
     {
       "id": "patient-list",
       "title": "Patientenliste",
+      "displayType": "DISPTYPE_WEC_PAT_LIST",
       "container": false,
       "inputs": [
         {
@@ -52,6 +53,7 @@
     {
       "id": "patient-view",
       "title": "Patientenansicht",
+      "displayType": "DISPTYPE_WEC_INDEX",
       "container": true,
       "inputs": [
         {
@@ -73,6 +75,7 @@
     {
       "id": "demographics-panel",
       "title": "Stammdaten",
+      "displayType": "DISPTYPE_WEC_CAVE",
       "container": false,
       "inputs": [
         {
@@ -87,6 +90,7 @@
     {
       "id": "findings-panel",
       "title": "Befunde",
+      "displayType": "DISPTYPE_REPORT",
       "container": false,
       "inputs": [
         {
@@ -101,6 +105,7 @@
     {
       "id": "orders-panel",
       "title": "Aufträge",
+      "displayType": "DISPTYPE_FORM",
       "container": false,
       "inputs": [
         {
@@ -115,6 +120,7 @@
     {
       "id": "transfusions-panel",
       "title": "Transfusionen",
+      "displayType": "DISPTYPE_WEC_INDEX_TRAFU",
       "container": false,
       "inputs": [
         {
