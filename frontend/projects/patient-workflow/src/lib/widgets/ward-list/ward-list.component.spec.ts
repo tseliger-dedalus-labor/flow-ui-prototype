@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { PatientApiService } from '../../patient-api.service';
-import { WardListComponent } from './ward-list.component';
+import { WardListSidebarComponent } from './ward-list.component';
 
 /** Testdoppel für das Laden der Stationsliste aus dem Patienten-Backend. */
 class ApiServiceMock {
@@ -15,16 +15,16 @@ class ApiServiceMock {
  * Die Suite stellt sicher, dass die Komponente Stationsdaten lädt und das fachliche
  * Auswahl-Event korrekt an nachfolgende Flows weitergibt.
  */
-describe('WardListComponent', () => {
+describe('WardListSidebarComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [WardListComponent],
+      imports: [WardListSidebarComponent],
       providers: [{ provide: PatientApiService, useClass: ApiServiceMock }]
     }).compileComponents();
   });
 
   it('loads wards on init', () => {
-    const fixture = TestBed.createComponent(WardListComponent);
+    const fixture = TestBed.createComponent(WardListSidebarComponent);
     fixture.detectChanges();
 
     expect(fixture.componentInstance.wards.length).toBe(1);
@@ -32,7 +32,7 @@ describe('WardListComponent', () => {
   });
 
   it('emits wardSelected payload', () => {
-    const fixture = TestBed.createComponent(WardListComponent);
+    const fixture = TestBed.createComponent(WardListSidebarComponent);
     const emitted: Array<{ wardId: string }> = [];
     fixture.componentInstance.wardSelected.subscribe((value) => emitted.push(value));
 

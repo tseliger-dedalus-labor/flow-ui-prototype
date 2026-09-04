@@ -46,7 +46,7 @@ describe('TabPanelComponent', () => {
           provide: FLOW_WIDGET,
           useValue: {
             componentId: 'orders-panel',
-            descriptor: { title: 'Aufträge' },
+            descriptor: { title: 'Aufträge', presenter: 'CONTENT' },
             component: TestOrdersComponent
           },
           multi: true
@@ -55,7 +55,7 @@ describe('TabPanelComponent', () => {
           provide: FLOW_WIDGET,
           useValue: {
             componentId: 'transfusions-panel',
-            descriptor: { title: 'Transfusionen' },
+            descriptor: { title: 'Transfusionen', presenter: 'CONTENT' },
             component: TestTransfusionsComponent
           },
           multi: true
@@ -64,7 +64,7 @@ describe('TabPanelComponent', () => {
           provide: FLOW_WIDGET,
           useValue: {
             componentId: 'order-view',
-            descriptor: { title: 'Auftrag' },
+            descriptor: { title: 'Auftrag', presenter: 'CONTENT' },
             component: TestOrderComponent
           },
           multi: true

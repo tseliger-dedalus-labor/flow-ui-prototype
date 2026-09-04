@@ -116,6 +116,34 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Liefert nur Komponenten, die für die Rolle des Knotens zugelassen sind.
+   */
+  descriptorsFor(node: FlowNode): ComponentDescriptor[] {
+    const presenter = this.isSidebarNode(node) ? 'SIDEBAR' : 'CONTENT';
+    return this.registry.filter((descriptor) => descriptor.presenter === presenter);
+  }
+
+  /**
+   * Liefert die Knoten, deren Komponenten als Sidebar registriert sind.
+   */
+  sidebarNodes(flow = this.flow): FlowNode[] {
+    return flow?.nodes.filter((node) => this.descriptor(node.componentId)?.presenter === 'SIDEBAR') ?? [];
+  }
+
+  /**
+   * Liefert die Knoten, deren Komponenten im Hauptbereich registriert sind.
+   */
+  contentNodes(flow = this.flow): FlowNode[] {
+    return flow?.nodes.filter((node) => this.descriptor(node.componentId)?.presenter === 'CONTENT') ?? [];
+  }
+
+  private isSidebarNode(node: FlowNode): boolean {
+    return this.flow?.sidebar?.nodeId === node.id
+      || this.flow?.nodes.some((candidate) => candidate.sidebar?.nodeId === node.id)
+      || false;
+  }
+
+  /**
    * Synchronisiert die konfigurierten Bindings eines Knotens mit den Inputs seiner gewählten Komponente.
    */
   ensureInputBindings(node: FlowNode): void {
@@ -277,7 +305,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
       delete flow.sidebar;
     } else {
       flow.sidebar = {
-        nodeId: flow.entryNodeId || flow.nodes[0]?.id || '',
+        nodeId: this.sidebarNodes(flow)[0]?.id ?? '',
         position: 'LEFT',
         width: 280,
         ariaLabel: 'Flow-Navigation'
@@ -294,7 +322,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
       delete node.sidebar;
     } else {
       node.sidebar = {
-        nodeId: this.flow?.nodes.find((candidate) => candidate.id !== node.id)?.id ?? node.id,
+        nodeId: this.sidebarNodes().find((candidate) => candidate.id !== node.id)?.id ?? '',
         position: 'LEFT',
         width: 280,
         ariaLabel: 'Flow-Navigation'

@@ -13,6 +13,7 @@ const checkOnly = process.argv.includes('--check');
 const projectsRoot = path.join(frontendRoot, 'projects');
 const semanticTypes = loadSemanticTypes();
 const ixtDisplayTypes = loadIxtDisplayTypes();
+const presenterBaseClasses = new Set(['AContentPresenter', 'ASidebarPresenter']);
 const generatedManifests = [];
 const errors = [];
 
@@ -150,7 +151,7 @@ function validateProject(projectRoot, packageJson) {
   const manifestName = path.basename(packageJson.flowComponents);
   const manifestPath = path.join(projectRoot, 'src', manifestName);
   const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     module: packageJson.name,
     moduleVersion: packageJson.version,
     components: definitions.map((definition) => definition.descriptor)
@@ -349,12 +350,15 @@ function validateDescriptors(definitions, checker) {
     const errorCount = errors.length;
     validateExactKeys(
       descriptor,
-      ['id', 'title', 'container', 'inputs', 'outputs'],
+      ['id', 'title', 'presenter', 'container', 'inputs', 'outputs'],
       ['displayType'],
       location
     );
     validateNonEmptyString(descriptor.id, `${location}: id`);
     validateNonEmptyString(descriptor.title, `${location}: title`);
+    if (!['CONTENT', 'SIDEBAR'].includes(descriptor.presenter)) {
+      errors.push(`${location}: presenter muss CONTENT oder SIDEBAR sein.`);
+    }
     if (descriptor.displayType !== undefined) {
       validateNonEmptyString(descriptor.displayType, `${location}: displayType`);
     }
@@ -446,10 +450,30 @@ function validateAngularBindings(componentClass, descriptor, location, checker) 
   const angularInputs = new Map();
   const angularOutputs = new Map();
 
-  if (componentClass.heritageClauses?.some((clause) => clause.token === ts.SyntaxKind.ExtendsKeyword)) {
+  const unsupportedBaseClass = componentClass.heritageClauses
+    ?.filter((clause) => clause.token === ts.SyntaxKind.ExtendsKeyword)
+    .flatMap((clause) => clause.types)
+    .some((type) => !presenterBaseClasses.has(type.expression.getText()));
+  if (unsupportedBaseClass) {
     errors.push(
-      `${location}: Flow-Komponenten mit Basisklassen werden nicht unterstützt, ` +
-      'da geerbte Angular-Inputs und -Outputs nicht eindeutig validiert werden können.'
+      `${location}: Flow-Komponenten unterstützen ausschließlich Presenter-Basisklassen, ` +
+      'da andere geerbte Angular-Inputs und -Outputs nicht eindeutig validiert werden können.'
+    );
+    return;
+  }
+  const presenterBaseClass = componentClass.heritageClauses
+    ?.filter((clause) => clause.token === ts.SyntaxKind.ExtendsKeyword)
+    .flatMap((clause) => clause.types)
+    .map((type) => type.expression.getText())
+    .find((name) => presenterBaseClasses.has(name));
+  if (!presenterBaseClass) {
+    errors.push(`${location}: Flow-Komponenten müssen AContentPresenter oder ASidebarPresenter erweitern.`);
+    return;
+  }
+  const expectedPresenter = presenterBaseClass === 'ASidebarPresenter' ? 'SIDEBAR' : 'CONTENT';
+  if (descriptor.presenter !== expectedPresenter) {
+    errors.push(
+      `${location}: Presenter-Typ '${descriptor.presenter}' passt nicht zur Basisklasse '${presenterBaseClass}'.`
     );
     return;
   }

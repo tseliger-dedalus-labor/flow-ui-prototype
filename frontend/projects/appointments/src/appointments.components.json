@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "module": "appointments",
   "moduleVersion": "1.0.0",
   "components": [
@@ -7,6 +7,7 @@
       "id": "appointments-panel",
       "title": "Terminplanung",
       "displayType": "DISPTYPE_APP_WARD_OVERVIEW",
+      "presenter": "CONTENT",
       "container": false,
       "inputs": [
         {

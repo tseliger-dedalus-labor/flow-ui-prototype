@@ -95,6 +95,36 @@
         }
       }
     },
+    "ui-framework": {
+      "projectType": "library",
+      "root": "projects/ui-framework",
+      "sourceRoot": "projects/ui-framework/src",
+      "prefix": "ui",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/ui-framework/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/ui-framework/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:karma",
+          "options": {
+            "tsConfig": "projects/ui-framework/tsconfig.spec.json",
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ]
+          }
+        }
+      }
+    },
     "flow-platform": {
       "projectType": "library",
       "root": "projects/flow-platform",

@@ -97,13 +97,20 @@ describe('EditorPageComponent', () => {
       name: 'Test',
       tool: 'WebclientTool',
       entryNodeId: 'wards',
-      nodes: [{ id: 'wards', componentId: 'ward-list', inputBindings: {}, children: [], transitions: [] }]
+      nodes: [
+        { id: 'wards', componentId: 'ward-list-content', inputBindings: {}, children: [], transitions: [] },
+        { id: 'wards-sidebar', componentId: 'ward-list-sidebar', inputBindings: {}, children: [], transitions: [] }
+      ]
     };
+    component.registry = [
+      { id: 'ward-list-content', title: 'Stationsliste', presenter: 'CONTENT', container: false, inputs: [], outputs: [] },
+      { id: 'ward-list-sidebar', title: 'Stationsliste Sidebar', presenter: 'SIDEBAR', container: false, inputs: [], outputs: [] }
+    ];
 
     component.setSidebarEnabled(flow, true);
     // Die Sidebar-Konfiguration ist ein fester Teil des Flow-Layouts und darf nicht abweichen.
     expect(flow.sidebar).toEqual({
-      nodeId: 'wards',
+      nodeId: 'wards-sidebar',
       position: 'LEFT',
       width: 280,
       ariaLabel: 'Flow-Navigation'
@@ -116,8 +123,12 @@ describe('EditorPageComponent', () => {
   it('creates and removes a node-specific sidebar configuration', () => {
     const fixture = TestBed.createComponent(EditorPageComponent);
     const component = fixture.componentInstance;
-    const wards: FlowNode = { id: 'wards', componentId: 'ward-list', inputBindings: {}, children: [], transitions: [] };
-    const patients: FlowNode = { id: 'patients', componentId: 'patient-list', inputBindings: {}, children: [], transitions: [] };
+    const wards: FlowNode = { id: 'wards', componentId: 'ward-list-sidebar', inputBindings: {}, children: [], transitions: [] };
+    const patients: FlowNode = { id: 'patients', componentId: 'patient-list-content', inputBindings: {}, children: [], transitions: [] };
+    component.registry = [
+      { id: 'ward-list-sidebar', title: 'Stationsliste Sidebar', presenter: 'SIDEBAR', container: false, inputs: [], outputs: [] },
+      { id: 'patient-list-content', title: 'Patientenliste', presenter: 'CONTENT', container: false, inputs: [], outputs: [] }
+    ];
     component.flow = {
       id: 'flow',
       name: 'Test',
@@ -144,21 +155,21 @@ describe('EditorPageComponent', () => {
     const component = fixture.componentInstance;
     component.registry = [
       {
-        id: 'source', title: 'Source', container: false, inputs: [],
+        id: 'source', title: 'Source', presenter: 'CONTENT', container: false, inputs: [],
         outputs: [{ name: 'selected', payload: { patientId: 'PATIENT_ID', caseId: 'CASE_ID' } }]
       },
       {
-        id: 'matching', title: 'Matching', container: false,
+        id: 'matching', title: 'Matching', presenter: 'CONTENT', container: false,
         inputs: [{ name: 'patientId', semanticType: 'PATIENT_ID', required: true, allowedValues: [] }],
         outputs: []
       },
       {
-        id: 'case-matching', title: 'Case Matching', container: false,
+        id: 'case-matching', title: 'Case Matching', presenter: 'CONTENT', container: false,
         inputs: [{ name: 'caseId', semanticType: 'CASE_ID', required: true, allowedValues: [] }],
         outputs: []
       },
       {
-        id: 'other', title: 'Other', container: false,
+        id: 'other', title: 'Other', presenter: 'CONTENT', container: false,
         inputs: [{ name: 'wardId', semanticType: 'WARD_ID', required: true, allowedValues: [] }],
         outputs: []
       }

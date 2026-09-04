@@ -40,11 +40,12 @@ class TestContainerComponent implements EmbeddedFlowContainer {
 /** Host-Komponente für die Renderer-Integration; die Inputs simulieren den Laufzeitknoten aus dem Flow-Engine-Status. */
 @Component({
   imports: [FlowRendererComponent],
-  template: '<app-flow-renderer [node]="node" [context]="context" />'
+  template: '<app-flow-renderer [node]="node" [context]="context" [presenter]="presenter" />'
 })
 class HostComponent {
   node!: FlowNode;
   context: Record<string, unknown> = {};
+  presenter: 'CONTENT' | 'SIDEBAR' = 'CONTENT';
 }
 
 /**
@@ -62,9 +63,9 @@ describe('FlowRendererComponent', () => {
       imports: [HostComponent],
       providers: [
         { provide: FlowEngineService, useClass: FlowEngineServiceMock },
-        { provide: FLOW_WIDGET, useValue: { componentId: 'patient-view', descriptor: { id: 'patient-view' }, component: TestViewComponent }, multi: true },
-        { provide: FLOW_WIDGET, useValue: { componentId: 'patient-list', descriptor: { id: 'patient-list' }, component: TestListComponent }, multi: true },
-        { provide: FLOW_WIDGET, useValue: { componentId: 'test-container', descriptor: { id: 'test-container' }, component: TestContainerComponent }, multi: true }
+        { provide: FLOW_WIDGET, useValue: { componentId: 'patient-view', descriptor: { id: 'patient-view', presenter: 'CONTENT' }, component: TestViewComponent }, multi: true },
+        { provide: FLOW_WIDGET, useValue: { componentId: 'patient-list', descriptor: { id: 'patient-list', presenter: 'CONTENT' }, component: TestListComponent }, multi: true },
+        { provide: FLOW_WIDGET, useValue: { componentId: 'test-container', descriptor: { id: 'test-container', presenter: 'CONTENT' }, component: TestContainerComponent }, multi: true }
       ]
     }).compileComponents();
 
@@ -171,5 +172,21 @@ describe('FlowRendererComponent', () => {
 
     expect(fixture.debugElement.query(By.directive(TestViewComponent))).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Keine Berechtigung');
+  });
+
+  it('does not render a component in the wrong presenter area', () => {
+    host.node = {
+      id: 'view',
+      componentId: 'patient-view',
+      inputBindings: {},
+      children: [],
+      transitions: []
+    };
+    host.presenter = 'SIDEBAR';
+
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.directive(TestViewComponent))).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('nicht zugelassen');
   });
 });

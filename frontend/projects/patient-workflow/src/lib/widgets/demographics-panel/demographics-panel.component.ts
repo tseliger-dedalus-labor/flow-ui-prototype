@@ -1,6 +1,7 @@
 import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
 import { PatientApiService } from '../../patient-api.service';
 import { Subscription } from 'rxjs';
+import { AContentPresenter } from 'ui-framework';
 
 /**
  * Zeigt Stammdaten des aktuell selektierten Patienten an.
@@ -11,7 +12,7 @@ import { Subscription } from 'rxjs';
     templateUrl: './demographics-panel.component.html',
     styleUrl: './demographics-panel.component.scss'
 })
-export class DemographicsPanelComponent implements OnChanges, OnDestroy {
+export class DemographicsPanelComponent extends AContentPresenter implements OnChanges, OnDestroy {
   @Input({ required: true }) patientId = '';
   @Input({ required: true }) caseId = '';
   data?: {
@@ -23,7 +24,9 @@ export class DemographicsPanelComponent implements OnChanges, OnDestroy {
   };
   private loadSubscription?: Subscription;
 
-  constructor(private readonly api: PatientApiService) {}
+  constructor(private readonly api: PatientApiService) {
+    super('WebclientTool');
+  }
 
   /**
    * Lädt bei Patientwechsel die aktuellen Stammdaten oder leert das Panel.

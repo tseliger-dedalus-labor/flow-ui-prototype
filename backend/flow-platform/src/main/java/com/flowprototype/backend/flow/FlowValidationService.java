@@ -55,10 +55,7 @@ public class FlowValidationService {
         Map<String, ComponentDescriptor> descriptorsById = registry.getAll().stream().collect(Collectors.toMap(ComponentDescriptor::getId, Function.identity()));
         Map<String, Map<String, SemanticType>> contextByNode = computeContextTypes(definition, nodes, descriptorsById, issues);
         Set<String> mainNodeIds = mainNodeIds(definition);
-        Set<String> childNodeIds = definition.getNodes().stream()
-            .flatMap(node -> node.getChildren().stream())
-            .map(FlowNode::getId)
-            .collect(Collectors.toSet());
+        Set<String> childNodeIds = childNodeIds(definition);
         Set<String> sidebarNodeIds = definition.getNodes().stream()
             .map(FlowNode::getSidebar)
             .filter(Objects::nonNull)
@@ -73,6 +70,19 @@ public class FlowValidationService {
             if (descriptor == null) {
                 issues.add(new ValidationIssue("nodes." + node.getId() + ".componentId", "Komponente '" + node.getComponentId() + "' existiert nicht in der Registry."));
                 continue;
+            }
+            if (sidebarNodeIds.contains(node.getId()) && descriptor.getPresenter() != PresenterType.SIDEBAR) {
+                issues.add(new ValidationIssue(
+                    "nodes." + node.getId() + ".componentId",
+                    "Sidebar-Knoten benötigen eine SIDEBAR-Presenter-Komponente."
+                ));
+            }
+            if ((mainNodeIds.contains(node.getId()) || childNodeIds.contains(node.getId()))
+                && descriptor.getPresenter() != PresenterType.CONTENT) {
+                issues.add(new ValidationIssue(
+                    "nodes." + node.getId() + ".componentId",
+                    "Haupt- und Kindknoten benötigen eine CONTENT-Presenter-Komponente."
+                ));
             }
 
             Map<String, InputBinding> bindings = node.getInputBindings() == null ? Map.of() : node.getInputBindings();
@@ -304,6 +314,25 @@ public class FlowValidationService {
             .filter(Objects::nonNull)
             .forEach(ids::add);
         return ids;
+    }
+
+    /**
+     * Ermittelt direkte und verschachtelte Kindknoten, die immer im Content-Bereich erscheinen.
+     */
+    private Set<String> childNodeIds(FlowDefinition definition) {
+        Set<String> ids = new HashSet<>();
+        for (FlowNode node : definition.getNodes()) {
+            collectChildNodeIds(node, ids);
+        }
+        return ids;
+    }
+
+    private void collectChildNodeIds(FlowNode node, Set<String> ids) {
+        for (FlowNode child : node.getChildren()) {
+            if (ids.add(child.getId())) {
+                collectChildNodeIds(child, ids);
+            }
+        }
     }
 
     /**

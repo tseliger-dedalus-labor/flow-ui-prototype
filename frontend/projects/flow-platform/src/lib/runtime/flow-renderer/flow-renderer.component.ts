@@ -1,4 +1,5 @@
-import { Component, EventEmitter, Inject, Input, OnChanges, OnDestroy, Optional, SimpleChanges, Type, ViewChild, ViewContainerRef, forwardRef } from '@angular/core';
+import { Component, EventEmitter, Inject, Input, OnChanges, OnDestroy, Optional, SimpleChanges, ViewChild, ViewContainerRef, forwardRef } from '@angular/core';
+import type { PresenterType } from 'ui-framework';
 
 import { Subscription } from 'rxjs';
 import { EmbeddedFlowContainer, FlowNode, InputBinding } from '../../models';
@@ -18,13 +19,15 @@ import { FLOW_WIDGET, FlowWidgetRegistration } from '../flow-widget';
 export class FlowRendererComponent implements OnChanges, OnDestroy {
   @Input() node!: FlowNode;
   @Input() context: Record<string, unknown> = {};
+  @Input() presenter: PresenterType = 'CONTENT';
 
   @ViewChild('host', { read: ViewContainerRef, static: true })
   private readonly host!: ViewContainerRef;
 
-  private readonly componentMap: Record<string, Type<unknown>>;
+  private readonly componentMap: Record<string, FlowWidgetRegistration>;
   private subscriptions: Subscription[] = [];
   hasAccess = true;
+  hasValidPresenter = true;
   rendersOwnChildren = false;
 
   constructor(
@@ -33,16 +36,14 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
     @Optional() @Inject(FLOW_WIDGET) widgets: FlowWidgetRegistration[] | null
   ) {
     // Multi-Provider registrieren alle Widgets lose gekoppelt; die Runtime löst nur über componentId auf.
-    this.componentMap = Object.fromEntries(
-      (widgets ?? []).map((widget) => [widget.componentId, widget.component])
-    );
+    this.componentMap = Object.fromEntries((widgets ?? []).map((widget) => [widget.componentId, widget]));
   }
 
   /**
    * Rendert den Knoten neu, sobald sich der Zielknoten oder dessen Kontext ändert.
    */
   ngOnChanges(changes: SimpleChanges): void {
-    if (!changes['node'] && !changes['context']) {
+    if (!changes['node'] && !changes['context'] && !changes['presenter']) {
       return;
     }
     this.renderNode();
@@ -55,15 +56,20 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
     this.cleanupSubscriptions();
     this.host.clear();
     this.rendersOwnChildren = false;
+    this.hasValidPresenter = true;
     this.hasAccess = this.permissions.hasAll(this.node.requiredPermissions ?? []);
     if (!this.hasAccess) {
       return;
     }
-    const componentType = this.componentMap[this.node.componentId];
-    if (!componentType) {
+    const registration = this.componentMap[this.node.componentId];
+    if (!registration) {
       return;
     }
-    const ref = this.host.createComponent(componentType);
+    this.hasValidPresenter = registration.descriptor.presenter === this.presenter;
+    if (!this.hasValidPresenter) {
+      return;
+    }
+    const ref = this.host.createComponent(registration.component);
     // Input-Bindings werden erst nach der Instanziierung gesetzt, damit Standalone-Komponenten unverändert bleiben können.
     for (const [name, binding] of Object.entries(this.node.inputBindings ?? {})) {
       ref.setInput(name, this.resolveBinding(binding));

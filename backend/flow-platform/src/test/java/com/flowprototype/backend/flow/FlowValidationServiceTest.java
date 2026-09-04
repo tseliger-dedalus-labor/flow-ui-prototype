@@ -28,6 +28,8 @@ class FlowValidationServiceTest {
         ComponentDescriptorProvider provider = () -> List.of(
             new ComponentDescriptor("ward-list", "Stationsliste", false, List.of(),
                 List.of(new OutputDescriptor("wardSelected", Map.of("wardId", SemanticType.WARD_ID)))),
+            new ComponentDescriptor("ward-list-sidebar", "Stationsliste Sidebar", PresenterType.SIDEBAR, false, List.of(),
+                List.of(new OutputDescriptor("wardSelected", Map.of("wardId", SemanticType.WARD_ID)))),
             new ComponentDescriptor("patient-list", "Patientenliste", false,
                 List.of(
                     new InputDescriptor("wardId", SemanticType.WARD_ID, true, List.of()),
@@ -43,6 +45,8 @@ class FlowValidationServiceTest {
                     new InputDescriptor("caseId", SemanticType.CASE_ID, true, List.of())
                 ), List.of()),
             new ComponentDescriptor("demographics-panel", "Stammdaten", false,
+                List.of(new InputDescriptor("patientId", SemanticType.PATIENT_ID, true, List.of())), List.of()),
+            new ComponentDescriptor("demographics-sidebar", "Stammdaten Sidebar", PresenterType.SIDEBAR, false,
                 List.of(new InputDescriptor("patientId", SemanticType.PATIENT_ID, true, List.of())), List.of())
         );
         validator = new FlowValidationService(new ComponentRegistryService(List.of(provider)));
@@ -182,8 +186,12 @@ class FlowValidationServiceTest {
     @Test
     void validSidebarPasses() {
         FlowDefinition def = buildValid();
+        FlowNode sidebarNode = new FlowNode();
+        sidebarNode.setId("wards-sidebar");
+        sidebarNode.setComponentId("ward-list-sidebar");
+        def.getNodes().add(sidebarNode);
         FlowSidebar sidebar = new FlowSidebar();
-        sidebar.setNodeId("wards");
+        sidebar.setNodeId("wards-sidebar");
         sidebar.setPosition(SidebarPosition.RIGHT);
         sidebar.setWidth(320);
         FlowNode patients = def.getNodes().stream().filter(n -> n.getId().equals("patients")).findFirst().orElseThrow();
@@ -215,7 +223,7 @@ class FlowValidationServiceTest {
 
         FlowNode demographics = new FlowNode();
         demographics.setId("demographics");
-        demographics.setComponentId("demographics-panel");
+        demographics.setComponentId("demographics-sidebar");
         InputBinding patientBinding = new InputBinding();
         patientBinding.setSource(BindingSource.CONTEXT);
         patientBinding.setContextKey("patientId");
@@ -238,7 +246,7 @@ class FlowValidationServiceTest {
 
         FlowNode demographics = new FlowNode();
         demographics.setId("demographics");
-        demographics.setComponentId("demographics-panel");
+        demographics.setComponentId("demographics-sidebar");
         InputBinding patientBinding = new InputBinding();
         patientBinding.setSource(BindingSource.CONTEXT);
         patientBinding.setContextKey("patientId");
@@ -264,7 +272,7 @@ class FlowValidationServiceTest {
 
         FlowNode demographics = new FlowNode();
         demographics.setId("demographics");
-        demographics.setComponentId("demographics-panel");
+        demographics.setComponentId("demographics-sidebar");
         InputBinding patientBinding = new InputBinding();
         patientBinding.setSource(BindingSource.CONTEXT);
         patientBinding.setContextKey("patientId");
@@ -295,7 +303,11 @@ class FlowValidationServiceTest {
         directToView.setContextMapping(Map.of("patientId", "$context.patientId"));
 
         FlowSidebar sidebar = new FlowSidebar();
-        sidebar.setNodeId("wards");
+        FlowNode sidebarNode = new FlowNode();
+        sidebarNode.setId("wards-sidebar");
+        sidebarNode.setComponentId("ward-list-sidebar");
+        def.getNodes().add(sidebarNode);
+        sidebar.setNodeId("wards-sidebar");
         view.setSidebar(sidebar);
 
         ValidationResult result = validator.validate(def);
@@ -304,6 +316,59 @@ class FlowValidationServiceTest {
         assertTrue(result.getIssues().stream().anyMatch(issue ->
             issue.getPath().equals("nodes.wards.transitions")
                 && issue.getMessage().contains("$context.patientId")
+        ));
+    }
+
+    @Test
+    void contentPresenterInSidebarFails() {
+        FlowDefinition def = buildValid();
+        FlowSidebar sidebar = new FlowSidebar();
+        sidebar.setNodeId("wards");
+        def.getNodes().stream().filter(node -> node.getId().equals("patients")).findFirst().orElseThrow()
+            .setSidebar(sidebar);
+
+        ValidationResult result = validator.validate(def);
+
+        assertTrue(result.getIssues().stream().anyMatch(issue ->
+            issue.getMessage().contains("SIDEBAR-Presenter")
+        ));
+    }
+
+    @Test
+    void sidebarPresenterInContentFails() {
+        FlowDefinition def = buildValid();
+        def.getNodes().stream().filter(node -> node.getId().equals("wards")).findFirst().orElseThrow()
+            .setComponentId("ward-list-sidebar");
+
+        ValidationResult result = validator.validate(def);
+
+        assertTrue(result.getIssues().stream().anyMatch(issue ->
+            issue.getMessage().contains("CONTENT-Presenter")
+        ));
+    }
+
+    @Test
+    void sidebarPresenterAsNestedContentFails() {
+        FlowDefinition def = buildValid();
+        FlowNode view = def.getNodes().stream().filter(node -> node.getId().equals("view")).findFirst().orElseThrow();
+
+        FlowNode nestedContainer = new FlowNode();
+        nestedContainer.setId("nested");
+        nestedContainer.setComponentId("patient-view");
+        nestedContainer.setInputBindings(view.getInputBindings());
+
+        FlowNode nestedSidebarPresenter = new FlowNode();
+        nestedSidebarPresenter.setId("nested-sidebar");
+        nestedSidebarPresenter.setComponentId("ward-list-sidebar");
+        nestedContainer.setChildren(List.of(nestedSidebarPresenter));
+        view.setChildren(List.of(nestedContainer));
+        def.getNodes().addAll(List.of(nestedContainer, nestedSidebarPresenter));
+
+        ValidationResult result = validator.validate(def);
+
+        assertTrue(result.getIssues().stream().anyMatch(issue ->
+            issue.getPath().equals("nodes.nested-sidebar.componentId")
+                && issue.getMessage().contains("CONTENT-Presenter")
         ));
     }
 

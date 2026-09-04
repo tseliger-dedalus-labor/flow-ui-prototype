@@ -1,11 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "module": "patient-workflow",
   "moduleVersion": "1.0.0",
   "components": [
     {
-      "id": "ward-list",
+      "id": "ward-list-content",
       "title": "Stationsliste",
+      "presenter": "CONTENT",
       "container": false,
       "inputs": [],
       "outputs": [
@@ -18,9 +19,59 @@
       ]
     },
     {
-      "id": "patient-list",
+      "id": "ward-list-sidebar",
+      "title": "Stationsliste (Sidebar)",
+      "presenter": "SIDEBAR",
+      "container": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "wardSelected",
+          "payload": {
+            "wardId": "WARD_ID"
+          }
+        }
+      ]
+    },
+    {
+      "id": "patient-list-content",
       "title": "Patientenliste",
       "displayType": "DISPTYPE_WEC_PAT_LIST",
+      "presenter": "CONTENT",
+      "container": false,
+      "inputs": [
+        {
+          "name": "wardId",
+          "semanticType": "WARD_ID",
+          "required": true,
+          "allowedValues": []
+        },
+        {
+          "name": "mode",
+          "semanticType": "MODE",
+          "required": true,
+          "allowedValues": [
+            "normal",
+            "findings",
+            "orders",
+            "transfusions"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "patientSelected",
+          "payload": {
+            "patientId": "PATIENT_ID",
+            "caseId": "CASE_ID"
+          }
+        }
+      ]
+    },
+    {
+      "id": "patient-list-sidebar",
+      "title": "Patientenliste (Sidebar)",
+      "presenter": "SIDEBAR",
       "container": false,
       "inputs": [
         {
@@ -55,6 +106,7 @@
       "id": "patient-view",
       "title": "Patientenansicht",
       "displayType": "DISPTYPE_WEC_INDEX",
+      "presenter": "CONTENT",
       "container": true,
       "inputs": [
         {
@@ -75,6 +127,7 @@
     {
       "id": "stack-layout",
       "title": "Stack-Layout",
+      "presenter": "CONTENT",
       "container": true,
       "inputs": [],
       "outputs": []
@@ -82,6 +135,7 @@
     {
       "id": "tab-panel",
       "title": "Tab-Panel",
+      "presenter": "CONTENT",
       "container": true,
       "inputs": [],
       "outputs": []
@@ -90,6 +144,7 @@
       "id": "demographics-panel",
       "title": "Stammdaten",
       "displayType": "DISPTYPE_WEC_CAVE",
+      "presenter": "CONTENT",
       "container": false,
       "inputs": [
         {
@@ -111,6 +166,7 @@
       "id": "findings-panel",
       "title": "Befunde",
       "displayType": "DISPTYPE_REPORT",
+      "presenter": "CONTENT",
       "container": false,
       "inputs": [
         {
@@ -126,6 +182,7 @@
       "id": "orders-panel",
       "title": "Aufträge",
       "displayType": "DISPTYPE_FORM",
+      "presenter": "CONTENT",
       "container": false,
       "inputs": [
         {
@@ -153,6 +210,7 @@
     {
       "id": "order-view",
       "title": "Auftrag",
+      "presenter": "CONTENT",
       "container": false,
       "inputs": [
         {
@@ -180,6 +238,7 @@
       "id": "transfusions-panel",
       "title": "Transfusionen",
       "displayType": "DISPTYPE_WEC_INDEX_TRAFU",
+      "presenter": "CONTENT",
       "container": false,
       "inputs": [
         {

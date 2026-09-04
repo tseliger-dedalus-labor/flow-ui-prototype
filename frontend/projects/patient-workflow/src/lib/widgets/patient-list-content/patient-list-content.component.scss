@@ -1,0 +1,24 @@
+.cards {
+  list-style: none;
+  padding: 0;
+}
+
+.cards li {
+  margin-bottom: 1rem;
+}
+
+.cases {
+  display: grid;
+  gap: .5rem;
+  margin-top: .5rem;
+}
+
+.cases button {
+  width: 100%;
+  text-align: left;
+  padding: .75rem;
+}
+
+.hint {
+  color: #666;
+}

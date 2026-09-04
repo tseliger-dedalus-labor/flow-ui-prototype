@@ -1,4 +1,6 @@
 import { IxtDisplayType } from './ixt-display-type';
+export type { Tool } from 'ui-framework';
+import type { PresenterType, Tool } from 'ui-framework';
 
 /**
  * Fachliche Typisierung für Flow-Inputs und Output-Payloads.
@@ -43,6 +45,8 @@ export interface ComponentDescriptor {
   title: string;
   /** Optionales fachliches Anzeigeformat aus der ixserv-Welt. */
   displayType?: IxtDisplayType;
+  /** Zulässiger Darstellungsbereich des Presenters. */
+  presenter: PresenterType;
   /** Kennzeichnet Container-Komponenten, die Kindknoten rendern dürfen. */
   container: boolean;
   /** Deklarierte Inputs der Komponente. */
@@ -111,8 +115,6 @@ export interface FlowSidebar {
 /**
  * Technische Tool-IDs aus der ixserv-Tool-Enum.
  */
-export type Tool = 'AppointmentTool' | 'WebclientTool';
-
 /**
  * Verknüpft Tool-IDs mit den Lazy-Load-Modulen der Anwendung.
  */

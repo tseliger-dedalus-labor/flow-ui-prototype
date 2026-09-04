@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core';
 import { PatientApiService, PatientSummary } from '../../patient-api.service';
 import { Subscription } from 'rxjs';
+import { ASidebarPresenter } from 'ui-framework';
 
 /**
  * Steuert die fachliche Ausprägung der Patientenliste innerhalb verschiedener Flows.
@@ -24,7 +25,7 @@ interface PatientSelectedEvent {
     templateUrl: './patient-list.component.html',
     styleUrl: './patient-list.component.scss'
 })
-export class PatientListComponent implements OnChanges, OnDestroy {
+export class PatientListSidebarComponent extends ASidebarPresenter implements OnChanges, OnDestroy {
   @Input({ required: true }) wardId = '';
   @Input({ required: true }) mode: PatientListMode = 'normal';
   @Output() readonly patientSelected = new EventEmitter<PatientSelectedEvent>();
@@ -32,7 +33,9 @@ export class PatientListComponent implements OnChanges, OnDestroy {
   patients: PatientSummary[] = [];
   private loadSubscription?: Subscription;
 
-  constructor(private readonly api: PatientApiService) {}
+  constructor(private readonly api: PatientApiService) {
+    super('WebclientTool');
+  }
 
   /**
    * Lädt die Patientenliste neu, sobald Station oder Modus wechseln.

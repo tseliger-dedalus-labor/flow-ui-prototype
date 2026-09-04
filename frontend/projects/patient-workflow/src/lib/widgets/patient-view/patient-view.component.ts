@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { AContentPresenter } from 'ui-framework';
 
 /**
  * Platzhalter-Container für patientenbezogene Unter-Widgets innerhalb eines Flows.
@@ -8,7 +9,11 @@ import { Component, Input } from '@angular/core';
   standalone: true,
   templateUrl: './patient-view.component.html'
 })
-export class PatientViewComponent {
+export class PatientViewComponent extends AContentPresenter {
   @Input({ required: true }) patientId = '';
   @Input({ required: true }) caseId = '';
+
+  constructor() {
+    super('WebclientTool');
+  }
 }

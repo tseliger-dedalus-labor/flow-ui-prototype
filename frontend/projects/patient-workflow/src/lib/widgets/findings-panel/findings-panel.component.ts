@@ -1,6 +1,7 @@
 import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
 import { PatientApiService } from '../../patient-api.service';
 import { Subscription } from 'rxjs';
+import { AContentPresenter } from 'ui-framework';
 
 /**
  * Zeigt Befunde des aktuell selektierten Patienten an.
@@ -11,12 +12,14 @@ import { Subscription } from 'rxjs';
     templateUrl: './findings-panel.component.html',
     styleUrl: './findings-panel.component.scss'
 })
-export class FindingsPanelComponent implements OnChanges, OnDestroy {
+export class FindingsPanelComponent extends AContentPresenter implements OnChanges, OnDestroy {
   @Input({ required: true }) patientId = '';
   items: Array<{ id: string; text: string }> = [];
   private loadSubscription?: Subscription;
 
-  constructor(private readonly api: PatientApiService) {}
+  constructor(private readonly api: PatientApiService) {
+    super('WebclientTool');
+  }
 
   /**
    * Lädt bei Patientwechsel die Befundliste oder leert das Panel.

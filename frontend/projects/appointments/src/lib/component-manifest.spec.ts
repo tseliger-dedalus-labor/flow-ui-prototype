@@ -9,7 +9,7 @@ import { FLOW_COMPONENTS } from './flow-components';
  */
 describe('appointments component manifest', () => {
   it('publishes the appointments panel metadata', () => {
-    expect(appointmentsComponentManifest.schemaVersion).toBe(1);
+    expect(appointmentsComponentManifest.schemaVersion).toBe(2);
     expect(appointmentsComponentManifest.module).toBe('appointments');
     // Die Manifest-Liste muss 1:1 den registrierten Deskriptoren entsprechen.
     expect(appointmentsComponentManifest.components)

@@ -8,6 +8,7 @@ Backend und Frontend sind als getrennt baubare, versionierte Artefakte organisie
 
 | Fachmodul | Backend-Artefakt | Frontend-Paket | Verantwortung |
 | --- | --- | --- | --- |
+| UI-Framework | – | `ui-framework` | Gemeinsame Presenter-Basen, UI-Zustände und Tool-Zuordnung |
 | Flow-Plattform | `com.flowprototype:flow-platform` | `flow-platform` | Flow-Verträge, Registry, Validierung, Persistenz, Engine und Renderer |
 | Patienten-Workflow | `com.flowprototype:patient-workflow` | `patient-workflow` | Stations-/Patientendaten und zugehörige Widgets |
 | Terminplanung | `com.flowprototype:appointments` | `appointments` | Termin-API, Termin-Widget und Feature-Route |
@@ -41,7 +42,7 @@ Relationale Metadaten + CLOB/JSON:
   "nodes": [
     {
       "id": "wards",
-      "componentId": "ward-list",
+      "componentId": "ward-list-content",
       "transitions": [
         {
           "onOutput": "wardSelected",
@@ -52,9 +53,9 @@ Relationale Metadaten + CLOB/JSON:
     },
     {
       "id": "patients",
-      "componentId": "patient-list",
+      "componentId": "patient-list-content",
       "sidebar": {
-        "nodeId": "wards",
+        "nodeId": "wards-sidebar",
         "position": "LEFT",
         "width": 280,
         "ariaLabel": "Stationsauswahl"
@@ -63,6 +64,17 @@ Relationale Metadaten + CLOB/JSON:
         "wardId": { "source": "CONTEXT", "contextKey": "wardId" },
         "mode": { "source": "STATIC", "staticValue": "normal" }
       }
+    },
+    {
+      "id": "wards-sidebar",
+      "componentId": "ward-list-sidebar",
+      "transitions": [
+        {
+          "onOutput": "wardSelected",
+          "targetNodeId": "patients",
+          "contextMapping": { "wardId": "$event.wardId" }
+        }
+      ]
     }
   ]
 }
@@ -103,6 +115,7 @@ kann die Installation ohne Netzwerkzugriff mit `npm install --offline` versucht 
 
 ```bash
 npm run build
+npm run build:ui-framework
 npm run build:flow-platform
 npm run build:patient-workflow
 npm run build:appointments
@@ -118,6 +131,7 @@ Die Shell stellt nur die gemeinsame Toolbar und die Composition-Routen bereit. S
 - Editor: `/editor`
 
 Weitere Module können eigene Routen, API-Clients und Widget-Provider exportieren, ohne die Flow-Plattform zu ändern.
+Presenter für Hauptbereich und Sidebar leiten von `AContentPresenter` beziehungsweise `ASidebarPresenter` aus dem `ui-framework` ab.
 Die Berechtigungen eines Flow-Knotens werden im Editor als kommaseparierte Werte konfiguriert.
 Das Terminplanungsmodul verwendet beispielhaft `APPOINTMENTS_READ`; die Berechtigungen sind im Prototyp clientseitig gemockt.
 

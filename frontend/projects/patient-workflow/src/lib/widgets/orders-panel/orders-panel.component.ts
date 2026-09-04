@@ -2,6 +2,7 @@ import { Component, EventEmitter, Inject, Input, OnChanges, OnDestroy, Optional,
 import { FlowTabService } from 'flow-platform';
 import { PatientApiService, PatientOrder } from '../../patient-api.service';
 import { Subscription } from 'rxjs';
+import { AContentPresenter } from 'ui-framework';
 
 /**
  * Zeigt Aufträge des aktuell selektierten Patienten an.
@@ -12,7 +13,7 @@ import { Subscription } from 'rxjs';
     templateUrl: './orders-panel.component.html',
     styleUrl: './orders-panel.component.scss'
 })
-export class OrdersPanelComponent implements OnChanges, OnDestroy {
+export class OrdersPanelComponent extends AContentPresenter implements OnChanges, OnDestroy {
   @Input({ required: true }) patientId = '';
   @Input({ required: true }) caseId = '';
   @Output() readonly orderSelected = new EventEmitter<{ RecordId: string }>();
@@ -23,7 +24,9 @@ export class OrdersPanelComponent implements OnChanges, OnDestroy {
   constructor(
     private readonly api: PatientApiService,
     @Optional() @Inject(FlowTabService) private readonly tabs: FlowTabService | null
-  ) {}
+  ) {
+    super('WebclientTool');
+  }
 
   /**
    * Lädt bei Patientwechsel die Auftragsliste oder leert das Panel.

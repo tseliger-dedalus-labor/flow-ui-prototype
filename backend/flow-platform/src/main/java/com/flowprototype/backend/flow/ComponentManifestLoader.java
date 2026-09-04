@@ -63,7 +63,7 @@ public class ComponentManifestLoader {
      * @param resourcePath Ursprungsdatei für Fehlermeldungen.
      */
     private void validate(ComponentManifest manifest, String expectedModule, String resourcePath) {
-        if (manifest.getSchemaVersion() != 1) {
+        if (manifest.getSchemaVersion() != 2) {
             throw new IllegalStateException("Nicht unterstützte Metadaten-Version in " + resourcePath);
         }
         if (!expectedModule.equals(manifest.getModule())) {
@@ -87,6 +87,9 @@ public class ComponentManifestLoader {
             }
             if (descriptor.getInputs() == null || descriptor.getOutputs() == null) {
                 throw new IllegalStateException("Inputs oder Outputs fehlen für Komponente: " + descriptor.getId());
+            }
+            if (descriptor.getPresenter() == null) {
+                throw new IllegalStateException("Presenter-Typ fehlt für Komponente: " + descriptor.getId());
             }
         }
     }
