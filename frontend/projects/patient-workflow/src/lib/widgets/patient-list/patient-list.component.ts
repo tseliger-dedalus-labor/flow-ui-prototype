@@ -2,6 +2,12 @@ import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleCha
 import { PatientApiService } from '../../patient-api.service';
 import { Subscription } from 'rxjs';
 
+type PatientListMode = 'normal' | 'findings' | 'orders' | 'transfusions';
+
+interface PatientSelectedEvent {
+  patientId: string;
+}
+
 @Component({
     selector: 'app-patient-list',
     imports: [],
@@ -9,9 +15,9 @@ import { Subscription } from 'rxjs';
     styleUrl: './patient-list.component.scss'
 })
 export class PatientListComponent implements OnChanges, OnDestroy {
-  @Input() wardId = '';
-  @Input() mode: 'normal' | 'findings' | 'orders' | 'transfusions' = 'normal';
-  @Output() readonly patientSelected = new EventEmitter<{ patientId: string }>();
+  @Input({ required: true }) wardId = '';
+  @Input({ required: true }) mode: PatientListMode = 'normal';
+  @Output() readonly patientSelected = new EventEmitter<PatientSelectedEvent>();
 
   patients: Array<{ id: string; name: string }> = [];
   private loadSubscription?: Subscription;

@@ -2,6 +2,9 @@
   "name": "appointments",
   "version": "1.0.0",
   "flowComponents": "./appointments.components.json",
+  "flowComponentRoots": [
+    "./src/lib/widgets"
+  ],
   "peerDependencies": {
     "@angular/common": "^21.2.0",
     "@angular/core": "^21.2.0",

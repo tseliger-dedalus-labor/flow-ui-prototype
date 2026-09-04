@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { PermissionService } from 'flow-platform';
 import { PatientApiService } from 'patient-workflow';
-import { AppointmentsApiService } from '../appointments-api.service';
+import { AppointmentsApiService } from '../../appointments-api.service';
 import { AppointmentsPanelComponent } from './appointments-panel.component';
 
 class ApiServiceMock {

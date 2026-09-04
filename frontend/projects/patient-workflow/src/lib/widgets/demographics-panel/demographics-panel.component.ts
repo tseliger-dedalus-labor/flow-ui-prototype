@@ -9,7 +9,7 @@ import { Subscription } from 'rxjs';
     styleUrl: './demographics-panel.component.scss'
 })
 export class DemographicsPanelComponent implements OnChanges, OnDestroy {
-  @Input() patientId = '';
+  @Input({ required: true }) patientId = '';
   data?: { id: string; name: string; birthDate: string };
   private loadSubscription?: Subscription;
 

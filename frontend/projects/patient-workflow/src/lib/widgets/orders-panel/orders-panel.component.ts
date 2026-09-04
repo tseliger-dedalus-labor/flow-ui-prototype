@@ -9,7 +9,7 @@ import { Subscription } from 'rxjs';
     styleUrl: './orders-panel.component.scss'
 })
 export class OrdersPanelComponent implements OnChanges, OnDestroy {
-  @Input() patientId = '';
+  @Input({ required: true }) patientId = '';
   items: Array<{ id: string; text: string }> = [];
   private loadSubscription?: Subscription;
 

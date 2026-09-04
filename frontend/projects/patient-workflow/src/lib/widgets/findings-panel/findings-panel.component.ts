@@ -9,7 +9,7 @@ import { Subscription } from 'rxjs';
     styleUrl: './findings-panel.component.scss'
 })
 export class FindingsPanelComponent implements OnChanges, OnDestroy {
-  @Input() patientId = '';
+  @Input({ required: true }) patientId = '';
   items: Array<{ id: string; text: string }> = [];
   private loadSubscription?: Subscription;
 

@@ -15,7 +15,7 @@ Backend und Frontend sind als getrennt baubare, versionierte Artefakte organisie
 
 `backend/application` und die Angular-Anwendung unter `frontend/src` sind ausschließlich Composition Hosts. Sie wählen die einzubindenden Module aus, liefern Demo-Seed-Daten und stellen die gemeinsame Navigation bereit.
 
-Frontend-Module beschreiben ihre Flow-Komponenten in einem versionierten `*.components.json`-Manifest und registrieren dynamische Komponenten über den Multi-Provider `FLOW_WIDGET`. Das Manifest wird beim Paketbau mit ausgeliefert und von den korrespondierenden Backend-Modulen über `ComponentDescriptorProvider` in die Registry geladen. Dadurch verwenden Renderer, Backend-Validierung und Editor dieselbe Metadatenquelle.
+Frontend-Module beschreiben ihre Flow-Komponenten in typisierten TypeScript-Definitionen und registrieren sie über den Multi-Provider `FLOW_WIDGET`. Daraus wird ein versioniertes `*.components.json`-Manifest generiert, beim Paketbau mit ausgeliefert und von den korrespondierenden Backend-Modulen über `ComponentDescriptorProvider` in die Registry geladen. Dadurch verwenden Renderer, Backend-Validierung und Editor dieselbe Metadatenquelle.
 
 Jedes `pom.xml` beziehungsweise `projects/*/package.json` enthält eine eigene Artefaktversion. Abhängigkeiten zwischen Modulen referenzieren explizite Versionen und können bei Releases einzeln angehoben werden.
 
@@ -111,7 +111,20 @@ Das Terminplanungsmodul verwendet beispielhaft `APPOINTMENTS_READ`; die Berechti
 
 ### Komponenten-Metadaten
 
-Jedes Frontend-Fachmodul liefert sein Manifest als Paket-Asset aus und verweist in `package.json` über `flowComponents` darauf. Das Manifest enthält Schema-, Modul- und Modulversionsangaben sowie IDs, Container-Eigenschaft, typisierte Inputs und Outputs aller registrierten Flow-Komponenten. Die Backend-Fachmodule übernehmen dieselben Dateien beim Maven-Build nach `META-INF/flow-components`; fehlende, falsch zugeordnete oder intern doppelte Metadaten verhindern den Start. `GET /api/flow-registry` stellt die zusammengeführte Beschreibung für Validierung und Editor bereit.
+Jedes Frontend-Fachmodul definiert seine Widgets typisiert in einer exportierten `FLOW_COMPONENTS`-Liste mit `defineFlowComponent(...)`. Diese Liste ist die gemeinsame Quelle für die Angular-Provider und das generierte `*.components.json`-Manifest. Modulname und Modulversion werden aus dem jeweiligen `package.json` übernommen.
+
+`npm run generate:components` erzeugt alle Manifeste. Der Generator prüft dabei unter anderem:
+
+- Jede Angular-Komponente unter den in `flowComponentRoots` konfigurierten Verzeichnissen besitzt genau eine Definition.
+- Alle Pflichtfelder, IDs, semantischen Typen, Inputs und Outputs sind vollständig und eindeutig.
+- Die Definition enthält exakt die tatsächlichen Angular-Inputs und -Outputs.
+- String-Union-Typen stimmen mit `allowedValues` und `EventEmitter`-Payloads mit den definierten Payload-Feldern überein.
+
+Flow-Komponenten werden unter einem gemeinsamen, in `flowComponentRoots` eingetragenen `widgets`-Verzeichnis abgelegt. Vererbung von Flow-Komponenten wird bewusst abgelehnt, damit keine geerbten Angular-Bindings unbemerkt außerhalb der Definition bleiben.
+
+Die Frontend-Modul-Builds führen die Generierung automatisch aus und schlagen bei fehlenden oder inkonsistenten Definitionen fehl. `npm run check:components` verändert keine Dateien und schlägt zusätzlich fehl, wenn eingecheckte Manifeste veraltet sind. Diese Prüfung läuft automatisch vor `npm test`.
+
+Die generierten Manifeste bleiben versionierte Paket-Assets. Das veröffentlichte Paket verweist in `package.json` über `flowComponents` darauf. Die Backend-Fachmodule übernehmen dieselben Dateien beim Maven-Build nach `META-INF/flow-components`; fehlende, falsch zugeordnete oder intern doppelte Metadaten verhindern den Start. `GET /api/flow-registry` stellt die zusammengeführte Beschreibung für Validierung und Editor bereit.
 
 ## Editor-Workflow (`/editor`)
 

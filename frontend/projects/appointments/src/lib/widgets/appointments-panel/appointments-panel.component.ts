@@ -3,8 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, Subscription } from 'rxjs';
 import { PermissionService } from 'flow-platform';
 import { PatientApiService } from 'patient-workflow';
-import { Appointment } from '../appointment';
-import { AppointmentsApiService } from '../appointments-api.service';
+import { Appointment } from '../../appointment';
+import { AppointmentsApiService } from '../../appointments-api.service';
 
 @Component({
   selector: 'app-appointments-panel',
@@ -13,7 +13,7 @@ import { AppointmentsApiService } from '../appointments-api.service';
   styleUrl: './appointments-panel.component.scss'
 })
 export class AppointmentsPanelComponent implements OnChanges, OnDestroy {
-  @Input() wardId = '';
+  @Input({ required: true }) wardId = '';
 
   appointments: Appointment[] = [];
   patients: Array<{ id: string; name: string }> = [];

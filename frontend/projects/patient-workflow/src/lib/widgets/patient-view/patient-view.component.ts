@@ -6,5 +6,5 @@ import { Component, Input } from '@angular/core';
   templateUrl: './patient-view.component.html'
 })
 export class PatientViewComponent {
-  @Input() patientId = '';
+  @Input({ required: true }) patientId = '';
 }
