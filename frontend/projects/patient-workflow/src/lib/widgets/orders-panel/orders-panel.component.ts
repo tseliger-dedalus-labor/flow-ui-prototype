@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Inject, Input, OnChanges, OnDestroy, Optional, Output } from '@angular/core';
 import { FlowTabService } from 'flow-platform';
 import { PatientApiService, PatientOrder } from '../../patient-api.service';
-import { Subscription } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { AContentPresenter } from 'ui-framework';
 
 /**
@@ -34,10 +34,13 @@ export class OrdersPanelComponent extends AContentPresenter implements OnChanges
   ngOnChanges(): void {
     this.loadSubscription?.unsubscribe();
     if (this.patientId && this.caseId) {
+      this.loading = true;
       this.loadSubscription = this.api.getOrders(this.patientId, this.caseId)
+        .pipe(finalize(() => this.loading = false))
         .subscribe((data) => this.items = data);
       return;
     }
+    this.loading = false;
     this.items = [];
   }
 

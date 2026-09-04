@@ -1,6 +1,6 @@
 import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, Subscription } from 'rxjs';
+import { finalize, forkJoin, Subscription } from 'rxjs';
 import { PermissionService } from 'flow-platform';
 import { PatientApiService } from 'patient-workflow';
 import { AContentPresenter } from 'ui-framework';
@@ -45,13 +45,15 @@ export class AppointmentsPanelComponent extends AContentPresenter implements OnC
     this.patients = [];
     this.draft = { patientId: '', date: '', time: '', reason: '' };
     if (!this.wardId) {
+      this.loading = false;
       return;
     }
+    this.loading = true;
     // Beide Datenquellen werden gemeinsam geladen, damit Formular und Liste stets denselben Stationskontext zeigen.
     this.loadSubscription = forkJoin({
       appointments: this.appointmentsApi.getAppointments(this.wardId),
       patients: this.patientApi.getPatients(this.wardId)
-    }).subscribe(({ appointments, patients }) => {
+    }).pipe(finalize(() => this.loading = false)).subscribe(({ appointments, patients }) => {
       this.appointments = appointments;
       this.patients = patients;
       this.draft.patientId = patients[0]?.id ?? '';

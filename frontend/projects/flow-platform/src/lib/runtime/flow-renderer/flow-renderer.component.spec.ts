@@ -6,6 +6,7 @@ import { EmbeddedFlowContainer, FlowNode } from '../../models';
 import { PermissionService } from '../../permission.service';
 import { FlowRendererComponent } from './flow-renderer.component';
 import { FLOW_WIDGET } from '../flow-widget';
+import { AContentPresenter } from 'ui-framework';
 
 /** Leichter Spy-Doppel für die Runtime-Engine, damit Transitionen ohne echte Navigation überprüft werden können. */
 class FlowEngineServiceMock {
@@ -17,9 +18,13 @@ class FlowEngineServiceMock {
  * So bleibt die Renderer-Suite auf die Bindung zwischen Kontext und Komponenten-API fokussiert.
  */
 @Component({ selector: 'flow-test-view', template: '' })
-class TestViewComponent {
+class TestViewComponent extends AContentPresenter {
   @Input() patientId = '';
   @Input() caseId = '';
+
+  constructor() {
+    super('WebclientTool');
+  }
 }
 
 /** Test-Doppel für einen Listenknoten, der Input-Bindings und ein Transition-Output-Signal bereitstellt. */
@@ -93,6 +98,26 @@ describe('FlowRendererComponent', () => {
     expect(patientView).toBeTruthy();
     expect((patientView.componentInstance as TestViewComponent).patientId).toBe('p-123');
     expect((patientView.componentInstance as TestViewComponent).caseId).toBe('F-123');
+  });
+
+  it('marks a presenter visible only while it is rendered', () => {
+    host.node = {
+      id: 'view',
+      componentId: 'patient-view',
+      inputBindings: {},
+      children: [],
+      transitions: []
+    };
+    fixture.detectChanges();
+    const presenter = fixture.debugElement.query(By.directive(TestViewComponent))
+      .componentInstance as TestViewComponent;
+
+    expect(presenter.visible).toBeTrue();
+
+    host.presenter = 'SIDEBAR';
+    fixture.detectChanges();
+
+    expect(presenter.visible).toBeFalse();
   });
 
   it('subscribes output transitions only once across re-renders', () => {

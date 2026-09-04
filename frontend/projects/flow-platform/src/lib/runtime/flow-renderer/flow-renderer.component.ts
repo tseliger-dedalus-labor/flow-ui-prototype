@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Inject, Input, OnChanges, OnDestroy, Optional, SimpleChanges, ViewChild, ViewContainerRef, forwardRef } from '@angular/core';
-import type { PresenterType } from 'ui-framework';
+import { APresenter, type PresenterType } from 'ui-framework';
 
 import { Subscription } from 'rxjs';
 import { EmbeddedFlowContainer, FlowNode, InputBinding } from '../../models';
@@ -26,6 +26,7 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
 
   private readonly componentMap: Record<string, FlowWidgetRegistration>;
   private subscriptions: Subscription[] = [];
+  private renderedPresenter?: APresenter;
   hasAccess = true;
   hasValidPresenter = true;
   rendersOwnChildren = false;
@@ -54,6 +55,7 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
    */
   private renderNode(): void {
     this.cleanupSubscriptions();
+    this.hideRenderedPresenter();
     this.host.clear();
     this.rendersOwnChildren = false;
     this.hasValidPresenter = true;
@@ -70,6 +72,10 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
       return;
     }
     const ref = this.host.createComponent(registration.component);
+    if (ref.instance instanceof APresenter) {
+      this.renderedPresenter = ref.instance;
+      this.renderedPresenter.visible = true;
+    }
     // Input-Bindings werden erst nach der Instanziierung gesetzt, damit Standalone-Komponenten unverändert bleiben können.
     for (const [name, binding] of Object.entries(this.node.inputBindings ?? {})) {
       ref.setInput(name, this.resolveBinding(binding));
@@ -115,6 +121,7 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
    */
   ngOnDestroy(): void {
     this.cleanupSubscriptions();
+    this.hideRenderedPresenter();
   }
 
   /**
@@ -123,5 +130,12 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
   private cleanupSubscriptions(): void {
     this.subscriptions.forEach((subscription) => subscription.unsubscribe());
     this.subscriptions = [];
+  }
+
+  private hideRenderedPresenter(): void {
+    if (this.renderedPresenter) {
+      this.renderedPresenter.visible = false;
+      this.renderedPresenter = undefined;
+    }
   }
 }

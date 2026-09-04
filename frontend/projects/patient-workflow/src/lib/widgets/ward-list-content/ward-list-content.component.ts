@@ -1,6 +1,7 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { AContentPresenter } from 'ui-framework';
 import { PatientApiService } from '../../patient-api.service';
+import { finalize } from 'rxjs';
 
 /**
  * Listet Stationen auf und meldet die Auswahl an die Flow-Engine zurück.
@@ -23,7 +24,10 @@ export class WardListContentComponent extends AContentPresenter implements OnIni
    * Lädt die auswählbaren Stationen beim Initialisieren des Widgets.
    */
   ngOnInit(): void {
-    this.api.getWards().subscribe((data) => this.wards = data);
+    this.loading = true;
+    this.api.getWards()
+      .pipe(finalize(() => this.loading = false))
+      .subscribe((data) => this.wards = data);
   }
 
   /**
