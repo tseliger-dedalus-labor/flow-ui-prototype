@@ -8,8 +8,8 @@ import java.util.List;
  *
  * <p>Der Flow enthält eine flache Knotenliste für globale ID-Referenzen und
  * optionale Verschachtelungen über {@link FlowNode#getChildren()} für Layoutstrukturen.
- * Eine optionale {@link FlowSidebar} dockt einen vorhandenen Knoten seitlich an,
- * ohne einen eigenen Ausführungspfad einzuführen.</p>
+ * Knoten können jeweils eine eigene {@link FlowSidebar} definieren. Die optionale
+ * Sidebar auf Flow-Ebene bleibt als Fallback für bestehende Definitionen erhalten.</p>
  */
 public class FlowDefinition {
     private String id;
@@ -38,9 +38,9 @@ public class FlowDefinition {
     public String getEntryNodeId() { return entryNodeId; }
     /** @param entryNodeId ID des Einstiegsknotens für die Laufzeitnavigation. */
     public void setEntryNodeId(String entryNodeId) { this.entryNodeId = entryNodeId; }
-    /** @return Optionale Seitenleistenkonfiguration des Flows. */
+    /** @return Optionale Standard-Seitenleiste für Knoten ohne eigene Konfiguration. */
     public FlowSidebar getSidebar() { return sidebar; }
-    /** @param sidebar Optionale Seitenleistenkonfiguration des Flows. */
+    /** @param sidebar Optionale Standard-Seitenleiste für Knoten ohne eigene Konfiguration. */
     public void setSidebar(FlowSidebar sidebar) { this.sidebar = sidebar; }
     /** @return Alle Knoten des Flows, unabhängig von ihrer Layoutverschachtelung. */
     public List<FlowNode> getNodes() { return nodes; }

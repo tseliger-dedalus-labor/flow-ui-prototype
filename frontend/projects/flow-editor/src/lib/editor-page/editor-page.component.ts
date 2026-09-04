@@ -251,6 +251,23 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Aktiviert oder deaktiviert die Sidebar für einen einzelnen Hauptknoten.
+   */
+  setNodeSidebarEnabled(node: FlowNode, enabled: boolean): void {
+    if (!enabled) {
+      delete node.sidebar;
+    } else {
+      node.sidebar = {
+        nodeId: this.flow?.nodes.find((candidate) => candidate.id !== node.id)?.id ?? node.id,
+        position: 'LEFT',
+        width: 280,
+        ariaLabel: 'Flow-Navigation'
+      };
+    }
+    this.validationTrigger.next();
+  }
+
+  /**
    * Serialisiert Context-Mappings in das mehrzeilige Editorformat.
    */
   mappingAsText(mapping: Record<string, string>): string {

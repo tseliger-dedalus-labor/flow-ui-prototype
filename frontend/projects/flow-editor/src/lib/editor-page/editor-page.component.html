@@ -36,7 +36,7 @@
             type="checkbox"
             [ngModel]="!!currentFlow.sidebar"
             (ngModelChange)="setSidebarEnabled(currentFlow, $event)" />
-          Sidebar verwenden
+          Standard-Sidebar verwenden
         </label>
         @if (currentFlow.sidebar; as sidebar) {
           <label>Sidebar-Knoten
@@ -141,6 +141,35 @@
                 </div>
               }
             </div>
+          }
+          <h4>Sidebar für diesen Knoten</h4>
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [ngModel]="!!node.sidebar"
+              (ngModelChange)="setNodeSidebarEnabled(node, $event)" />
+            Knotenspezifische Sidebar verwenden
+          </label>
+          @if (node.sidebar; as sidebar) {
+            <label>Sidebar-Knoten
+              <select [(ngModel)]="sidebar.nodeId" (ngModelChange)="triggerValidation()">
+                @for (candidate of currentFlow.nodes; track candidate) {
+                  <option [value]="candidate.id">{{ candidate.id }}</option>
+                }
+              </select>
+            </label>
+            <label>Sidebar-Position
+              <select [(ngModel)]="sidebar.position" (ngModelChange)="triggerValidation()">
+                <option value="LEFT">Links</option>
+                <option value="RIGHT">Rechts</option>
+              </select>
+            </label>
+            <label>Sidebar-Breite (px)
+              <input type="number" min="160" [(ngModel)]="sidebar.width" (ngModelChange)="triggerValidation()" />
+            </label>
+            <label>Sidebar ARIA-Label
+              <input [(ngModel)]="sidebar.ariaLabel" (ngModelChange)="triggerValidation()" />
+            </label>
           }
           <h4>Kindknoten (IDs, Komma-getrennt)</h4>
           <input [ngModel]="childIds(node)" (ngModelChange)="setChildren(node, $event)" />

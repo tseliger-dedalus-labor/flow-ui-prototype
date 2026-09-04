@@ -180,7 +180,8 @@ class FlowValidationServiceTest {
         sidebar.setNodeId("wards");
         sidebar.setPosition(SidebarPosition.RIGHT);
         sidebar.setWidth(320);
-        def.setSidebar(sidebar);
+        FlowNode patients = def.getNodes().stream().filter(n -> n.getId().equals("patients")).findFirst().orElseThrow();
+        patients.setSidebar(sidebar);
 
         ValidationResult result = validator.validate(def);
 
@@ -192,12 +193,112 @@ class FlowValidationServiceTest {
         FlowDefinition def = buildValid();
         FlowSidebar sidebar = new FlowSidebar();
         sidebar.setNodeId("missing");
+        FlowNode patients = def.getNodes().stream().filter(n -> n.getId().equals("patients")).findFirst().orElseThrow();
+        patients.setSidebar(sidebar);
+
+        ValidationResult result = validator.validate(def);
+
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue -> issue.getPath().equals("nodes.patients.sidebar.nodeId")));
+    }
+
+    @Test
+    void sidebarReceivesContextOfActiveMainNode() {
+        FlowDefinition def = buildValid();
+        FlowNode view = def.getNodes().stream().filter(n -> n.getId().equals("view")).findFirst().orElseThrow();
+
+        FlowNode demographics = new FlowNode();
+        demographics.setId("demographics");
+        demographics.setComponentId("demographics-panel");
+        InputBinding patientBinding = new InputBinding();
+        patientBinding.setSource(BindingSource.CONTEXT);
+        patientBinding.setContextKey("patientId");
+        demographics.setInputBindings(Map.of("patientId", patientBinding));
+        def.getNodes().add(demographics);
+
+        FlowSidebar sidebar = new FlowSidebar();
+        sidebar.setNodeId("demographics");
+        view.setSidebar(sidebar);
+
+        ValidationResult result = validator.validate(def);
+
+        assertTrue(result.isValid(), () -> "Expected valid contextual sidebar, got: " + result.getIssues().stream().map(ValidationIssue::getMessage).toList());
+    }
+
+    @Test
+    void sidebarMissingHostContextFails() {
+        FlowDefinition def = buildValid();
+        FlowNode patients = def.getNodes().stream().filter(n -> n.getId().equals("patients")).findFirst().orElseThrow();
+
+        FlowNode demographics = new FlowNode();
+        demographics.setId("demographics");
+        demographics.setComponentId("demographics-panel");
+        InputBinding patientBinding = new InputBinding();
+        patientBinding.setSource(BindingSource.CONTEXT);
+        patientBinding.setContextKey("patientId");
+        demographics.setInputBindings(Map.of("patientId", patientBinding));
+        def.getNodes().add(demographics);
+
+        FlowSidebar sidebar = new FlowSidebar();
+        sidebar.setNodeId("demographics");
+        patients.setSidebar(sidebar);
+
+        ValidationResult result = validator.validate(def);
+
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue ->
+            issue.getPath().equals("nodes.patients.sidebar")
+                && issue.getMessage().contains("patientId")
+        ));
+    }
+
+    @Test
+    void fallbackSidebarIsValidatedForEveryMainNodeContext() {
+        FlowDefinition def = buildValid();
+
+        FlowNode demographics = new FlowNode();
+        demographics.setId("demographics");
+        demographics.setComponentId("demographics-panel");
+        InputBinding patientBinding = new InputBinding();
+        patientBinding.setSource(BindingSource.CONTEXT);
+        patientBinding.setContextKey("patientId");
+        demographics.setInputBindings(Map.of("patientId", patientBinding));
+        def.getNodes().add(demographics);
+
+        FlowSidebar sidebar = new FlowSidebar();
+        sidebar.setNodeId("demographics");
         def.setSidebar(sidebar);
 
         ValidationResult result = validator.validate(def);
 
         assertFalse(result.isValid());
-        assertTrue(result.getIssues().stream().anyMatch(issue -> issue.getPath().equals("sidebar.nodeId")));
+        assertTrue(result.getIssues().stream().anyMatch(issue ->
+            issue.getPath().equals("sidebar")
+                && issue.getMessage().contains("patientId")
+        ));
+    }
+
+    @Test
+    void sidebarContextDoesNotLeakIntoMainNodeValidation() {
+        FlowDefinition def = buildValid();
+        FlowNode wards = def.getNodes().stream().filter(n -> n.getId().equals("wards")).findFirst().orElseThrow();
+        FlowNode view = def.getNodes().stream().filter(n -> n.getId().equals("view")).findFirst().orElseThrow();
+
+        FlowTransition directToView = wards.getTransitions().get(0);
+        directToView.setTargetNodeId("view");
+        directToView.setContextMapping(Map.of("patientId", "$context.patientId"));
+
+        FlowSidebar sidebar = new FlowSidebar();
+        sidebar.setNodeId("wards");
+        view.setSidebar(sidebar);
+
+        ValidationResult result = validator.validate(def);
+
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue ->
+            issue.getPath().equals("nodes.wards.transitions")
+                && issue.getMessage().contains("$context.patientId")
+        ));
     }
 
     /**

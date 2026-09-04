@@ -79,6 +79,8 @@ export interface FlowNode {
   children: FlowNode[];
   transitions: FlowTransition[];
   requiredPermissions?: string[];
+  /** Sidebar, die angezeigt wird, solange dieser Knoten der aktive Hauptknoten ist. */
+  sidebar?: FlowSidebar;
 }
 
 /**
@@ -117,6 +119,7 @@ export interface FlowDefinition {
   name: string;
   tool: Tool;
   entryNodeId: string;
+  /** Rückwärtskompatible Standard-Sidebar für Knoten ohne eigene Konfiguration. */
   sidebar?: FlowSidebar;
   nodes: FlowNode[];
 }

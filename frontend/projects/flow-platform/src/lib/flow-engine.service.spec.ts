@@ -1,5 +1,5 @@
 import { FlowEngineService } from './flow-engine.service';
-import { FlowDefinition } from './models';
+import { FlowDefinition, FlowNode } from './models';
 
 /**
  * Schützt die Laufzeitmaschine der Flow-Plattform.
@@ -131,5 +131,80 @@ describe('FlowEngineService', () => {
     expect(nodeId).toBe('patients');
     expect(sidebarNodeId).toBe('wards');
     expect(context['wardId']).toBe('ward-b');
+  });
+
+  it('switches the sidebar with the active main node and restores it on back', () => {
+    const flow: FlowDefinition = {
+      id: 'f',
+      name: 'flow',
+      tool: 'WebclientTool',
+      entryNodeId: 'wards',
+      nodes: [
+        {
+          id: 'wards',
+          componentId: 'ward-list',
+          inputBindings: {},
+          children: [],
+          transitions: [{ onOutput: 'wardSelected', targetNodeId: 'patients', contextMapping: { wardId: '$event.wardId' } }]
+        },
+        {
+          id: 'patients',
+          componentId: 'patient-list',
+          inputBindings: {},
+          children: [],
+          sidebar: { nodeId: 'wards', position: 'LEFT', width: 280 },
+          transitions: [{ onOutput: 'patientSelected', targetNodeId: 'detail', contextMapping: { patientId: '$event.patientId' } }]
+        },
+        {
+          id: 'detail',
+          componentId: 'patient-view',
+          inputBindings: {},
+          children: [],
+          sidebar: { nodeId: 'patients', position: 'LEFT', width: 320 },
+          transitions: []
+        }
+      ]
+    };
+
+    service.initialize(flow);
+    service.transition('wardSelected', { wardId: 'ward-a' });
+
+    let sidebarNodeId: string | undefined;
+    service.sidebarNode$.subscribe((node) => sidebarNodeId = node?.id);
+    expect(sidebarNodeId).toBe('wards');
+
+    service.transition('patientSelected', { patientId: 'p-1' });
+    expect(sidebarNodeId).toBe('patients');
+
+    service.goBack();
+    expect(sidebarNodeId).toBe('wards');
+  });
+
+  it('keeps the sidebar completely absent when neither flow nor node configures one', () => {
+    const flow: FlowDefinition = {
+      id: 'f',
+      name: 'flow',
+      tool: 'WebclientTool',
+      entryNodeId: 'only',
+      nodes: [
+        {
+          id: 'only',
+          componentId: 'patient-view',
+          inputBindings: {},
+          children: [],
+          transitions: []
+        }
+      ]
+    };
+
+    service.initialize(flow);
+
+    let sidebarNode: FlowNode | null | undefined;
+    let sidebar: FlowDefinition['sidebar'] | null | undefined;
+    service.sidebarNode$.subscribe((value) => sidebarNode = value);
+    service.sidebar$.subscribe((value) => sidebar = value);
+
+    expect(sidebarNode).toBeNull();
+    expect(sidebar).toBeNull();
   });
 });

@@ -35,8 +35,7 @@ export class FlowEngineService {
     this.history = [];
     const entry = this.nodeMap.get(definition.entryNodeId) ?? null;
     this.currentNodeSubject.next(entry);
-    this.sidebarNodeSubject.next(definition.sidebar ? this.nodeMap.get(definition.sidebar.nodeId) ?? null : null);
-    this.sidebarSubject.next(definition.sidebar ?? null);
+    this.updateSidebar(entry);
     this.contextSubject.next({});
   }
 
@@ -74,7 +73,9 @@ export class FlowEngineService {
     // Der alte Zustand wird erst nach erfolgreicher Transition archiviert, damit "Zurück" exakt reproduzierbar bleibt.
     this.history.push({ nodeId: currentNode.id, context: { ...this.contextSubject.value } });
     this.contextSubject.next(context);
-    this.currentNodeSubject.next(this.nodeMap.get(transition.targetNodeId) ?? null);
+    const targetNode = this.nodeMap.get(transition.targetNodeId) ?? null;
+    this.currentNodeSubject.next(targetNode);
+    this.updateSidebar(targetNode);
   }
 
   /**
@@ -85,7 +86,9 @@ export class FlowEngineService {
     if (!previous) {
       return;
     }
-    this.currentNodeSubject.next(this.nodeMap.get(previous.nodeId) ?? null);
+    const previousNode = this.nodeMap.get(previous.nodeId) ?? null;
+    this.currentNodeSubject.next(previousNode);
+    this.updateSidebar(previousNode);
     this.contextSubject.next(previous.context);
   }
 
@@ -94,6 +97,15 @@ export class FlowEngineService {
    */
   canGoBack(): boolean {
     return this.history.length > 0;
+  }
+
+  /**
+   * Aktiviert die knotenspezifische Sidebar oder den Flow-Fallback.
+   */
+  private updateSidebar(node: FlowNode | null): void {
+    const sidebar = node?.sidebar ?? this.definition?.sidebar ?? null;
+    this.sidebarSubject.next(sidebar);
+    this.sidebarNodeSubject.next(sidebar ? this.nodeMap.get(sidebar.nodeId) ?? null : null);
   }
 
   /**

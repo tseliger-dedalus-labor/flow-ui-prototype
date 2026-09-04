@@ -90,6 +90,32 @@ describe('EditorPageComponent', () => {
     expect(flow.sidebar).toBeUndefined();
   });
 
+  it('creates and removes a node-specific sidebar configuration', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    const wards: FlowNode = { id: 'wards', componentId: 'ward-list', inputBindings: {}, children: [], transitions: [] };
+    const patients: FlowNode = { id: 'patients', componentId: 'patient-list', inputBindings: {}, children: [], transitions: [] };
+    component.flow = {
+      id: 'flow',
+      name: 'Test',
+      tool: 'WebclientTool',
+      entryNodeId: 'wards',
+      nodes: [wards, patients]
+    };
+
+    component.setNodeSidebarEnabled(patients, true);
+
+    expect(patients.sidebar).toEqual({
+      nodeId: 'wards',
+      position: 'LEFT',
+      width: 280,
+      ariaLabel: 'Flow-Navigation'
+    });
+
+    component.setNodeSidebarEnabled(patients, false);
+    expect(patients.sidebar).toBeUndefined();
+  });
+
   it('suggests targets whose required inputs match an output type', () => {
     const fixture = TestBed.createComponent(EditorPageComponent);
     const component = fixture.componentInstance;

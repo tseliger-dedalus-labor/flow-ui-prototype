@@ -46,13 +46,12 @@ public class FlowSeedData implements CommandLineRunner {
             return;
         }
 
-        // Standardfluss: Seitenleiste zeigt die Stationswahl, danach wird Patientenkontext schrittweise aufgebaut.
+        // Standardfluss: Die Sidebar wechselt von der Stations- zur Patientenliste.
         FlowDefinition normalFlow = new FlowDefinition();
         normalFlow.setId("flow-normal");
         normalFlow.setName("Standardfluss");
         normalFlow.setTool(Tool.WebclientTool);
         normalFlow.setEntryNodeId("wards");
-        normalFlow.setSidebar(sidebar("wards"));
 
         FlowNode wards = new FlowNode();
         wards.setId("wards");
@@ -73,6 +72,7 @@ public class FlowSeedData implements CommandLineRunner {
         modeBinding.setSource(BindingSource.STATIC);
         modeBinding.setStaticValue("normal");
         patients.setInputBindings(Map.of("wardId", wardBinding, "mode", modeBinding));
+        patients.setSidebar(sidebar("wards", "Stationsauswahl"));
         FlowTransition toPatient = new FlowTransition();
         toPatient.setOnOutput("patientSelected");
         toPatient.setTargetNodeId("patientView");
@@ -86,6 +86,7 @@ public class FlowSeedData implements CommandLineRunner {
         patientBinding.setSource(BindingSource.CONTEXT);
         patientBinding.setContextKey("patientId");
         patientView.setInputBindings(Map.of("patientId", patientBinding));
+        patientView.setSidebar(sidebar("patients", "Patientenauswahl"));
 
         FlowNode stack = new FlowNode();
         stack.setId("patientStack");
@@ -106,7 +107,6 @@ public class FlowSeedData implements CommandLineRunner {
         ordersFlow.setName("Auftragsfokus");
         ordersFlow.setTool(Tool.WebclientTool);
         ordersFlow.setEntryNodeId("wards2");
-        ordersFlow.setSidebar(sidebar("wards2"));
 
         FlowNode wards2 = new FlowNode();
         wards2.setId("wards2");
@@ -123,6 +123,7 @@ public class FlowSeedData implements CommandLineRunner {
         InputBinding ward2 = new InputBinding(); ward2.setSource(BindingSource.CONTEXT); ward2.setContextKey("wardId");
         InputBinding mode2 = new InputBinding(); mode2.setSource(BindingSource.STATIC); mode2.setStaticValue("orders");
         patients2.setInputBindings(Map.of("wardId", ward2, "mode", mode2));
+        patients2.setSidebar(sidebar("wards2", "Stationsauswahl"));
         FlowTransition toPatient2 = new FlowTransition();
         toPatient2.setOnOutput("patientSelected");
         toPatient2.setTargetNodeId("patientView2");
@@ -134,6 +135,7 @@ public class FlowSeedData implements CommandLineRunner {
         patientView2.setComponentId("patient-view");
         InputBinding pid2 = new InputBinding(); pid2.setSource(BindingSource.CONTEXT); pid2.setContextKey("patientId");
         patientView2.setInputBindings(Map.of("patientId", pid2));
+        patientView2.setSidebar(sidebar("patients2", "Patientenauswahl"));
 
         FlowNode layout2 = new FlowNode();
         layout2.setId("layout2");
@@ -150,7 +152,6 @@ public class FlowSeedData implements CommandLineRunner {
         appointmentsFlow.setName("Stationsbezogene Terminplanung");
         appointmentsFlow.setTool(Tool.AppointmentTool);
         appointmentsFlow.setEntryNodeId("appointmentWards");
-        appointmentsFlow.setSidebar(sidebar("appointmentWards"));
 
         FlowNode appointmentWards = new FlowNode();
         appointmentWards.setId("appointmentWards");
@@ -168,6 +169,7 @@ public class FlowSeedData implements CommandLineRunner {
         appointmentWard.setSource(BindingSource.CONTEXT);
         appointmentWard.setContextKey("wardId");
         appointments.setInputBindings(Map.of("wardId", appointmentWard));
+        appointments.setSidebar(sidebar("appointmentWards", "Stationsauswahl"));
         appointments.setRequiredPermissions(List.of("APPOINTMENTS_READ"));
         appointmentsFlow.setNodes(List.of(appointmentWards, appointments));
         // Persistiert die Beispielflows im produktiven Format, also mit relationalen Metadaten und JSON-Definition.
@@ -199,14 +201,15 @@ public class FlowSeedData implements CommandLineRunner {
      * Erzeugt die Standardseitenleiste für Flows mit vorgeschalteter Stationsauswahl.
      *
      * @param nodeId ID des Knotens, der in der Seitenleiste angedockt dargestellt wird.
+     * @param ariaLabel Beschriftung der jeweils dargestellten Auswahl.
      * @return Konfiguration einer linken Seitenleiste mit fester Breite und ARIA-Beschriftung.
      */
-    private FlowSidebar sidebar(String nodeId) {
+    private FlowSidebar sidebar(String nodeId, String ariaLabel) {
         FlowSidebar sidebar = new FlowSidebar();
         sidebar.setNodeId(nodeId);
         sidebar.setPosition(SidebarPosition.LEFT);
         sidebar.setWidth(280);
-        sidebar.setAriaLabel("Stationsauswahl");
+        sidebar.setAriaLabel(ariaLabel);
         return sidebar;
     }
 }

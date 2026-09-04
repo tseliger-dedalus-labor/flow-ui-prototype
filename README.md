@@ -38,12 +38,6 @@ Relationale Metadaten + CLOB/JSON:
   "id": "flow-normal",
   "name": "Standardfluss",
   "entryNodeId": "wards",
-  "sidebar": {
-    "nodeId": "wards",
-    "position": "LEFT",
-    "width": 280,
-    "ariaLabel": "Stationsauswahl"
-  },
   "nodes": [
     {
       "id": "wards",
@@ -59,6 +53,12 @@ Relationale Metadaten + CLOB/JSON:
     {
       "id": "patients",
       "componentId": "patient-list",
+      "sidebar": {
+        "nodeId": "wards",
+        "position": "LEFT",
+        "width": 280,
+        "ariaLabel": "Stationsauswahl"
+      },
       "inputBindings": {
         "wardId": { "source": "CONTEXT", "contextKey": "wardId" },
         "mode": { "source": "STATIC", "staticValue": "normal" }
@@ -68,7 +68,7 @@ Relationale Metadaten + CLOB/JSON:
 }
 ```
 
-Die optionale `sidebar`-Konfiguration referenziert einen beliebigen Flow-Knoten. Wenn der Sidebar-Knoten zugleich der aktuelle Hauptknoten ist, wird er nur im Hauptbereich dargestellt. Nach einer Transition bleibt derselbe Knoten als Sidebar sichtbar und kann weiterhin eigene Transitionen auslösen. Position, Breite und ARIA-Bezeichnung sind im Flow-Editor konfigurierbar.
+Jeder Knoten kann eine eigene `sidebar`-Konfiguration besitzen. Dadurch zeigt die Patientenliste beispielsweise die Stationsliste als Sidebar, während die Patientendetailansicht zur Patientenliste wechselt. Sidebar-Inputs werden gegen den Kontext des aktiven Hauptknotens validiert; ihre Outputs und Transitionen müssen die Pflicht-Inputs ihrer Ziele typkompatibel versorgen. Eine `sidebar` auf Flow-Ebene bleibt als Fallback für bestehende Definitionen erhalten. Position, Breite, Zielknoten und ARIA-Bezeichnung sind im Flow-Editor konfigurierbar.
 
 ## Backend starten (`backend/`)
 

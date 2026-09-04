@@ -49,17 +49,24 @@ public class FlowValidationService {
         }
         FlowSidebar sidebar = definition.getSidebar();
         if (sidebar != null) {
-            // Die Seitenleiste referenziert bewusst einen normalen Knoten; sie ist nur eine alternative Darstellungsposition.
-            if (!nodes.containsKey(sidebar.getNodeId())) {
-                issues.add(new ValidationIssue("sidebar.nodeId", "Sidebar-Knoten existiert nicht."));
-            }
-            if (sidebar.getWidth() == null || sidebar.getWidth() < 160) {
-                issues.add(new ValidationIssue("sidebar.width", "Sidebar-Breite muss mindestens 160 Pixel betragen."));
-            }
+            validateSidebarConfiguration(sidebar, "sidebar", nodes, issues);
         }
 
         Map<String, ComponentDescriptor> descriptorsById = registry.getAll().stream().collect(Collectors.toMap(ComponentDescriptor::getId, Function.identity()));
         Map<String, Map<String, SemanticType>> contextByNode = computeContextTypes(definition, nodes, descriptorsById, issues);
+        Set<String> mainNodeIds = mainNodeIds(definition);
+        Set<String> childNodeIds = definition.getNodes().stream()
+            .flatMap(node -> node.getChildren().stream())
+            .map(FlowNode::getId)
+            .collect(Collectors.toSet());
+        Set<String> sidebarNodeIds = definition.getNodes().stream()
+            .map(FlowNode::getSidebar)
+            .filter(Objects::nonNull)
+            .map(FlowSidebar::getNodeId)
+            .collect(Collectors.toSet());
+        if (definition.getSidebar() != null) {
+            sidebarNodeIds.add(definition.getSidebar().getNodeId());
+        }
 
         for (FlowNode node : definition.getNodes()) {
             ComponentDescriptor descriptor = descriptorsById.get(node.getComponentId());
@@ -68,13 +75,29 @@ public class FlowValidationService {
                 continue;
             }
 
+            Map<String, InputBinding> bindings = node.getInputBindings() == null ? Map.of() : node.getInputBindings();
+            Map<String, SemanticType> availableContext = contextByNode.getOrDefault(node.getId(), Map.of());
+            boolean sidebarOnly = sidebarNodeIds.contains(node.getId())
+                && !mainNodeIds.contains(node.getId())
+                && !childNodeIds.contains(node.getId());
+
+            FlowSidebar nodeSidebar = node.getSidebar();
+            if (nodeSidebar != null) {
+                String sidebarPath = "nodes." + node.getId() + ".sidebar";
+                validateSidebarConfiguration(nodeSidebar, sidebarPath, nodes, issues);
+            }
+            FlowSidebar activeSidebar = nodeSidebar != null ? nodeSidebar : definition.getSidebar();
+            if (activeSidebar != null
+                && mainNodeIds.contains(node.getId())
+                && !node.getId().equals(activeSidebar.getNodeId())) {
+                String sidebarPath = nodeSidebar != null ? "nodes." + node.getId() + ".sidebar" : "sidebar";
+                validateSidebarExecution(activeSidebar, sidebarPath, availableContext, nodes, descriptorsById, issues);
+            }
+
             // Nur Container dürfen verschachtelte Layoutknoten tragen; Fachkomponenten bleiben Blätter im Baum.
             if (!node.getChildren().isEmpty() && !descriptor.isContainer()) {
                 issues.add(new ValidationIssue("nodes." + node.getId() + ".children", "Kindknoten sind nur bei Container-Komponenten erlaubt."));
             }
-
-            Map<String, InputBinding> bindings = node.getInputBindings() == null ? Map.of() : node.getInputBindings();
-            Map<String, SemanticType> availableContext = contextByNode.getOrDefault(node.getId(), Map.of());
 
             for (InputDescriptor input : descriptor.getInputs()) {
                 InputBinding binding = bindings.get(input.getName());
@@ -90,6 +113,9 @@ public class FlowValidationService {
                         issues.add(new ValidationIssue("nodes." + node.getId() + ".inputBindings." + input.getName(), "Statischer Wert ist nicht typkompatibel oder Enum-Wert ist ungültig."));
                     }
                 } else if (binding.getSource() == BindingSource.CONTEXT) {
+                    if (sidebarOnly) {
+                        continue;
+                    }
                     SemanticType contextType = availableContext.get(binding.getContextKey());
                     if (contextType == null) {
                         issues.add(new ValidationIssue("nodes." + node.getId() + ".inputBindings." + input.getName(), "Context-Key '" + binding.getContextKey() + "' ist auf diesem Pfad nicht verfügbar."));
@@ -116,6 +142,9 @@ public class FlowValidationService {
                 FlowNode target = nodes.get(transition.getTargetNodeId());
                 if (target == null) {
                     issues.add(new ValidationIssue("nodes." + node.getId() + ".transitions", "Transition-Ziel '" + transition.getTargetNodeId() + "' existiert nicht."));
+                    continue;
+                }
+                if (sidebarOnly) {
                     continue;
                 }
 
@@ -166,6 +195,7 @@ public class FlowValidationService {
     private Map<String, Map<String, SemanticType>> computeContextTypes(FlowDefinition definition, Map<String, FlowNode> nodes, Map<String, ComponentDescriptor> descriptorsById, List<ValidationIssue> issues) {
         Map<String, Map<String, SemanticType>> contextByNode = new HashMap<>();
         Set<String> reportedConflicts = new HashSet<>();
+        Set<String> mainNodeIds = mainNodeIds(definition);
         if (definition.getEntryNodeId() == null || !nodes.containsKey(definition.getEntryNodeId())) {
             return contextByNode;
         }
@@ -190,29 +220,179 @@ public class FlowValidationService {
                         changed |= mergeContext(childNode, currentContext, contextByNode, reportedConflicts, issues);
                     }
                 }
-                Map<String, OutputDescriptor> outputs = sourceDesc.getOutputs().stream().collect(Collectors.toMap(OutputDescriptor::getName, Function.identity()));
-                for (FlowTransition transition : node.getTransitions()) {
-                    FlowNode targetNode = nodes.get(transition.getTargetNodeId());
-                    OutputDescriptor output = outputs.get(transition.getOnOutput());
-                    if (targetNode == null || output == null) {
-                        continue;
+                FlowSidebar activeSidebar = mainNodeIds.contains(node.getId())
+                    ? node.getSidebar() != null ? node.getSidebar() : definition.getSidebar()
+                    : null;
+                if (activeSidebar != null && !node.getId().equals(activeSidebar.getNodeId())) {
+                    FlowNode sidebarNode = nodes.get(activeSidebar.getNodeId());
+                    if (sidebarNode != null) {
+                        // Sidebar-Transitionen verwenden den Host-Kontext, ohne ihn dem Sidebar-Knoten als Hauptkontext zuzuschreiben.
+                        changed |= propagateTransitions(
+                            sidebarNode,
+                            currentContext,
+                            nodes,
+                            descriptorsById,
+                            contextByNode,
+                            reportedConflicts,
+                            issues
+                        );
                     }
-                    // Fixpunktiteration: neue Kontextinformationen werden so lange weitergereicht,
-                    // bis kein Zielknoten mehr zusätzliche Schlüssel oder Typen erhält.
-                    Map<String, SemanticType> candidate = new HashMap<>(currentContext);
-                    for (Map.Entry<String, String> m : transition.getContextMapping().entrySet()) {
-                        SemanticType mappedType = mappedType(m.getValue(), output, currentContext);
-                        if (mappedType != null) {
-                            candidate.put(m.getKey(), mappedType);
-                        }
-                    }
-
-                    changed |= mergeContext(targetNode, candidate, contextByNode, reportedConflicts, issues);
                 }
+                changed |= propagateTransitions(
+                    node,
+                    currentContext,
+                    nodes,
+                    descriptorsById,
+                    contextByNode,
+                    reportedConflicts,
+                    issues
+                );
             }
         } while (changed);
 
         return contextByNode;
+    }
+
+    /**
+     * Propagiert die Transitionen eines Haupt-, Kind- oder Sidebar-Knotens aus einem konkreten Ausführungskontext.
+     */
+    private boolean propagateTransitions(
+        FlowNode sourceNode,
+        Map<String, SemanticType> currentContext,
+        Map<String, FlowNode> nodes,
+        Map<String, ComponentDescriptor> descriptorsById,
+        Map<String, Map<String, SemanticType>> contextByNode,
+        Set<String> reportedConflicts,
+        List<ValidationIssue> issues
+    ) {
+        ComponentDescriptor sourceDescriptor = descriptorsById.get(sourceNode.getComponentId());
+        if (sourceDescriptor == null) {
+            return false;
+        }
+        boolean changed = false;
+        Map<String, OutputDescriptor> outputs = sourceDescriptor.getOutputs().stream()
+            .collect(Collectors.toMap(OutputDescriptor::getName, Function.identity()));
+        for (FlowTransition transition : sourceNode.getTransitions()) {
+            FlowNode targetNode = nodes.get(transition.getTargetNodeId());
+            OutputDescriptor output = outputs.get(transition.getOnOutput());
+            if (targetNode == null || output == null) {
+                continue;
+            }
+            Map<String, SemanticType> candidate = new HashMap<>(currentContext);
+            for (Map.Entry<String, String> mapping : transition.getContextMapping().entrySet()) {
+                SemanticType mappedType = mappedType(mapping.getValue(), output, currentContext);
+                if (mappedType != null) {
+                    candidate.put(mapping.getKey(), mappedType);
+                }
+            }
+            changed |= mergeContext(targetNode, candidate, contextByNode, reportedConflicts, issues);
+        }
+        return changed;
+    }
+
+    /**
+     * Ermittelt alle Knoten, die als aktiver Hauptinhalt auftreten können.
+     */
+    private Set<String> mainNodeIds(FlowDefinition definition) {
+        Set<String> ids = new HashSet<>();
+        if (definition.getEntryNodeId() != null) {
+            ids.add(definition.getEntryNodeId());
+        }
+        definition.getNodes().stream()
+            .flatMap(node -> node.getTransitions().stream())
+            .map(FlowTransition::getTargetNodeId)
+            .filter(Objects::nonNull)
+            .forEach(ids::add);
+        return ids;
+    }
+
+    /**
+     * Prüft Referenz und Darstellungswerte einer Sidebar-Konfiguration.
+     */
+    private void validateSidebarConfiguration(
+        FlowSidebar sidebar,
+        String path,
+        Map<String, FlowNode> nodes,
+        List<ValidationIssue> issues
+    ) {
+        if (!nodes.containsKey(sidebar.getNodeId())) {
+            issues.add(new ValidationIssue(path + ".nodeId", "Sidebar-Knoten existiert nicht."));
+        }
+        if (sidebar.getWidth() == null || sidebar.getWidth() < 160) {
+            issues.add(new ValidationIssue(path + ".width", "Sidebar-Breite muss mindestens 160 Pixel betragen."));
+        }
+    }
+
+    /**
+     * Prüft Inputs und Transitionen eines Sidebar-Knotens mit dem Kontext des Hauptknotens.
+     */
+    private void validateSidebarExecution(
+        FlowSidebar sidebar,
+        String path,
+        Map<String, SemanticType> hostContext,
+        Map<String, FlowNode> nodes,
+        Map<String, ComponentDescriptor> descriptorsById,
+        List<ValidationIssue> issues
+    ) {
+        FlowNode sidebarNode = nodes.get(sidebar.getNodeId());
+        if (sidebarNode == null) {
+            return;
+        }
+        ComponentDescriptor descriptor = descriptorsById.get(sidebarNode.getComponentId());
+        if (descriptor == null) {
+            return;
+        }
+
+        Map<String, InputBinding> bindings = sidebarNode.getInputBindings() == null ? Map.of() : sidebarNode.getInputBindings();
+        for (InputDescriptor input : descriptor.getInputs().stream().filter(InputDescriptor::isRequired).toList()) {
+            InputBinding binding = bindings.get(input.getName());
+            if (binding == null) {
+                issues.add(new ValidationIssue(path, "Sidebar-Knoten '" + sidebarNode.getId() + "' erhält Pflicht-Input '" + input.getName() + "' nicht."));
+            } else if (binding.getSource() == BindingSource.CONTEXT) {
+                SemanticType type = hostContext.get(binding.getContextKey());
+                if (type == null || !isCompatible(type, input.getSemanticType())) {
+                    issues.add(new ValidationIssue(path, "Sidebar-Knoten '" + sidebarNode.getId() + "' erhält Pflicht-Input '" + input.getName() + "' nicht aus dem Kontext des Hauptknotens."));
+                }
+            }
+        }
+
+        Map<String, OutputDescriptor> outputs = descriptor.getOutputs().stream()
+            .collect(Collectors.toMap(OutputDescriptor::getName, Function.identity()));
+        for (FlowTransition transition : sidebarNode.getTransitions()) {
+            OutputDescriptor output = outputs.get(transition.getOnOutput());
+            FlowNode target = nodes.get(transition.getTargetNodeId());
+            if (output == null || target == null) {
+                continue;
+            }
+
+            Map<String, SemanticType> postTransitionContext = new HashMap<>(hostContext);
+            for (Map.Entry<String, String> mapping : transition.getContextMapping().entrySet()) {
+                SemanticType mappedType = mappedType(mapping.getValue(), output, hostContext);
+                if (mappedType == null) {
+                    issues.add(new ValidationIssue(path + ".transitions", "Sidebar-Context-Mapping '" + mapping.getValue() + "' kann nicht aufgelöst werden."));
+                } else {
+                    postTransitionContext.put(mapping.getKey(), mappedType);
+                }
+            }
+
+            ComponentDescriptor targetDescriptor = descriptorsById.get(target.getComponentId());
+            if (targetDescriptor == null) {
+                continue;
+            }
+            Map<String, InputBinding> targetBindings = target.getInputBindings() == null ? Map.of() : target.getInputBindings();
+            for (InputDescriptor input : targetDescriptor.getInputs().stream().filter(InputDescriptor::isRequired).toList()) {
+                InputBinding binding = targetBindings.get(input.getName());
+                if (binding != null && binding.getSource() == BindingSource.CONTEXT) {
+                    SemanticType type = postTransitionContext.get(binding.getContextKey());
+                    if (type == null || !isCompatible(type, input.getSemanticType())) {
+                        issues.add(new ValidationIssue(
+                            path + ".transitions",
+                            "Sidebar-Output '" + transition.getOnOutput() + "' stellt Pflicht-Input '" + input.getName() + "' des Ziels '" + target.getId() + "' nicht bereit."
+                        ));
+                    }
+                }
+            }
+        }
     }
 
     /**

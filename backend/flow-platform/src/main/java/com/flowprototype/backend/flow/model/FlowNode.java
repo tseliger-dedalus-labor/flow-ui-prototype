@@ -19,6 +19,7 @@ public class FlowNode {
     private List<FlowNode> children = new ArrayList<>();
     private List<FlowTransition> transitions = new ArrayList<>();
     private List<String> requiredPermissions = new ArrayList<>();
+    private FlowSidebar sidebar;
 
     /** Erstellt einen leeren Knoten für die JSON-Bindung. */
     public FlowNode() {}
@@ -47,4 +48,8 @@ public class FlowNode {
     public List<String> getRequiredPermissions() { return requiredPermissions; }
     /** @param requiredPermissions Benötigte Berechtigungen für die Darstellung des Knotens. */
     public void setRequiredPermissions(List<String> requiredPermissions) { this.requiredPermissions = requiredPermissions; }
+    /** @return Optionale Sidebar, die angezeigt wird, solange dieser Knoten aktiv ist. */
+    public FlowSidebar getSidebar() { return sidebar; }
+    /** @param sidebar Optionale Sidebar für diesen aktiven Hauptknoten. */
+    public void setSidebar(FlowSidebar sidebar) { this.sidebar = sidebar; }
 }
