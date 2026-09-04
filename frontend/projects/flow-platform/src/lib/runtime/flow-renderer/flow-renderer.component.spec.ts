@@ -19,6 +19,7 @@ class FlowEngineServiceMock {
 @Component({ selector: 'flow-test-view', template: '' })
 class TestViewComponent {
   @Input() patientId = '';
+  @Input() caseId = '';
 }
 
 /** Test-Doppel für einen Listenknoten, der Input-Bindings und ein Transition-Output-Signal bereitstellt. */
@@ -26,7 +27,7 @@ class TestViewComponent {
 class TestListComponent {
   @Input() wardId = '';
   @Input() mode = '';
-  @Output() patientSelected = new EventEmitter<{ patientId: string }>();
+  @Output() patientSelected = new EventEmitter<{ patientId: string; caseId: string }>();
 }
 
 /** Host-Komponente für die Renderer-Integration; die Inputs simulieren den Laufzeitknoten aus dem Flow-Engine-Status. */
@@ -69,18 +70,20 @@ describe('FlowRendererComponent', () => {
       id: 'view',
       componentId: 'patient-view',
       inputBindings: {
-        patientId: { source: 'CONTEXT', contextKey: 'patientId' }
+        patientId: { source: 'CONTEXT', contextKey: 'patientId' },
+        caseId: { source: 'CONTEXT', contextKey: 'caseId' }
       },
       children: [],
       transitions: []
     };
-    host.context = { patientId: 'p-123' };
+    host.context = { patientId: 'p-123', caseId: 'F-123' };
 
     fixture.detectChanges();
 
     const patientView = fixture.debugElement.query(By.directive(TestViewComponent));
     expect(patientView).toBeTruthy();
     expect((patientView.componentInstance as TestViewComponent).patientId).toBe('p-123');
+    expect((patientView.componentInstance as TestViewComponent).caseId).toBe('F-123');
   });
 
   it('subscribes output transitions only once across re-renders', () => {
@@ -93,7 +96,11 @@ describe('FlowRendererComponent', () => {
       },
       children: [],
       transitions: [
-        { onOutput: 'patientSelected', targetNodeId: 'next', contextMapping: { patientId: '$event.patientId' } }
+        {
+          onOutput: 'patientSelected',
+          targetNodeId: 'next',
+          contextMapping: { patientId: '$event.patientId', caseId: '$event.caseId' }
+        }
       ]
     };
     host.context = { any: 'v1' };
@@ -104,10 +111,14 @@ describe('FlowRendererComponent', () => {
 
     const patientList = fixture.debugElement.query(By.directive(TestListComponent));
     // Die Transition darf nicht mehrfach registriert werden, sonst würden doppelte Navigationen entstehen.
-    (patientList.componentInstance as TestListComponent).patientSelected.emit({ patientId: 'p-1' });
+    (patientList.componentInstance as TestListComponent).patientSelected.emit({ patientId: 'p-1', caseId: 'F-1' });
 
     expect(engine.transitionFrom).toHaveBeenCalledTimes(1);
-    expect(engine.transitionFrom).toHaveBeenCalledWith('patients', 'patientSelected', { patientId: 'p-1' });
+    expect(engine.transitionFrom).toHaveBeenCalledWith(
+      'patients',
+      'patientSelected',
+      { patientId: 'p-1', caseId: 'F-1' }
+    );
   });
 
   it('does not render a node without its required permission', () => {

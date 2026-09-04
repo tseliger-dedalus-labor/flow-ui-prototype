@@ -11,5 +11,7 @@ public enum SemanticType {
     /** Identifikator einer Station. */
     WARD_ID,
     /** Identifikator eines Patienten. */
-    PATIENT_ID
+    PATIENT_ID,
+    /** Identifikator eines Patientenfalls. */
+    CASE_ID
 }

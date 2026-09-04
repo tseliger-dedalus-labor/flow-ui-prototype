@@ -33,9 +33,15 @@ class FlowValidationServiceTest {
                     new InputDescriptor("wardId", SemanticType.WARD_ID, true, List.of()),
                     new InputDescriptor("mode", SemanticType.MODE, true, List.of("normal", "findings", "orders", "transfusions"))
                 ),
-                List.of(new OutputDescriptor("patientSelected", Map.of("patientId", SemanticType.PATIENT_ID)))),
+                List.of(new OutputDescriptor("patientSelected", Map.of(
+                    "patientId", SemanticType.PATIENT_ID,
+                    "caseId", SemanticType.CASE_ID
+                )))),
             new ComponentDescriptor("patient-view", "Patientenansicht", true,
-                List.of(new InputDescriptor("patientId", SemanticType.PATIENT_ID, true, List.of())), List.of()),
+                List.of(
+                    new InputDescriptor("patientId", SemanticType.PATIENT_ID, true, List.of()),
+                    new InputDescriptor("caseId", SemanticType.CASE_ID, true, List.of())
+                ), List.of()),
             new ComponentDescriptor("demographics-panel", "Stammdaten", false,
                 List.of(new InputDescriptor("patientId", SemanticType.PATIENT_ID, true, List.of())), List.of())
         );
@@ -337,7 +343,10 @@ class FlowValidationServiceTest {
         FlowTransition toView = new FlowTransition();
         toView.setOnOutput("patientSelected");
         toView.setTargetNodeId("view");
-        toView.setContextMapping(Map.of("patientId", "$event.patientId"));
+        toView.setContextMapping(Map.of(
+            "patientId", "$event.patientId",
+            "caseId", "$event.caseId"
+        ));
         patients.setTransitions(new java.util.ArrayList<>(List.of(toView)));
 
         FlowNode view = new FlowNode();
@@ -346,7 +355,10 @@ class FlowValidationServiceTest {
         InputBinding patientBinding = new InputBinding();
         patientBinding.setSource(BindingSource.CONTEXT);
         patientBinding.setContextKey("patientId");
-        view.setInputBindings(Map.of("patientId", patientBinding));
+        InputBinding caseBinding = new InputBinding();
+        caseBinding.setSource(BindingSource.CONTEXT);
+        caseBinding.setContextKey("caseId");
+        view.setInputBindings(Map.of("patientId", patientBinding, "caseId", caseBinding));
 
         def.setNodes(new java.util.ArrayList<>(List.of(wards, patients, view)));
         return def;

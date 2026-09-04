@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core';
-import { PatientApiService } from '../../patient-api.service';
+import { PatientApiService, PatientSummary } from '../../patient-api.service';
 import { Subscription } from 'rxjs';
 
 /**
@@ -12,6 +12,7 @@ type PatientListMode = 'normal' | 'findings' | 'orders' | 'transfusions';
  */
 interface PatientSelectedEvent {
   patientId: string;
+  caseId: string;
 }
 
 /**
@@ -28,7 +29,7 @@ export class PatientListComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) mode: PatientListMode = 'normal';
   @Output() readonly patientSelected = new EventEmitter<PatientSelectedEvent>();
 
-  patients: Array<{ id: string; name: string }> = [];
+  patients: PatientSummary[] = [];
   private loadSubscription?: Subscription;
 
   constructor(private readonly api: PatientApiService) {}
@@ -48,8 +49,8 @@ export class PatientListComponent implements OnChanges, OnDestroy {
   /**
    * Meldet die Benutzerwahl als Flow-Output mit standardisierter Payload.
    */
-  selectPatient(patientId: string): void {
-    this.patientSelected.emit({ patientId });
+  selectPatient(patientId: string, caseId: string): void {
+    this.patientSelected.emit({ patientId, caseId });
   }
 
   /**

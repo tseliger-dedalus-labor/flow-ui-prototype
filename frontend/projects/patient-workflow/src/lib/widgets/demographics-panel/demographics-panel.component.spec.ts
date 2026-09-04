@@ -26,6 +26,7 @@ describe('DemographicsPanelComponent', () => {
   it('clears data when patientId becomes empty', () => {
     const fixture = TestBed.createComponent(DemographicsPanelComponent);
     fixture.componentRef.setInput('patientId', 'p-1');
+    fixture.componentRef.setInput('caseId', 'F-1');
     fixture.detectChanges();
     expect(fixture.componentInstance.data?.id).toBe('p-1');
 

@@ -54,7 +54,8 @@ export const FLOW_COMPONENTS = [
       {
         name: 'patientSelected',
         payload: {
-          patientId: 'PATIENT_ID'
+          patientId: 'PATIENT_ID',
+          caseId: 'CASE_ID'
         }
       }
     ]
@@ -68,6 +69,12 @@ export const FLOW_COMPONENTS = [
       {
         name: 'patientId',
         semanticType: 'PATIENT_ID',
+        required: true,
+        allowedValues: []
+      },
+      {
+        name: 'caseId',
+        semanticType: 'CASE_ID',
         required: true,
         allowedValues: []
       }
@@ -90,6 +97,12 @@ export const FLOW_COMPONENTS = [
       {
         name: 'patientId',
         semanticType: 'PATIENT_ID',
+        required: true,
+        allowedValues: []
+      },
+      {
+        name: 'caseId',
+        semanticType: 'CASE_ID',
         required: true,
         allowedValues: []
       }

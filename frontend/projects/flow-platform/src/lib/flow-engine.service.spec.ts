@@ -32,7 +32,15 @@ describe('FlowEngineService', () => {
           componentId: 'patient-list',
           inputBindings: {},
           children: [],
-          transitions: [{ onOutput: 'patientSelected', targetNodeId: 'end', contextMapping: { copiedWard: '$context.wardId', patientId: '$event.patientId' } }]
+          transitions: [{
+            onOutput: 'patientSelected',
+            targetNodeId: 'end',
+            contextMapping: {
+              copiedWard: '$context.wardId',
+              patientId: '$event.patientId',
+              caseId: '$event.caseId'
+            }
+          }]
         },
         {
           id: 'end',
@@ -47,13 +55,14 @@ describe('FlowEngineService', () => {
     service.initialize(flow);
     service.transition('wardSelected', { wardId: 'ward-a' });
     // Der Kontext des vorherigen Schritts muss für nachfolgende Transitionen erhalten bleiben.
-    service.transition('patientSelected', { patientId: 'p-1' });
+    service.transition('patientSelected', { patientId: 'p-1', caseId: 'F-1' });
 
     let context!: Record<string, unknown>;
     service.context$.subscribe((value) => context = value);
     expect(context['wardId']).toBe('ward-a');
     expect(context['copiedWard']).toBe('ward-a');
     expect(context['patientId']).toBe('p-1');
+    expect(context['caseId']).toBe('F-1');
   });
 
   it('restores node and context on goBack', () => {

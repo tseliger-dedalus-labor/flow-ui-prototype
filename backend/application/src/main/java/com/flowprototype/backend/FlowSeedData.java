@@ -76,7 +76,10 @@ public class FlowSeedData implements CommandLineRunner {
         FlowTransition toPatient = new FlowTransition();
         toPatient.setOnOutput("patientSelected");
         toPatient.setTargetNodeId("patientView");
-        toPatient.setContextMapping(Map.of("patientId", "$event.patientId"));
+        toPatient.setContextMapping(Map.of(
+            "patientId", "$event.patientId",
+            "caseId", "$event.caseId"
+        ));
         patients.setTransitions(List.of(toPatient));
 
         FlowNode patientView = new FlowNode();
@@ -85,14 +88,17 @@ public class FlowSeedData implements CommandLineRunner {
         InputBinding patientBinding = new InputBinding();
         patientBinding.setSource(BindingSource.CONTEXT);
         patientBinding.setContextKey("patientId");
-        patientView.setInputBindings(Map.of("patientId", patientBinding));
+        InputBinding caseBinding = new InputBinding();
+        caseBinding.setSource(BindingSource.CONTEXT);
+        caseBinding.setContextKey("caseId");
+        patientView.setInputBindings(Map.of("patientId", patientBinding, "caseId", caseBinding));
         patientView.setSidebar(sidebar("patients", "Patientenauswahl"));
 
         FlowNode stack = new FlowNode();
         stack.setId("patientStack");
         stack.setComponentId("stack-layout");
 
-        FlowNode demographics = panel("demographics", "demographics-panel");
+        FlowNode demographics = casePanel("demographics", "demographics-panel");
         FlowNode findings = panel("findings", "findings-panel");
         stack.setChildren(List.of(demographics, findings));
         patientView.setChildren(List.of(stack));
@@ -127,14 +133,18 @@ public class FlowSeedData implements CommandLineRunner {
         FlowTransition toPatient2 = new FlowTransition();
         toPatient2.setOnOutput("patientSelected");
         toPatient2.setTargetNodeId("patientView2");
-        toPatient2.setContextMapping(Map.of("patientId", "$event.patientId"));
+        toPatient2.setContextMapping(Map.of(
+            "patientId", "$event.patientId",
+            "caseId", "$event.caseId"
+        ));
         patients2.setTransitions(List.of(toPatient2));
 
         FlowNode patientView2 = new FlowNode();
         patientView2.setId("patientView2");
         patientView2.setComponentId("patient-view");
         InputBinding pid2 = new InputBinding(); pid2.setSource(BindingSource.CONTEXT); pid2.setContextKey("patientId");
-        patientView2.setInputBindings(Map.of("patientId", pid2));
+        InputBinding case2 = new InputBinding(); case2.setSource(BindingSource.CONTEXT); case2.setContextKey("caseId");
+        patientView2.setInputBindings(Map.of("patientId", pid2, "caseId", case2));
         patientView2.setSidebar(sidebar("patients2", "Patientenauswahl"));
 
         FlowNode layout2 = new FlowNode();
@@ -194,6 +204,27 @@ public class FlowSeedData implements CommandLineRunner {
         b.setSource(BindingSource.CONTEXT);
         b.setContextKey("patientId");
         node.setInputBindings(Map.of("patientId", b));
+        return node;
+    }
+
+    /**
+     * Baut einen Detailknoten, der zusätzlich zum Patienten den ausgewählten Fall verwendet.
+     *
+     * @param id Technische Knoten-ID im Flow-Graphen.
+     * @param componentId Komponenten-ID aus dem Komponentenverzeichnis.
+     * @return Vollständig konfigurierter fallbezogener Bereichsknoten.
+     */
+    private FlowNode casePanel(String id, String componentId) {
+        FlowNode node = new FlowNode();
+        node.setId(id);
+        node.setComponentId(componentId);
+        InputBinding patient = new InputBinding();
+        patient.setSource(BindingSource.CONTEXT);
+        patient.setContextKey("patientId");
+        InputBinding patientCase = new InputBinding();
+        patientCase.setSource(BindingSource.CONTEXT);
+        patientCase.setContextKey("caseId");
+        node.setInputBindings(Map.of("patientId", patient, "caseId", patientCase));
         return node;
     }
 

@@ -13,12 +13,12 @@ import { Subscription } from 'rxjs';
 })
 export class DemographicsPanelComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) patientId = '';
+  @Input({ required: true }) caseId = '';
   data?: {
     id: string;
     name: string;
     birthDate: string;
     room: string;
-    caseNumber: string;
     insurance: string;
   };
   private loadSubscription?: Subscription;

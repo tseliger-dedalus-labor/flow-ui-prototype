@@ -6,7 +6,7 @@ import { PatientListComponent } from './patient-list.component';
 /** Testdoppel für das Laden patientenbezogener Listen pro Station. */
 class ApiServiceMock {
   getPatients() {
-    return of([{ id: 'p-1', name: 'Patient 1' }]);
+    return of([{ id: 'p-1', name: 'Patient 1', cases: [{ id: 'F-1' }, { id: 'F-2' }] }]);
   }
 }
 
@@ -33,5 +33,15 @@ describe('PatientListComponent', () => {
     fixture.detectChanges();
     // Ohne Stationsbezug darf keine alte Patientenliste sichtbar bleiben.
     expect(fixture.componentInstance.patients).toEqual([]);
+  });
+
+  it('emits patient and case for a selection', () => {
+    const fixture = TestBed.createComponent(PatientListComponent);
+    const selected = jasmine.createSpy('selected');
+    fixture.componentInstance.patientSelected.subscribe(selected);
+
+    fixture.componentInstance.selectPatient('p-1', 'F-2');
+
+    expect(selected).toHaveBeenCalledOnceWith({ patientId: 'p-1', caseId: 'F-2' });
   });
 });

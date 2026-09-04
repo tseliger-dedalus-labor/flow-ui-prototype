@@ -3,6 +3,18 @@ import { Inject, Injectable } from '@angular/core';
 import { FLOW_UI_API_BASE_URL } from 'flow-platform';
 import { Observable } from 'rxjs';
 
+/** Fall eines Patienten, der gemeinsam mit dem Patienten ausgewählt wird. */
+export interface PatientCase {
+  id: string;
+}
+
+/** Kompakter Patienteneintrag inklusive aller zugeordneten Fälle. */
+export interface PatientSummary {
+  id: string;
+  name: string;
+  cases: PatientCase[];
+}
+
 /**
  * Kapselt alle lesenden Patient-Workflow-Endpunkte des Backends.
  */
@@ -23,8 +35,8 @@ export class PatientApiService {
   /**
    * Lädt die Patienten einer Station für Listen- und Termin-Widgets.
    */
-  getPatients(wardId: string): Observable<Array<{ id: string; name: string }>> {
-    return this.http.get<Array<{ id: string; name: string }>>(`${this.baseUrl}/wards/${wardId}/patients`);
+  getPatients(wardId: string): Observable<PatientSummary[]> {
+    return this.http.get<PatientSummary[]>(`${this.baseUrl}/wards/${wardId}/patients`);
   }
 
   /**
@@ -35,7 +47,6 @@ export class PatientApiService {
     name: string;
     birthDate: string;
     room: string;
-    caseNumber: string;
     insurance: string;
   }> {
     return this.http.get<{
@@ -43,7 +54,6 @@ export class PatientApiService {
       name: string;
       birthDate: string;
       room: string;
-      caseNumber: string;
       insurance: string;
     }>(`${this.baseUrl}/patients/${patientId}`);
   }

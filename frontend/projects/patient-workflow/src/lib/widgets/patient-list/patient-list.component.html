@@ -7,7 +7,14 @@
   <ul class="cards">
     @for (patient of patients; track patient) {
       <li>
-        <button type="button" (click)="selectPatient(patient.id)">{{ patient.name }} ({{ patient.id }})</button>
+        <strong>{{ patient.name }} ({{ patient.id }})</strong>
+        <div class="cases">
+          @for (patientCase of patient.cases; track patientCase.id) {
+            <button type="button" (click)="selectPatient(patient.id, patientCase.id)">
+              Fall {{ patientCase.id }} auswählen
+            </button>
+          }
+        </div>
       </li>
     }
   </ul>

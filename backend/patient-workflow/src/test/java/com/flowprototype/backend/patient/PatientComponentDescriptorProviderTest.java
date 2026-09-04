@@ -26,7 +26,14 @@ class PatientComponentDescriptorProviderTest {
                 assertThat(descriptor.getDisplayType()).isEqualTo(IxtDisplayType.DISPTYPE_WEC_PAT_LIST);
                 assertThat(descriptor.getInputs())
                     .anySatisfy(input -> assertThat(input.getSemanticType()).isEqualTo(SemanticType.WARD_ID));
+                assertThat(descriptor.getOutputs())
+                    .singleElement()
+                    .satisfies(output -> assertThat(output.getPayload()).containsEntry("caseId", SemanticType.CASE_ID));
             });
+        assertThat(descriptors).filteredOn(descriptor -> descriptor.getId().equals("patient-view"))
+            .singleElement()
+            .satisfies(descriptor -> assertThat(descriptor.getInputs())
+                .anySatisfy(input -> assertThat(input.getSemanticType()).isEqualTo(SemanticType.CASE_ID)));
         assertThat(descriptors).filteredOn(descriptor -> descriptor.getId().equals("transfusions-panel"))
             .singleElement()
             .extracting("displayType")

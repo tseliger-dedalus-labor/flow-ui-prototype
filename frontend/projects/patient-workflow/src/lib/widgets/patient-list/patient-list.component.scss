@@ -3,10 +3,19 @@
   padding: 0;
 }
 
-.cards button {
+.cards li {
+  margin-bottom: 1rem;
+}
+
+.cases {
+  display: grid;
+  gap: .5rem;
+  margin-top: .5rem;
+}
+
+.cases button {
   width: 100%;
   text-align: left;
-  margin-bottom: .5rem;
   padding: .75rem;
 }
 

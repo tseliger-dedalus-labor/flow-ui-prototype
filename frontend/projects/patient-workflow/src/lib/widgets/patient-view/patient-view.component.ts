@@ -10,4 +10,5 @@ import { Component, Input } from '@angular/core';
 })
 export class PatientViewComponent {
   @Input({ required: true }) patientId = '';
+  @Input({ required: true }) caseId = '';
 }

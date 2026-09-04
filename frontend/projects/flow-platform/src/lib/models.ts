@@ -3,7 +3,7 @@ import { IxtDisplayType } from './ixt-display-type';
 /**
  * Fachliche Typisierung für Flow-Inputs und Output-Payloads.
  */
-export type SemanticType = 'STRING' | 'MODE' | 'WARD_ID' | 'PATIENT_ID';
+export type SemanticType = 'STRING' | 'MODE' | 'WARD_ID' | 'PATIENT_ID' | 'CASE_ID';
 /**
  * Herkunft eines Input-Bindings innerhalb einer Flow-Definition.
  */

@@ -45,7 +45,7 @@ public class PatientDataController {
      * @return Patientenliste für die Station.
      */
     @GetMapping("/wards/{id}/patients")
-    public List<Map<String, String>> patients(@PathVariable String id) {
+    public List<PatientDataService.PatientSummary> patients(@PathVariable String id) {
         return patientData.patients(id);
     }
 

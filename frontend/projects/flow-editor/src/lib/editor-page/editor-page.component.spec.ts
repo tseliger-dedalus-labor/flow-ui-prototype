@@ -122,11 +122,16 @@ describe('EditorPageComponent', () => {
     component.registry = [
       {
         id: 'source', title: 'Source', container: false, inputs: [],
-        outputs: [{ name: 'selected', payload: { patientId: 'PATIENT_ID' } }]
+        outputs: [{ name: 'selected', payload: { patientId: 'PATIENT_ID', caseId: 'CASE_ID' } }]
       },
       {
         id: 'matching', title: 'Matching', container: false,
         inputs: [{ name: 'patientId', semanticType: 'PATIENT_ID', required: true, allowedValues: [] }],
+        outputs: []
+      },
+      {
+        id: 'case-matching', title: 'Case Matching', container: false,
+        inputs: [{ name: 'caseId', semanticType: 'CASE_ID', required: true, allowedValues: [] }],
         outputs: []
       },
       {
@@ -141,14 +146,25 @@ describe('EditorPageComponent', () => {
       inputBindings: { patientId: { source: 'CONTEXT', contextKey: 'patientId' } },
       children: [], transitions: []
     };
+    const caseMatching: FlowNode = {
+      id: 'c', componentId: 'case-matching',
+      inputBindings: { caseId: { source: 'CONTEXT', contextKey: 'caseId' } },
+      children: [], transitions: []
+    };
     const other: FlowNode = {
       id: 'o', componentId: 'other',
       inputBindings: { wardId: { source: 'CONTEXT', contextKey: 'wardId' } },
       children: [], transitions: []
     };
-    component.flow = { id: 'flow', name: 'Test', tool: 'WebclientTool', entryNodeId: 's', nodes: [source, matching, other] };
+    component.flow = {
+      id: 'flow',
+      name: 'Test',
+      tool: 'WebclientTool',
+      entryNodeId: 's',
+      nodes: [source, matching, caseMatching, other]
+    };
 
     // Nur Ziele mit kompatiblen semantischen Eingaben dürfen vorgeschlagen werden.
-    expect(component.compatibleTargets(source, 'selected').map((node) => node.id)).toEqual(['s', 'm']);
+    expect(component.compatibleTargets(source, 'selected').map((node) => node.id)).toEqual(['s', 'm', 'c']);
   });
 });

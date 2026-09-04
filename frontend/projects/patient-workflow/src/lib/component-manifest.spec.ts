@@ -18,6 +18,10 @@ describe('patient workflow component manifest', () => {
       .toEqual(FLOW_COMPONENTS.map((definition) => definition.descriptor));
     expect(patientWorkflowComponent('patient-list').inputs.map((input) => input.name))
       .toEqual(['wardId', 'mode']);
+    expect(patientWorkflowComponent('patient-list').outputs[0].payload)
+      .toEqual({ patientId: 'PATIENT_ID', caseId: 'CASE_ID' });
+    expect(patientWorkflowComponent('patient-view').inputs.map((input) => input.name))
+      .toEqual(['patientId', 'caseId']);
     // Die Display-Typ-Zuordnung muss mit den UI-Kacheln des Patienten-Workflows übereinstimmen.
     expect(patientWorkflowComponent('patient-list').displayType)
       .toBe(IxtDisplayType.DISPTYPE_WEC_PAT_LIST);

@@ -2,6 +2,7 @@ package com.flowprototype.backend.patient;
 
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -20,39 +21,55 @@ public class PatientDataService {
         Map.of("id", "ward-c", "name", "Station C – Pädiatrie")
     );
 
-    private static final Map<String, List<Map<String, String>>> PATIENTS_BY_WARD = Map.of(
+    private static final Map<String, List<PatientSummary>> PATIENTS_BY_WARD = Map.of(
         "ward-a", List.of(
-            Map.of("id", "p-100", "name", "Anna Weber"),
-            Map.of("id", "p-101", "name", "Paul Meier"),
-            Map.of("id", "p-102", "name", "Leila Hartmann"),
-            Map.of("id", "p-103", "name", "Jonas Richter")
+            patientSummary("p-100", "Anna Weber", "F-2026-1001", "F-2024-0815"),
+            patientSummary("p-101", "Paul Meier", "F-2026-1002"),
+            patientSummary("p-102", "Leila Hartmann", "F-2026-1003", "F-2025-0642"),
+            patientSummary("p-103", "Jonas Richter", "F-2026-1004")
         ),
         "ward-b", List.of(
-            Map.of("id", "p-200", "name", "Erik Stern"),
-            Map.of("id", "p-201", "name", "Mona Kraft"),
-            Map.of("id", "p-202", "name", "Sofia Nguyen"),
-            Map.of("id", "p-203", "name", "David König")
+            patientSummary("p-200", "Erik Stern", "F-2026-2001", "F-2025-1488"),
+            patientSummary("p-201", "Mona Kraft", "F-2026-2002"),
+            patientSummary("p-202", "Sofia Nguyen", "F-2026-2003"),
+            patientSummary("p-203", "David König", "F-2026-2004", "F-2023-0991")
         ),
         "ward-c", List.of(
-            Map.of("id", "p-300", "name", "Emil Fischer"),
-            Map.of("id", "p-301", "name", "Mia Schneider"),
-            Map.of("id", "p-302", "name", "Noah Wagner")
+            patientSummary("p-300", "Emil Fischer", "F-2026-3001"),
+            patientSummary("p-301", "Mia Schneider", "F-2026-3002", "F-2025-2310"),
+            patientSummary("p-302", "Noah Wagner", "F-2026-3003")
         )
     );
 
     private static final Map<String, Map<String, String>> PATIENT_DETAILS = Map.ofEntries(
-        patient("p-100", "Anna Weber", "1978-04-12", "A-12", "F-2026-1001", "Gesetzlich"),
-        patient("p-101", "Paul Meier", "1959-11-03", "A-08", "F-2026-1002", "Privat"),
-        patient("p-102", "Leila Hartmann", "1986-07-24", "A-15", "F-2026-1003", "Gesetzlich"),
-        patient("p-103", "Jonas Richter", "1967-02-18", "A-11", "F-2026-1004", "Gesetzlich"),
-        patient("p-200", "Erik Stern", "1971-09-09", "B-03", "F-2026-2001", "Privat"),
-        patient("p-201", "Mona Kraft", "1990-05-16", "B-06", "F-2026-2002", "Gesetzlich"),
-        patient("p-202", "Sofia Nguyen", "1982-12-01", "B-09", "F-2026-2003", "Gesetzlich"),
-        patient("p-203", "David König", "1954-06-27", "B-02", "F-2026-2004", "Privat"),
-        patient("p-300", "Emil Fischer", "2017-03-14", "C-05", "F-2026-3001", "Familienversichert"),
-        patient("p-301", "Mia Schneider", "2014-08-30", "C-07", "F-2026-3002", "Familienversichert"),
-        patient("p-302", "Noah Wagner", "2019-01-22", "C-04", "F-2026-3003", "Familienversichert")
+        patientDetails("p-100", "Anna Weber", "1978-04-12", "A-12", "Gesetzlich"),
+        patientDetails("p-101", "Paul Meier", "1959-11-03", "A-08", "Privat"),
+        patientDetails("p-102", "Leila Hartmann", "1986-07-24", "A-15", "Gesetzlich"),
+        patientDetails("p-103", "Jonas Richter", "1967-02-18", "A-11", "Gesetzlich"),
+        patientDetails("p-200", "Erik Stern", "1971-09-09", "B-03", "Privat"),
+        patientDetails("p-201", "Mona Kraft", "1990-05-16", "B-06", "Gesetzlich"),
+        patientDetails("p-202", "Sofia Nguyen", "1982-12-01", "B-09", "Gesetzlich"),
+        patientDetails("p-203", "David König", "1954-06-27", "B-02", "Privat"),
+        patientDetails("p-300", "Emil Fischer", "2017-03-14", "C-05", "Familienversichert"),
+        patientDetails("p-301", "Mia Schneider", "2014-08-30", "C-07", "Familienversichert"),
+        patientDetails("p-302", "Noah Wagner", "2019-01-22", "C-04", "Familienversichert")
     );
+
+    /**
+     * Kompakte Falldaten eines Patienten.
+     *
+     * @param id Technische Fall-ID und zugleich angezeigte Fallnummer.
+     */
+    public record PatientCase(String id) {}
+
+    /**
+     * Patienteneintrag für die Stationsauswahl mit beliebig vielen Fällen.
+     *
+     * @param id Technische Patienten-ID.
+     * @param name Anzeigename.
+     * @param cases Zugeordnete Fälle.
+     */
+    public record PatientSummary(String id, String name, List<PatientCase> cases) {}
 
     /**
      * Liefert die verfügbaren Beispielstationen.
@@ -69,7 +86,7 @@ public class PatientDataService {
      * @param wardId Technische Stations-ID.
      * @return Patientenliste der Station.
      */
-    public List<Map<String, String>> patients(String wardId) {
+    public List<PatientSummary> patients(String wardId) {
         return PATIENTS_BY_WARD.getOrDefault(wardId, List.of());
     }
 
@@ -87,7 +104,6 @@ public class PatientDataService {
                 "name", "Unbekannter Patient",
                 "birthDate", "–",
                 "room", "–",
-                "caseNumber", "–",
                 "insurance", "–"
             )
         );
@@ -153,10 +169,26 @@ public class PatientDataService {
      */
     public String patientName(String wardId, String patientId) {
         return patients(wardId).stream()
-            .filter(patient -> patientId.equals(patient.get("id")))
-            .map(patient -> patient.get("name"))
+            .filter(patient -> patientId.equals(patient.id()))
+            .map(PatientSummary::name)
             .findFirst()
             .orElse(null);
+    }
+
+    /**
+     * Erzeugt einen Patienteneintrag mit einer variablen Anzahl von Fällen.
+     *
+     * @param id Technische Patienten-ID.
+     * @param name Anzeigename.
+     * @param caseIds Zugeordnete Fall-IDs.
+     * @return Patient für die Stationsliste.
+     */
+    private static PatientSummary patientSummary(String id, String name, String... caseIds) {
+        return new PatientSummary(
+            id,
+            name,
+            Arrays.stream(caseIds).map(PatientCase::new).toList()
+        );
     }
 
     /**
@@ -166,16 +198,14 @@ public class PatientDataService {
      * @param name Anzeigename.
      * @param birthDate Geburtsdatum im ISO-Format.
      * @param room Aktuelle Zimmerbezeichnung.
-     * @param caseNumber Fallnummer des Demo-Aufenthalts.
      * @param insurance Versicherungsart.
      * @return Schlüssel-Wert-Eintrag für {@link Map#ofEntries(Map.Entry[])}.
      */
-    private static Map.Entry<String, Map<String, String>> patient(
+    private static Map.Entry<String, Map<String, String>> patientDetails(
         String id,
         String name,
         String birthDate,
         String room,
-        String caseNumber,
         String insurance
     ) {
         return Map.entry(
@@ -185,7 +215,6 @@ public class PatientDataService {
                 "name", name,
                 "birthDate", birthDate,
                 "room", room,
-                "caseNumber", caseNumber,
                 "insurance", insurance
             )
         );
