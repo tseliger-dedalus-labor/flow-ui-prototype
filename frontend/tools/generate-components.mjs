@@ -13,6 +13,7 @@ const checkOnly = process.argv.includes('--check');
 const projectsRoot = path.join(frontendRoot, 'projects');
 const semanticTypes = loadSemanticTypes();
 const ixtDisplayTypes = loadIxtDisplayTypes();
+const presenterBaseClasses = new Set(['APresenter', 'AContentPresenter', 'ASidebarPresenter']);
 const generatedManifests = [];
 const errors = [];
 
@@ -446,10 +447,14 @@ function validateAngularBindings(componentClass, descriptor, location, checker) 
   const angularInputs = new Map();
   const angularOutputs = new Map();
 
-  if (componentClass.heritageClauses?.some((clause) => clause.token === ts.SyntaxKind.ExtendsKeyword)) {
+  const unsupportedBaseClass = componentClass.heritageClauses
+    ?.filter((clause) => clause.token === ts.SyntaxKind.ExtendsKeyword)
+    .flatMap((clause) => clause.types)
+    .some((type) => !presenterBaseClasses.has(type.expression.getText()));
+  if (unsupportedBaseClass) {
     errors.push(
-      `${location}: Flow-Komponenten mit Basisklassen werden nicht unterstützt, ` +
-      'da geerbte Angular-Inputs und -Outputs nicht eindeutig validiert werden können.'
+      `${location}: Flow-Komponenten unterstützen ausschließlich Presenter-Basisklassen, ` +
+      'da andere geerbte Angular-Inputs und -Outputs nicht eindeutig validiert werden können.'
     );
     return;
   }
