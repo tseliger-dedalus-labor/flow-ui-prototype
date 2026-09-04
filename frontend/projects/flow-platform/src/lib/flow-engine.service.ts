@@ -15,7 +15,7 @@ export interface FlowEngineState {
 export class FlowEngineService {
   private definition?: FlowDefinition;
   private nodeMap = new Map<string, FlowNode>();
-  // Für "Zurück" wird immer der vorherige Knoten samt Kontext-Snapshot abgelegt.
+  // Bei einer gefundenen Transition wird der aktuell angezeigte Knoten samt Kontext-Snapshot für "Zurück" gespeichert.
   private history: Array<{ nodeId: string; context: Record<string, unknown> }> = [];
 
   private currentNodeSubject = new BehaviorSubject<FlowNode | null>(null);
@@ -32,7 +32,7 @@ export class FlowEngineService {
   readonly sidebar$ = this.sidebarSubject.asObservable();
   /** Beobachtet den zwischen Knoten weitergereichten Flow-Kontext. */
   readonly context$ = this.contextSubject.asObservable();
-  /** Beobachtet den vollständig serialisierbaren Navigationszustand. */
+  /** Beobachtet den für die URL-Persistenz vorgesehenen Navigationszustand. */
   readonly state$ = this.stateSubject.asObservable();
 
   /**
@@ -87,7 +87,7 @@ export class FlowEngineService {
       context[key] = this.resolveExpression(expression, payload, context);
     }
 
-    // Der alte Zustand wird erst nach erfolgreicher Transition archiviert, damit "Zurück" exakt reproduzierbar bleibt.
+    // Der bisherige Zustand wird nach gefundener Transition vor dem Zustandswechsel archiviert.
     this.history.push({ nodeId: currentNode.id, context: { ...this.contextSubject.value } });
     this.contextSubject.next(context);
     const targetNode = this.nodeMap.get(transition.targetNodeId) ?? null;

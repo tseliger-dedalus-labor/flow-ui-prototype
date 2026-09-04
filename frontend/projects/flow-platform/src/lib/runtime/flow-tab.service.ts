@@ -22,7 +22,7 @@ export class FlowTabService {
   readonly requests$: Observable<FlowTabRequest> = this.requests.asObservable();
 
   /**
-   * Öffnet einen neuen Tab oder aktiviert einen bereits unter demselben Schlüssel geöffneten Tab.
+   * Meldet dem umgebenden Tab-Container eine Anforderung zum Öffnen oder Aktivieren eines Tabs.
    */
   open(request: FlowTabRequest): void {
     this.requests.next(request);
