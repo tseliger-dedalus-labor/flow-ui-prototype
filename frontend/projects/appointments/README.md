@@ -10,5 +10,5 @@ Die folgenden Befehle werden aus dem Verzeichnis `frontend/` ausgeführt:
 
 ```bash
 npm run build:appointments
-npx --offline ng test appointments --watch=false
+npx ng test appointments --watch=false
 ```

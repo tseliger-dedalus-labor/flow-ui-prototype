@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core';
 import { PatientApiService, PatientSummary } from '../../patient-api.service';
-import { Subscription } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { AContentPresenter } from 'ui-framework';
 
 /**
@@ -43,9 +43,13 @@ export class PatientListContentComponent extends AContentPresenter implements On
   ngOnChanges(changes: SimpleChanges): void {
     this.loadSubscription?.unsubscribe();
     if ((changes['wardId'] || changes['mode']) && this.wardId) {
-      this.loadSubscription = this.api.getPatients(this.wardId).subscribe((data) => this.patients = data);
+      this.loading = true;
+      this.loadSubscription = this.api.getPatients(this.wardId)
+        .pipe(finalize(() => this.loading = false))
+        .subscribe((data) => this.patients = data);
       return;
     }
+    this.loading = false;
     this.patients = [];
   }
 

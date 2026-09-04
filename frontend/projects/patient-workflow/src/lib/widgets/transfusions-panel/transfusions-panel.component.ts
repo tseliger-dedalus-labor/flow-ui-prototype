@@ -1,6 +1,6 @@
 import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
 import { PatientApiService } from '../../patient-api.service';
-import { Subscription } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { AContentPresenter } from 'ui-framework';
 
 /**
@@ -27,9 +27,13 @@ export class TransfusionsPanelComponent extends AContentPresenter implements OnC
   ngOnChanges(): void {
     this.loadSubscription?.unsubscribe();
     if (this.patientId) {
-      this.loadSubscription = this.api.getTransfusions(this.patientId).subscribe((data) => this.items = data);
+      this.loading = true;
+      this.loadSubscription = this.api.getTransfusions(this.patientId)
+        .pipe(finalize(() => this.loading = false))
+        .subscribe((data) => this.items = data);
       return;
     }
+    this.loading = false;
     this.items = [];
   }
 

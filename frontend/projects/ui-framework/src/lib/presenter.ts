@@ -7,7 +7,7 @@ export type PresenterType = 'CONTENT' | 'SIDEBAR';
  */
 export abstract class APresenter {
   loading = false;
-  visible = true;
+  visible = false;
 
   protected constructor(public readonly tool: Tool) {}
 }

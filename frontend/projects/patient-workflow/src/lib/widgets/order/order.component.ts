@@ -1,5 +1,5 @@
 import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { AContentPresenter } from 'ui-framework';
 import { PatientApiService, PatientOrder } from '../../patient-api.service';
 
@@ -30,10 +30,13 @@ export class OrderComponent extends AContentPresenter implements OnChanges, OnDe
   ngOnChanges(): void {
     this.loadSubscription?.unsubscribe();
     if (!this.patientId || !this.caseId || !this.RecordId) {
+      this.loading = false;
       this.order = undefined;
       return;
     }
+    this.loading = true;
     this.loadSubscription = this.api.getOrder(this.patientId, this.caseId, this.RecordId)
+      .pipe(finalize(() => this.loading = false))
       .subscribe((order) => this.order = order);
   }
 

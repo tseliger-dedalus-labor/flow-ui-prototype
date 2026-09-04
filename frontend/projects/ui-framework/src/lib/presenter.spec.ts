@@ -23,7 +23,7 @@ describe('Presenter', () => {
     const presenter = new TestPresenter();
 
     expect(presenter.loading).toBeFalse();
-    expect(presenter.visible).toBeTrue();
+    expect(presenter.visible).toBeFalse();
     expect(presenter.tool).toBe('WebclientTool');
 
     presenter.loading = true;

@@ -29,8 +29,7 @@ Zugangsdaten oder Geheimnisse ablegen.
 npm start
 ```
 
-Die Befehle verwenden das vorhandene `node_modules`. Falls eine lokale Installation fehlt, ist
-`npm install --offline` zu verwenden.
+Falls eine lokale Installation fehlt, ist `npm install` zu verwenden.
 
 ## Builds
 
@@ -53,8 +52,8 @@ npm test
 Einzelne Bibliotheken können mit dem lokal installierten Angular CLI getestet werden:
 
 ```bash
-npx --offline ng test flow-platform --watch=false
-npx --offline ng test patient-workflow --watch=false
-npx --offline ng test appointments --watch=false
-npx --offline ng test flow-editor --watch=false
+npx ng test flow-platform --watch=false
+npx ng test patient-workflow --watch=false
+npx ng test appointments --watch=false
+npx ng test flow-editor --watch=false
 ```

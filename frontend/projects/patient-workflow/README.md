@@ -14,5 +14,5 @@ Die folgenden Befehle werden aus dem Verzeichnis `frontend/` ausgeführt:
 
 ```bash
 npm run build:patient-workflow
-npx --offline ng test patient-workflow --watch=false
+npx ng test patient-workflow --watch=false
 ```

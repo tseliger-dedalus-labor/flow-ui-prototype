@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { PatientApiService } from '../../patient-api.service';
 import { PatientListSidebarComponent } from './patient-list.component';
 
 /** Testdoppel für das Laden patientenbezogener Listen pro Station. */
 class ApiServiceMock {
-  getPatients() {
-    return of([{ id: 'p-1', name: 'Patient 1', cases: [{ id: 'F-1' }, { id: 'F-2' }] }]);
-  }
+  getPatients = jasmine.createSpy('getPatients').and.returnValue(
+    of([{ id: 'p-1', name: 'Patient 1', cases: [{ id: 'F-1' }, { id: 'F-2' }] }])
+  );
 }
 
 /**
@@ -43,5 +43,20 @@ describe('PatientListSidebarComponent', () => {
     fixture.componentInstance.selectPatient('p-1', 'F-2');
 
     expect(selected).toHaveBeenCalledOnceWith({ patientId: 'p-1', caseId: 'F-2' });
+  });
+
+  it('reflects an active server request in loading', () => {
+    const response = new Subject<Array<{ id: string; name: string; cases: Array<{ id: string }> }>>();
+    TestBed.inject(PatientApiService).getPatients = jasmine.createSpy().and.returnValue(response);
+    const fixture = TestBed.createComponent(PatientListSidebarComponent);
+
+    fixture.componentRef.setInput('wardId', 'ward-a');
+    fixture.detectChanges();
+    expect(fixture.componentInstance.loading).toBeTrue();
+
+    response.next([]);
+    response.complete();
+
+    expect(fixture.componentInstance.loading).toBeFalse();
   });
 });
