@@ -7,14 +7,32 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Prüft Flowbeschreibungen gegen Struktur-, Typ- und Erreichbarkeitsinvarianten.
+ *
+ * <p>Die Validierung verbindet Komponentenverzeichnis, Kontextfortpflanzung und
+ * Zielknotenprüfung. Sie stellt sicher, dass ein Flow nicht nur syntaktisch
+ * vollständig ist, sondern entlang jedes Übergangs die benötigten Daten anliegen.</p>
+ */
 @Service
 public class FlowValidationService {
     private final ComponentRegistryService registry;
 
+    /**
+     * Erstellt den Prüfdienst mit Zugriff auf das globale Komponentenverzeichnis.
+     *
+     * @param registry Komponentenverzeichnis aller bekannten Komponenten.
+     */
     public FlowValidationService(ComponentRegistryService registry) {
         this.registry = registry;
     }
 
+    /**
+     * Validiert einen Flow vollständig.
+     *
+     * @param definition Zu prüfende Flowbeschreibung.
+     * @return Sammlung aller gefundenen Validierungsprobleme.
+     */
     public ValidationResult validate(FlowDefinition definition) {
         List<ValidationIssue> issues = new ArrayList<>();
         if (definition == null || definition.getNodes() == null || definition.getNodes().isEmpty()) {
@@ -28,6 +46,7 @@ public class FlowValidationService {
         }
         FlowSidebar sidebar = definition.getSidebar();
         if (sidebar != null) {
+            // Die Seitenleiste referenziert bewusst einen normalen Knoten; sie ist nur eine alternative Darstellungsposition.
             if (!nodes.containsKey(sidebar.getNodeId())) {
                 issues.add(new ValidationIssue("sidebar.nodeId", "Sidebar-Knoten existiert nicht."));
             }
@@ -46,6 +65,7 @@ public class FlowValidationService {
                 continue;
             }
 
+            // Nur Container dürfen verschachtelte Layoutknoten tragen; Fachkomponenten bleiben Blätter im Baum.
             if (!node.getChildren().isEmpty() && !descriptor.isContainer()) {
                 issues.add(new ValidationIssue("nodes." + node.getId() + ".children", "Kindknoten sind nur bei Container-Komponenten erlaubt."));
             }
@@ -81,6 +101,7 @@ public class FlowValidationService {
             Map<String, OutputDescriptor> outputs = descriptor.getOutputs().stream().collect(Collectors.toMap(OutputDescriptor::getName, Function.identity()));
             Set<String> seenTransitionOutputs = new HashSet<>();
             for (FlowTransition transition : node.getTransitions()) {
+                // Pro Ausgabe gibt es höchstens einen Folgeknoten, damit die Laufzeitnavigation deterministisch bleibt.
                 if (!seenTransitionOutputs.add(transition.getOnOutput())) {
                     issues.add(new ValidationIssue("nodes." + node.getId() + ".transitions", "Mehrere Transitionen für Output '" + transition.getOnOutput() + "' sind nicht erlaubt."));
                     continue;
@@ -95,6 +116,7 @@ public class FlowValidationService {
                     continue;
                 }
 
+                // Jede Transition erzeugt ihren eigenen Kontextzustand, der Ereignisnutzlast und vorhandenen Kontext kombiniert.
                 Map<String, SemanticType> postTransitionContext = new HashMap<>(availableContext);
                 OutputDescriptor outputDescriptor = outputs.get(transition.getOnOutput());
                 for (Map.Entry<String, String> mapping : transition.getContextMapping().entrySet()) {
@@ -129,6 +151,15 @@ public class FlowValidationService {
         return new ValidationResult(issues);
     }
 
+    /**
+     * Berechnet für jeden erreichbaren Knoten die auf allen Pfaden bekannten Kontexttypen.
+     *
+     * @param definition Gesamte Flowbeschreibung.
+     * @param nodes Knoten nach ID.
+     * @param descriptorsById Komponentenbeschreibungen nach ID.
+     * @param issues Ergebnisliste für Konfliktmeldungen.
+     * @return Kontextsicht je Knoten-ID.
+     */
     private Map<String, Map<String, SemanticType>> computeContextTypes(FlowDefinition definition, Map<String, FlowNode> nodes, Map<String, ComponentDescriptor> descriptorsById, List<ValidationIssue> issues) {
         Map<String, Map<String, SemanticType>> contextByNode = new HashMap<>();
         Set<String> reportedConflicts = new HashSet<>();
@@ -156,6 +187,8 @@ public class FlowValidationService {
                     if (targetNode == null || output == null) {
                         continue;
                     }
+                    // Fixpunktiteration: neue Kontextinformationen werden so lange weitergereicht,
+                    // bis kein Zielknoten mehr zusätzliche Schlüssel oder Typen erhält.
                     Map<String, SemanticType> candidate = new HashMap<>(currentContext);
                     for (Map.Entry<String, String> m : transition.getContextMapping().entrySet()) {
                         SemanticType mappedType = mappedType(m.getValue(), output, currentContext);
@@ -184,6 +217,14 @@ public class FlowValidationService {
         return contextByNode;
     }
 
+    /**
+     * Leitet den Typ einer Ausdrucksquelle aus dem Kontextabbild ab.
+     *
+     * @param expression Mapping-Ausdruck aus der Transition.
+     * @param outputDescriptor Ausgabebeschreibung des auslösenden Knotens.
+     * @param currentContext Bereits bekannter Kontext am Quellknoten.
+     * @return Abgeleiteter Typ oder {@code null}, wenn der Ausdruck nicht auflösbar ist.
+     */
     private SemanticType mappedType(String expression, OutputDescriptor outputDescriptor, Map<String, SemanticType> currentContext) {
         if (expression == null) {
             return null;
@@ -199,6 +240,13 @@ public class FlowValidationService {
         return SemanticType.STRING;
     }
 
+    /**
+     * Prüft, ob ein statischer Zuordnungswert zur erwarteten Eingabe passt.
+     *
+     * @param value Statischer Wert aus der Flowbeschreibung.
+     * @param input Zielbeschreibung der Eingabe.
+     * @return {@code true}, wenn der Wert akzeptiert werden kann.
+     */
     private boolean isStaticCompatible(Object value, InputDescriptor input) {
         if (value == null) {
             return !input.isRequired();
@@ -206,16 +254,25 @@ public class FlowValidationService {
         if (!(value instanceof String str)) {
             return false;
         }
+        // MODE ist aktuell der einzige semantische Typ mit eingeschränkten Literalwerten.
         if (input.getSemanticType() == SemanticType.MODE && !input.getAllowedValues().contains(str)) {
             return false;
         }
         return true;
     }
 
+    /**
+     * Prüft die Typverträglichkeit zwischen vorhandenem Kontext und erwarteter Eingabe.
+     *
+     * @param actual Tatsächlicher Kontexttyp.
+     * @param expected Erwarteter Typ der Eingabe.
+     * @return {@code true}, wenn die Typen kompatibel sind.
+     */
     private boolean isCompatible(SemanticType actual, SemanticType expected) {
         if (actual == expected) {
             return true;
         }
+        // STRING dient als bewusst großzügiger Auffangtyp für generische Textfelder.
         if (expected == SemanticType.STRING) {
             return true;
         }

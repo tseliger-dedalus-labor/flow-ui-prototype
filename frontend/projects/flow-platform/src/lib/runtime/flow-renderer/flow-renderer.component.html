@@ -1,7 +1,9 @@
 <section class="node-shell">
+  <!-- Host-Slot für die dynamisch instanziierte Fachkomponente. -->
   <ng-container #host />
   @if (hasAccess) {
     @if (node.children.length) {
+      <!-- Container-Knoten rendern ihre Kindknoten rekursiv mit demselben Laufzeitkontext. -->
       <div class="children">
         @for (child of node.children; track child) {
           <app-flow-renderer

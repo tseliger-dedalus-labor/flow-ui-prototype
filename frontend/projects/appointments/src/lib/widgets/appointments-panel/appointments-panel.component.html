@@ -4,6 +4,7 @@
     <p class="hint">Bitte zuerst eine Station wählen.</p>
   } @else {
     @if (canSchedule) {
+      <!-- Formular zum Anlegen neuer Termine innerhalb der aktuell selektierten Station. -->
       <form (ngSubmit)="schedule()">
         <label>Patient
           <select name="patientId" [(ngModel)]="draft.patientId" required>
@@ -18,6 +19,7 @@
         <button type="submit" [disabled]="!isDraftComplete()">Termin anlegen</button>
       </form>
     }
+    <!-- Bestehende Termine bleiben auch für Nutzer ohne Schreibrecht sichtbar. -->
     <ul class="appointments">
       @for (appointment of appointments; track appointment.id) {
         <li>

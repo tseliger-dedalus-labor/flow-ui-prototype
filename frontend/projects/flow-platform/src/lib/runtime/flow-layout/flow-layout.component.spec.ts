@@ -4,6 +4,11 @@ import { FlowEngineService } from '../../flow-engine.service';
 import { FlowNode, FlowSidebar } from '../../models';
 import { FlowLayoutComponent } from './flow-layout.component';
 
+/**
+ * Schützt die Layout-Entscheidung zwischen Hauptknoten und Sidebar.
+ * Die Suite stellt sicher, dass die Runtime keine doppelten Knoten rendert und die Sidebar-
+ * Position samt Breite als Architekturvertrag erhalten bleibt.
+ */
 describe('FlowLayoutComponent', () => {
   let fixture: ComponentFixture<FlowLayoutComponent>;
   let component: FlowLayoutComponent;
@@ -54,6 +59,7 @@ describe('FlowLayoutComponent', () => {
 
     const layout = fixture.debugElement.query(By.css('.flow-layout'));
     const aside = fixture.debugElement.query(By.css('aside'));
+    // Sidebar-Position, Breite und Label müssen für die Navigations-UX stabil bleiben.
     expect(layout.classes['flow-layout-right']).toBeTrue();
     expect((layout.nativeElement as HTMLElement).style.getPropertyValue('--flow-sidebar-width')).toBe('320px');
     expect(aside.attributes['aria-label']).toBe('Stationen');

@@ -7,15 +7,21 @@ import { PermissionService } from '../../permission.service';
 import { FlowRendererComponent } from './flow-renderer.component';
 import { FLOW_WIDGET } from '../flow-widget';
 
+/** Leichter Spy-Doppel für die Runtime-Engine, damit Transitionen ohne echte Navigation überprüft werden können. */
 class FlowEngineServiceMock {
   transitionFrom = jasmine.createSpy('transitionFrom');
 }
 
+/**
+ * Test-Komponente für die gerenderte Patientenansicht; sie prüft reine Input-Bindings ohne Template-Logik.
+ * So bleibt die Renderer-Suite auf die Bindung zwischen Kontext und Komponenten-API fokussiert.
+ */
 @Component({ selector: 'flow-test-view', template: '' })
 class TestViewComponent {
   @Input() patientId = '';
 }
 
+/** Test-Doppel für einen Listenknoten, der Input-Bindings und ein Transition-Output-Signal bereitstellt. */
 @Component({ selector: 'flow-test-list', template: '' })
 class TestListComponent {
   @Input() wardId = '';
@@ -23,6 +29,7 @@ class TestListComponent {
   @Output() patientSelected = new EventEmitter<{ patientId: string }>();
 }
 
+/** Host-Komponente für die Renderer-Integration; die Inputs simulieren den Laufzeitknoten aus dem Flow-Engine-Status. */
 @Component({
   imports: [FlowRendererComponent],
   template: '<app-flow-renderer [node]="node" [context]="context" />'
@@ -32,6 +39,11 @@ class HostComponent {
   context: Record<string, unknown> = {};
 }
 
+/**
+ * Testet das dynamische Rendern einzelner Flow-Knoten.
+ * Die Suite schützt die Bindung von Kontext, Outputs und Berechtigungen zwischen Registry,
+ * Runtime-Engine und gerendertem Komponenten-Host.
+ */
 describe('FlowRendererComponent', () => {
   let fixture: ComponentFixture<HostComponent>;
   let host: HostComponent;
@@ -91,6 +103,7 @@ describe('FlowRendererComponent', () => {
     fixture.detectChanges();
 
     const patientList = fixture.debugElement.query(By.directive(TestListComponent));
+    // Die Transition darf nicht mehrfach registriert werden, sonst würden doppelte Navigationen entstehen.
     (patientList.componentInstance as TestListComponent).patientSelected.emit({ patientId: 'p-1' });
 
     expect(engine.transitionFrom).toHaveBeenCalledTimes(1);
@@ -99,6 +112,7 @@ describe('FlowRendererComponent', () => {
 
   it('does not render a node without its required permission', () => {
     const permissions = TestBed.inject(PermissionService);
+    // Ohne vollständige Berechtigung muss der Knoten vollständig aus dem DOM verschwinden.
     spyOn(permissions, 'hasAll').and.returnValue(false);
     host.node = {
       id: 'view',

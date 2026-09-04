@@ -9,13 +9,17 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/**
+ * Prüft Filterung, Anlage und fachliche Stationszuordnung der speicherinternen
+ * Termin-Mockdaten.
+ */
 class AppointmentsServiceTest {
     private final AppointmentsService appointments = new AppointmentsService(new PatientDataService());
 
     @Test
     void returnsOnlyAppointmentsForRequestedWard() {
         assertThat(appointments.appointments("ward-a"))
-            .hasSize(2)
+            .hasSize(4)
             .allMatch(appointment -> "ward-a".equals(appointment.get("wardId")));
     }
 

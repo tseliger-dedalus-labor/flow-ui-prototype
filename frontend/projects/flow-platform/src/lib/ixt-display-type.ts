@@ -1,6 +1,6 @@
 /**
- * Local mock of Constants.XmfIxservType.IxtDisplayType.
- * The string values intentionally match the Java enum names without adding an ixserv dependency.
+ * Lokales Abbild von Constants.XmfIxservType.IxtDisplayType.
+ * Die Stringwerte bleiben absichtlich identisch zu den Java-Enum-Namen, ohne eine ixserv-Abhängigkeit einzuführen.
  */
 export enum IxtDisplayType {
   DISPTYPE_NONE = 'DISPTYPE_NONE',

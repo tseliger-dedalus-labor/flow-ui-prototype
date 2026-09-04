@@ -2,12 +2,21 @@ import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleCha
 import { PatientApiService } from '../../patient-api.service';
 import { Subscription } from 'rxjs';
 
+/**
+ * Steuert die fachliche Ausprägung der Patientenliste innerhalb verschiedener Flows.
+ */
 type PatientListMode = 'normal' | 'findings' | 'orders' | 'transfusions';
 
+/**
+ * Payload des Auswahl-Outputs für die Flow-Engine.
+ */
 interface PatientSelectedEvent {
   patientId: string;
 }
 
+/**
+ * Listet Patienten einer Station auf und meldet die Auswahl an die Flow-Engine zurück.
+ */
 @Component({
     selector: 'app-patient-list',
     imports: [],
@@ -24,6 +33,9 @@ export class PatientListComponent implements OnChanges, OnDestroy {
 
   constructor(private readonly api: PatientApiService) {}
 
+  /**
+   * Lädt die Patientenliste neu, sobald Station oder Modus wechseln.
+   */
   ngOnChanges(changes: SimpleChanges): void {
     this.loadSubscription?.unsubscribe();
     if ((changes['wardId'] || changes['mode']) && this.wardId) {
@@ -33,10 +45,16 @@ export class PatientListComponent implements OnChanges, OnDestroy {
     this.patients = [];
   }
 
+  /**
+   * Meldet die Benutzerwahl als Flow-Output mit standardisierter Payload.
+   */
   selectPatient(patientId: string): void {
     this.patientSelected.emit({ patientId });
   }
 
+  /**
+   * Beendet laufende Requests beim Zerstören der Liste.
+   */
   ngOnDestroy(): void {
     this.loadSubscription?.unsubscribe();
   }

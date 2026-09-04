@@ -21,6 +21,7 @@ textarea {
   min-height: 5rem;
 }
 .editor-grid {
+  /* Die Karten dürfen umbrechen, damit auch längere Formulare auf kleineren Viewports bedienbar bleiben. */
   margin-top: 1rem;
   display: grid;
   gap: 1rem;

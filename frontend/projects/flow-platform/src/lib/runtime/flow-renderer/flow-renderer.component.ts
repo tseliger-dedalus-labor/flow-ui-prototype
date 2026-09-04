@@ -6,6 +6,9 @@ import { FlowEngineService } from '../../flow-engine.service';
 import { PermissionService } from '../../permission.service';
 import { FLOW_WIDGET, FlowWidgetRegistration } from '../flow-widget';
 
+/**
+ * Rendert einen Flow-Knoten dynamisch, bindet dessen Inputs und verdrahtet deklarierte Outputs zurück an die Engine.
+ */
 @Component({
     selector: 'app-flow-renderer',
     templateUrl: './flow-renderer.component.html',
@@ -28,11 +31,15 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
     private readonly permissions: PermissionService,
     @Optional() @Inject(FLOW_WIDGET) widgets: FlowWidgetRegistration[] | null
   ) {
+    // Multi-Provider registrieren alle Widgets lose gekoppelt; die Runtime löst nur über componentId auf.
     this.componentMap = Object.fromEntries(
       (widgets ?? []).map((widget) => [widget.componentId, widget.component])
     );
   }
 
+  /**
+   * Rendert den Knoten neu, sobald sich der Zielknoten oder dessen Kontext ändert.
+   */
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['node'] && !changes['context']) {
       return;
@@ -40,6 +47,9 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
     this.renderNode();
   }
 
+  /**
+   * Erstellt die Angular-Komponente des Knotens dynamisch und verbindet deren Outputs mit Flow-Transitionen.
+   */
   private renderNode(): void {
     this.cleanupSubscriptions();
     this.host.clear();
@@ -52,6 +62,7 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
       return;
     }
     const ref = this.host.createComponent(componentType);
+    // Input-Bindings werden erst nach der Instanziierung gesetzt, damit Standalone-Komponenten unverändert bleiben können.
     for (const [name, binding] of Object.entries(this.node.inputBindings ?? {})) {
       ref.setInput(name, this.resolveBinding(binding));
     }
@@ -60,6 +71,7 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
     for (const transition of this.node.transitions ?? []) {
       const emitter = instance[transition.onOutput];
       if (emitter instanceof EventEmitter) {
+        // Jeder Output wird gezielt auf die deklarierte Transition gemappt; fehlende Emitter werden still ignoriert.
         this.subscriptions.push(
           emitter.subscribe((value) => this.engine.transitionFrom(this.node.id, transition.onOutput, value))
         );
@@ -67,6 +79,9 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
     }
   }
 
+  /**
+   * Liest einen Binding-Wert entweder direkt aus dem Kontext oder aus der statischen Konfiguration.
+   */
   private resolveBinding(binding: InputBinding): unknown {
     if (binding.source === 'CONTEXT') {
       return this.context[binding.contextKey ?? ''];
@@ -74,10 +89,16 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
     return binding.staticValue;
   }
 
+  /**
+   * Räumt alle Output-Abonnements auf, sobald die Host-Komponente zerstört wird.
+   */
   ngOnDestroy(): void {
     this.cleanupSubscriptions();
   }
 
+  /**
+   * Verhindert doppelte Output-Abonnements beim erneuten Rendern desselben Host-Slots.
+   */
   private cleanupSubscriptions(): void {
     this.subscriptions.forEach((subscription) => subscription.unsubscribe());
     this.subscriptions = [];

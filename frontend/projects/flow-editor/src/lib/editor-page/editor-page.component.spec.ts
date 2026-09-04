@@ -3,6 +3,7 @@ import { of, throwError } from 'rxjs';
 import { FlowApiService, FlowDefinition, FlowNode } from 'flow-platform';
 import { EditorPageComponent } from './editor-page.component';
 
+/** API-Doppel mit kontrolliertem Validierungsverhalten für die Editor-Interaktion. */
 class ApiServiceMock {
   failValidation = false;
   getRegistry() { return of([]); }
@@ -17,6 +18,11 @@ class ApiServiceMock {
   }
 }
 
+/**
+ * Schützt die Editor-Seite als zentrale Bearbeitungsschicht für Flows.
+ * Die Suite prüft Validierung, Sidebar-Konfiguration, Berechtigungen und Zielvorschläge
+ * als Architekturvertrag zwischen Formularlogik und Flow-Registry.
+ */
 describe('EditorPageComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -32,6 +38,7 @@ describe('EditorPageComponent', () => {
 
     component.validate();
 
+    // Die Validierungsfehler müssen 1:1 in den lokalen Status übernommen werden.
     expect(component.issues.length).toBe(1);
     expect(component.issues[0].message).toBe('Fehler');
   });
@@ -55,6 +62,7 @@ describe('EditorPageComponent', () => {
 
     fixture.componentInstance.setRequiredPermissions(node, ' APPOINTMENTS_READ, APPOINTMENTS_WRITE, APPOINTMENTS_READ ');
 
+    // Doppelte und leere Einträge dürfen die Berechtigungsmenge nicht verfälschen.
     expect(node.requiredPermissions).toEqual(['APPOINTMENTS_READ', 'APPOINTMENTS_WRITE']);
   });
 
@@ -69,6 +77,7 @@ describe('EditorPageComponent', () => {
     };
 
     component.setSidebarEnabled(flow, true);
+    // Die Sidebar-Konfiguration ist ein fester Teil des Flow-Layouts und darf nicht abweichen.
     expect(flow.sidebar).toEqual({
       nodeId: 'wards',
       position: 'LEFT',
@@ -112,6 +121,7 @@ describe('EditorPageComponent', () => {
     };
     component.flow = { id: 'flow', name: 'Test', entryNodeId: 's', nodes: [source, matching, other] };
 
+    // Nur Ziele mit kompatiblen semantischen Eingaben dürfen vorgeschlagen werden.
     expect(component.compatibleTargets(source, 'selected').map((node) => node.id)).toEqual(['s', 'm']);
   });
 });

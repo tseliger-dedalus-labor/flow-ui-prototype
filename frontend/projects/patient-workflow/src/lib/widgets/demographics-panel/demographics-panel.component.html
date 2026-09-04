@@ -1,6 +1,13 @@
 <article class="panel">
   <h3>Stammdaten</h3>
   @if (data) {
-    <p>{{ data.name }} · {{ data.birthDate }}</p>
+    <!-- Die kompakte Übersicht zeigt die wichtigsten Informationen für den aktuellen Aufenthalt. -->
+    <dl>
+      <div><dt>Name</dt><dd>{{ data.name }}</dd></div>
+      <div><dt>Geburtsdatum</dt><dd>{{ data.birthDate }}</dd></div>
+      <div><dt>Zimmer</dt><dd>{{ data.room }}</dd></div>
+      <div><dt>Fallnummer</dt><dd>{{ data.caseNumber }}</dd></div>
+      <div><dt>Versicherung</dt><dd>{{ data.insurance }}</dd></div>
+    </dl>
   }
 </article>

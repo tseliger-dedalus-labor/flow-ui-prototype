@@ -1,4 +1,5 @@
 form {
+  /* Das Formular verteilt seine Felder responsiv, damit Termine auch in schmalen Sidebars gepflegt werden können. */
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: .75rem;

@@ -4,6 +4,7 @@
 }
 
 .flow-layout {
+  /* CSS-Variablen erlauben dem Flow, die Sidebar-Breite ohne zusätzliche Klassen zu steuern. */
   display: grid;
   grid-template-columns: minmax(0, var(--flow-sidebar-width)) minmax(0, 1fr);
   min-height: 0;
@@ -42,6 +43,7 @@
 }
 
 @media (max-width: 720px) {
+  /* Auf kleinen Viewports wird die Sidebar über dem Inhalt gestapelt, damit nichts horizontal scrollt. */
   .flow-layout,
   .flow-layout-right {
     grid-template-columns: minmax(0, 1fr);

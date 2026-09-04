@@ -6,6 +6,7 @@
   }
   @if (vm$ | async; as vm) {
     @if (vm.node) {
+      <!-- Der Flow wird vollständig datengetrieben aus Engine-Zustand und registrierten Widgets aufgebaut. -->
       <app-flow-layout
         [node]="vm.node"
         [sidebarNode]="vm.sidebarNode"

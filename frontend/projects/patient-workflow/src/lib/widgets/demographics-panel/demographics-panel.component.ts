@@ -2,6 +2,9 @@ import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
 import { PatientApiService } from '../../patient-api.service';
 import { Subscription } from 'rxjs';
 
+/**
+ * Zeigt Stammdaten des aktuell selektierten Patienten an.
+ */
 @Component({
     selector: 'app-demographics-panel',
     imports: [],
@@ -10,11 +13,21 @@ import { Subscription } from 'rxjs';
 })
 export class DemographicsPanelComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) patientId = '';
-  data?: { id: string; name: string; birthDate: string };
+  data?: {
+    id: string;
+    name: string;
+    birthDate: string;
+    room: string;
+    caseNumber: string;
+    insurance: string;
+  };
   private loadSubscription?: Subscription;
 
   constructor(private readonly api: PatientApiService) {}
 
+  /**
+   * Lädt bei Patientwechsel die aktuellen Stammdaten oder leert das Panel.
+   */
   ngOnChanges(): void {
     this.loadSubscription?.unsubscribe();
     if (this.patientId) {
@@ -24,6 +37,9 @@ export class DemographicsPanelComponent implements OnChanges, OnDestroy {
     this.data = undefined;
   }
 
+  /**
+   * Beendet laufende Requests beim Zerstören des Panels.
+   */
   ngOnDestroy(): void {
     this.loadSubscription?.unsubscribe();
   }

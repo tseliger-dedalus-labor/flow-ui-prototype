@@ -10,9 +10,19 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Deckt die Struktur-, Typ- und Erreichbarkeitsregeln der Flow-Validierung ab.
+ *
+ * <p>Jeder Test verändert gezielt einen ansonsten gültigen Referenz-Flow. Dadurch
+ * bleibt erkennbar, welche einzelne Invariante den jeweiligen Fehler auslöst.</p>
+ */
 class FlowValidationServiceTest {
     private FlowValidationService validator;
 
+    /**
+     * Erstellt vor jedem Test eine kleine Komponenten-Registry mit allen für den
+     * Referenz-Flow benötigten Ein- und Ausgabetypen.
+     */
     @BeforeEach
     void setup() {
         ComponentDescriptorProvider provider = () -> List.of(
@@ -158,6 +168,12 @@ class FlowValidationServiceTest {
         assertTrue(result.getIssues().stream().anyMatch(issue -> issue.getPath().equals("sidebar.nodeId")));
     }
 
+    /**
+     * Baut den minimalen gültigen Pfad Stationsliste → Patientenliste →
+     * Patientenansicht auf, der als Ausgangspunkt für alle Negativtests dient.
+     *
+     * @return Vollständig typisierter und erreichbarer Referenz-Flow.
+     */
     private FlowDefinition buildValid() {
         FlowDefinition def = new FlowDefinition();
         def.setId("f");

@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, debounceTime } from 'rxjs';
 import { ComponentDescriptor, FlowApiService, FlowDefinition, FlowNode, ValidationIssue } from 'flow-platform';
 
+/**
+ * Bietet eine einfache Authoring-Oberfläche zum Laden, Prüfen und Speichern von Flow-Definitionen.
+ */
 @Component({
     selector: 'app-editor-page',
     imports: [FormsModule],
@@ -24,9 +27,13 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   private readonly validationSubscription: Subscription;
 
   constructor(private readonly api: FlowApiService) {
+    // Validierung wird bewusst entprellt, damit Formularänderungen nicht für jeden Tastenanschlag HTTP-Requests auslösen.
     this.validationSubscription = this.validationTrigger.pipe(debounceTime(300)).subscribe(() => this.validate());
   }
 
+  /**
+   * Lädt Komponenten-Registry und Flow-Liste für die initiale Editoransicht.
+   */
   ngOnInit(): void {
     this.api.getRegistry().subscribe((registry) => this.registry = registry);
     this.api.getFlows().subscribe((flows) => {
@@ -38,6 +45,9 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Lädt den aktuell ausgewählten Flow als bearbeitbare Kopie und setzt den Editorzustand zurück.
+   */
   loadFlow(): void {
     if (!this.selectedFlowId) {
       return;
@@ -49,18 +59,28 @@ export class EditorPageComponent implements OnInit, OnDestroy {
       this.issues = [];
       this.status = '';
       this.validationPerformed = false;
+      // Direkt nach dem Laden wird eine erste, entprellte Validierung ausgelöst.
       this.validationTrigger.next();
     });
   }
 
+  /**
+   * Liefert den aktuell selektierten Knoten für den rechten Bearbeitungsbereich.
+   */
   get selectedNode(): FlowNode | undefined {
     return this.flow?.nodes.find((node) => node.id === this.selectedNodeId);
   }
 
+  /**
+   * Sucht den Descriptor einer Widget-ID in der geladenen Registry.
+   */
   descriptor(componentId: string): ComponentDescriptor | undefined {
     return this.registry.find((component) => component.id === componentId);
   }
 
+  /**
+   * Synchronisiert die konfigurierten Bindings eines Knotens mit den Inputs seiner gewählten Komponente.
+   */
   ensureInputBindings(node: FlowNode): void {
     const descriptor = this.descriptor(node.componentId);
     if (!descriptor) {
@@ -68,6 +88,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     }
     const existing = node.inputBindings ?? {};
     const nextBindings: Record<string, { source: 'STATIC' | 'CONTEXT'; staticValue?: unknown; contextKey?: string }> = {};
+    // Nicht mehr vorhandene Inputs werden bewusst verworfen, damit die Flow-Definition dem Descriptor entspricht.
     for (const input of descriptor.inputs) {
       nextBindings[input.name] = existing[input.name] ?? { source: 'STATIC', staticValue: '' };
     }
@@ -75,6 +96,9 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     this.validationTrigger.next();
   }
 
+  /**
+   * Übersetzt eine kommaseparierte Liste in konkrete Kindknoten-Verknüpfungen.
+   */
   setChildren(node: FlowNode, childIdsText: string): void {
     if (!this.flow) {
       return;
@@ -84,25 +108,40 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     this.validationTrigger.next();
   }
 
+  /**
+   * Formatiert die Kindknoten eines Knotens für das Eingabefeld.
+   */
   childIds(node: FlowNode): string {
     return (node.children ?? []).map((child) => child.id).join(', ');
   }
 
+  /**
+   * Formatiert die Berechtigungen eines Knotens als editierbaren Text.
+   */
   requiredPermissionsAsText(node: FlowNode): string {
     return (node.requiredPermissions ?? []).join(', ');
   }
 
+  /**
+   * Überführt die Texteingabe für Berechtigungen in eine deduplizierte Liste.
+   */
   setRequiredPermissions(node: FlowNode, value: string): void {
     node.requiredPermissions = [...new Set(value.split(',').map((permission) => permission.trim()).filter(Boolean))];
     this.validationTrigger.next();
   }
 
+  /**
+   * Fügt eine leere Transition hinzu, die im Formular weiter konfiguriert werden kann.
+   */
   addTransition(node: FlowNode): void {
     node.transitions ??= [];
     node.transitions.push({ onOutput: '', targetNodeId: '', contextMapping: {} });
     this.validationTrigger.next();
   }
 
+  /**
+   * Ermittelt Zielknoten, deren Pflicht-Inputs mit dem gewählten Output kompatibel befüllt werden können.
+   */
   compatibleTargets(source: FlowNode, outputName: string): FlowNode[] {
     const output = this.descriptor(source.componentId)?.outputs.find((candidate) => candidate.name === outputName);
     if (!this.flow || !output) {
@@ -114,6 +153,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
       if (!descriptor) {
         return false;
       }
+      // Ein Ziel ist kompatibel, wenn jeder Pflicht-Input entweder statisch versorgt ist oder vom Output-Typ abgedeckt wird.
       return descriptor.inputs.filter((input) => input.required).every((input) => {
         const binding = target.inputBindings?.[input.name];
         return binding?.source === 'STATIC'
@@ -122,6 +162,9 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Ergänzt einen einzelnen Context-Mapping-Eintrag.
+   */
   addMapping(transition: { contextMapping: Record<string, string> }, key: string, value: string): void {
     if (key) {
       transition.contextMapping[key] = value;
@@ -129,11 +172,17 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Entfernt einen Context-Mapping-Eintrag.
+   */
   removeMapping(transition: { contextMapping: Record<string, string> }, key: string): void {
     delete transition.contextMapping[key];
     this.validationTrigger.next();
   }
 
+  /**
+   * Persistiert den aktuell bearbeiteten Flow und synchronisiert den lokalen Editorzustand mit der Serverantwort.
+   */
   save(): void {
     if (!this.flow) {
       return;
@@ -146,6 +195,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
         const fallbackNodeId = this.flow.nodes[0]?.id ?? '';
         this.selectedNodeId = this.flow.nodes.some((node) => node.id === preferredNodeId) ? preferredNodeId : fallbackNodeId;
         this.status = 'Flow gespeichert.';
+        // Nach dem Speichern wird bewusst sofort die serverseitige Validierung erneut angezeigt.
         this.validate();
       },
       error: (error) => {
@@ -154,6 +204,9 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Führt die serverseitige Validierung aus und aktualisiert die sichtbare Fehlerliste.
+   */
   validate(): void {
     if (!this.flow) {
       return;
@@ -164,16 +217,23 @@ export class EditorPageComponent implements OnInit, OnDestroy {
         this.validationPerformed = true;
       },
       error: () => {
+        // Netzwerk- oder Backendfehler werden in dieselbe Fehlerliste gemappt wie fachliche Validierungsprobleme.
         this.issues = [{ path: 'flow', message: 'Validierung konnte nicht ausgeführt werden.' }];
         this.validationPerformed = true;
       }
     });
   }
 
+  /**
+   * Plant eine entprellte Validierung für die aktuelle Bearbeitung ein.
+   */
   triggerValidation(): void {
     this.validationTrigger.next();
   }
 
+  /**
+   * Aktiviert oder deaktiviert die Sidebar-Konfiguration mit sinnvollen Standardwerten.
+   */
   setSidebarEnabled(flow: FlowDefinition, enabled: boolean): void {
     if (!enabled) {
       delete flow.sidebar;
@@ -188,12 +248,18 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     this.validationTrigger.next();
   }
 
+  /**
+   * Serialisiert Context-Mappings in das mehrzeilige Editorformat.
+   */
   mappingAsText(mapping: Record<string, string>): string {
     return Object.entries(mapping ?? {})
       .map(([key, value]) => `${key}:${value}`)
       .join('\n');
   }
 
+  /**
+   * Parst die textarea-basierte Mapping-Eingabe zurück in das persistierte Objektformat.
+   */
   updateMappingFromText(transition: { contextMapping: Record<string, string> }, text: string): void {
     const next: Record<string, string> = {};
     for (const line of text.split('\n')) {
@@ -207,12 +273,16 @@ export class EditorPageComponent implements OnInit, OnDestroy {
       }
       const key = trimmed.slice(0, splitIndex).trim();
       const value = trimmed.slice(splitIndex + 1).trim();
+      // Nur vollständig parsebare "key:value"-Zeilen werden übernommen, damit Zwischenstände nicht sofort Fehlerzustände erzeugen.
       next[key] = value;
     }
     transition.contextMapping = next;
     this.validationTrigger.next();
   }
 
+  /**
+   * Gibt das entprellte Validierungsabonnement beim Verlassen der Seite frei.
+   */
   ngOnDestroy(): void {
     this.validationSubscription.unsubscribe();
   }

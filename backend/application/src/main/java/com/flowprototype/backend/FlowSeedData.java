@@ -11,22 +11,43 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Legt beim Start Beispiel-Flows an, falls die Datenbank noch leer ist.
+ *
+ * <p>Die Saatdaten demonstrieren die Modulgrenzen des Systems: allgemeine
+ * Flow-Struktur kommt aus {@code flow-platform}, konkrete Komponenten aus
+ * Patienten- und Terminmodulen. Dadurch kann eine frische Instanz sofort mit
+ * realistischen Beispielgraphen betrieben werden.</p>
+ */
 @Component
 public class FlowSeedData implements CommandLineRunner {
     private final FlowRepository repository;
     private final FlowMapper mapper;
 
+    /**
+     * Erstellt die Saatdatenkomponente mit Persistenzzugriff und Flow-Umsetzung.
+     *
+     * @param repository Datenzugriff für gespeicherte Flows.
+     * @param mapper Umsetzer zwischen Schnittstellenmodell und JPA-Entität.
+     */
     public FlowSeedData(FlowRepository repository, FlowMapper mapper) {
         this.repository = repository;
         this.mapper = mapper;
     }
 
+    /**
+     * Erzeugt die initialen Beispielflows für die Anwendung.
+     *
+     * @param args Startargumente des Spring-Boot-Prozesses.
+     */
     @Override
     public void run(String... args) {
+        // Saatdaten werden nur einmal angelegt, damit lokale Änderungen an Flows erhalten bleiben.
         if (repository.count() > 0) {
             return;
         }
 
+        // Standardfluss: Seitenleiste zeigt die Stationswahl, danach wird Patientenkontext schrittweise aufgebaut.
         FlowDefinition normalFlow = new FlowDefinition();
         normalFlow.setId("flow-normal");
         normalFlow.setName("Standardfluss");
@@ -75,8 +96,11 @@ public class FlowSeedData implements CommandLineRunner {
         stack.setChildren(List.of(demographics, findings));
         patientView.setChildren(List.of(stack));
 
+        // Die Knoten bleiben absichtlich sowohl hier als flache Liste als auch über Kindknotenverweise referenzierbar,
+        // weil Validierung, Persistenz und Editor jeden Knoten global per ID adressieren.
         normalFlow.setNodes(List.of(wards, patients, patientView, stack, demographics, findings));
 
+        // Alternative Sicht für denselben Navigationspfad mit anderem fachlichen Fokus im Patientendetail.
         FlowDefinition ordersFlow = new FlowDefinition();
         ordersFlow.setId("flow-orders");
         ordersFlow.setName("Auftragsfokus");
@@ -144,13 +168,20 @@ public class FlowSeedData implements CommandLineRunner {
         appointments.setInputBindings(Map.of("wardId", appointmentWard));
         appointments.setRequiredPermissions(List.of("APPOINTMENTS_READ"));
         appointmentsFlow.setNodes(List.of(appointmentWards, appointments));
-
+        // Persistiert die Beispielflows im produktiven Format, also mit relationalen Metadaten und JSON-Definition.
         FlowEntity first = mapper.toEntity(normalFlow, true);
         FlowEntity second = mapper.toEntity(ordersFlow, false);
         FlowEntity third = mapper.toEntity(appointmentsFlow, false);
         repository.saveAll(List.of(first, second, third));
     }
 
+    /**
+     * Baut einen wiederverwendbaren Detailknoten für patientenbezogene Bereiche.
+     *
+     * @param id Technische Knoten-ID im Flow-Graphen.
+     * @param componentId Komponenten-ID aus dem Komponentenverzeichnis.
+     * @return Vollständig konfigurierter Bereichsknoten.
+     */
     private FlowNode panel(String id, String componentId) {
         FlowNode node = new FlowNode();
         node.setId(id);
@@ -162,6 +193,12 @@ public class FlowSeedData implements CommandLineRunner {
         return node;
     }
 
+    /**
+     * Erzeugt die Standardseitenleiste für Flows mit vorgeschalteter Stationsauswahl.
+     *
+     * @param nodeId ID des Knotens, der in der Seitenleiste angedockt dargestellt wird.
+     * @return Konfiguration einer linken Seitenleiste mit fester Breite und ARIA-Beschriftung.
+     */
     private FlowSidebar sidebar(String nodeId) {
         FlowSidebar sidebar = new FlowSidebar();
         sidebar.setNodeId(nodeId);

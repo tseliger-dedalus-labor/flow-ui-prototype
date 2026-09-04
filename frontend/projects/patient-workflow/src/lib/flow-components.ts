@@ -8,6 +8,9 @@ import { StackLayoutComponent } from './widgets/stack-layout/stack-layout.compon
 import { TransfusionsPanelComponent } from './widgets/transfusions-panel/transfusions-panel.component';
 import { WardListComponent } from './widgets/ward-list/ward-list.component';
 
+/**
+ * Deklariert alle im Patient-Workflow verfügbaren Flow-Komponenten für Runtime und Manifest-Generator.
+ */
 export const FLOW_COMPONENTS = [
   defineFlowComponent(WardListComponent, {
     id: 'ward-list',

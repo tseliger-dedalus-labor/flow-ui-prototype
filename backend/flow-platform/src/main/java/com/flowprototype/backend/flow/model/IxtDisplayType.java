@@ -1,8 +1,11 @@
 package com.flowprototype.backend.flow.model;
 
 /**
- * Local mock of Constants.XmfIxservType.IxtDisplayType.
- * Names and database values mirror ixserv without introducing a module dependency.
+ * Lokale Nachbildung des ixserv-Typs {@code Constants.XmfIxservType.IxtDisplayType}.
+ *
+ * <p>Das Prototyp-Backend spiegelt Namen und Datenbankwerte absichtlich 1:1,
+ * damit Modulmanifeste und Komponentenverzeichnis denselben Vertragsraum wie das Zielsystem
+ * verwenden, ohne bereits eine direkte Abhängigkeit auf ixserv einzuführen.</p>
  */
 public enum IxtDisplayType {
     DISPTYPE_NONE(0),
@@ -107,10 +110,21 @@ public enum IxtDisplayType {
         this.dbValue = dbValue;
     }
 
+    /**
+     * Liefert den zu ixserv kompatiblen Datenbankwert.
+     *
+     * @return Persistenter Integerwert des Display-Typs.
+     */
     public int getDbValue() {
         return dbValue;
     }
 
+    /**
+     * Löst einen Datenbankwert wieder auf einen Display-Typ auf.
+     *
+     * @param dbValue Persistenter Integerwert aus ixserv oder der Prototypdatenbank.
+     * @return Passender Display-Typ.
+     */
     public static IxtDisplayType fromDbValue(int dbValue) {
         for (IxtDisplayType displayType : values()) {
             if (displayType.dbValue == dbValue) {

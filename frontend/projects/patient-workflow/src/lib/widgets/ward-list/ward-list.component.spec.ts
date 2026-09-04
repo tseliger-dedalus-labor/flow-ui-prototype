@@ -3,12 +3,18 @@ import { of } from 'rxjs';
 import { PatientApiService } from '../../patient-api.service';
 import { WardListComponent } from './ward-list.component';
 
+/** Testdoppel für das Laden der Stationsliste aus dem Patienten-Backend. */
 class ApiServiceMock {
   getWards() {
     return of([{ id: 'ward-a', name: 'Station A' }]);
   }
 }
 
+/**
+ * Schützt die Stationsauswahl als Einstiegspunkt des Patienten-Workflows.
+ * Die Suite stellt sicher, dass die Komponente Stationsdaten lädt und das fachliche
+ * Auswahl-Event korrekt an nachfolgende Flows weitergibt.
+ */
 describe('WardListComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({

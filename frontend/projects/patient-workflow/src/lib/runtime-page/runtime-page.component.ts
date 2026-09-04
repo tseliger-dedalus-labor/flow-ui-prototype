@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { combineLatest, Observable } from 'rxjs';
 import { FlowApiService, FlowEngineService, FlowLayoutComponent, FlowNode, FlowSidebar } from 'flow-platform';
 
+/**
+ * Einstiegskomponente für die produktive Flow-Runtime des Benutzerbereichs.
+ */
 @Component({
     selector: 'app-runtime-page',
     imports: [CommonModule, FlowLayoutComponent],
@@ -27,6 +30,9 @@ export class RuntimePageComponent implements OnInit {
     });
   }
 
+  /**
+   * Lädt den aktuell wirksamen Flow vom Backend.
+   */
   ngOnInit(): void {
     this.api.getEffectiveFlow().subscribe({
       next: (definition) => this.engine.initialize(definition),
@@ -34,6 +40,9 @@ export class RuntimePageComponent implements OnInit {
     });
   }
 
+  /**
+   * Delegiert den Rücksprung an die Flow-Engine.
+   */
   back(): void {
     this.engine.goBack();
   }

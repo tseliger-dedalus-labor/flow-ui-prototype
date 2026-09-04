@@ -8,6 +8,10 @@ import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Prüft, ob das Patientenmodul sein generiertes Komponenten-Manifest vollständig
+ * und typisiert in die zentrale Registry einbringt.
+ */
 class PatientComponentDescriptorProviderTest {
     @Test
     void contributesPatientWorkflowComponents() {

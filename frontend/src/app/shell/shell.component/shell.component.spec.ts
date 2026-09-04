@@ -2,6 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ShellComponent } from './shell.component';
 
+/**
+ * Schützt die Navigationshülle der Anwendung.
+ * Die Suite stellt sicher, dass die Architektur ihre Feature-Einstiege in der Toolbar
+ * sichtbar und korrekt verlinkt bereitstellt.
+ */
 describe('ShellComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({

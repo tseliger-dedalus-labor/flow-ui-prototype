@@ -3,12 +3,18 @@ import { of } from 'rxjs';
 import { PatientApiService } from '../../patient-api.service';
 import { TransfusionsPanelComponent } from './transfusions-panel.component';
 
+/** Testdoppel für das Laden von Transfusionsdaten. */
 class ApiServiceMock {
   getTransfusions() {
     return of([{ id: 't-1', text: 'T1' }]);
   }
 }
 
+/**
+ * Schützt das Transfusions-Panel als patientenbezogene Fachansicht.
+ * Die Suite stellt sicher, dass Blutprodukte korrekt geladen werden und der Kontextwechsel
+ * den sichtbaren Zustand vollständig leert.
+ */
 describe('TransfusionsPanelComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -25,6 +31,7 @@ describe('TransfusionsPanelComponent', () => {
 
     fixture.componentRef.setInput('patientId', '');
     fixture.detectChanges();
+    // Ein leerer Patient-Kontext muss die vorherigen Transfusionsdaten entfernen.
     expect(fixture.componentInstance.items).toEqual([]);
   });
 });

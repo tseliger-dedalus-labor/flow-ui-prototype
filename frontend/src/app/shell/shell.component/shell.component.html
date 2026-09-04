@@ -1,3 +1,4 @@
+<!-- Primäre Modulnavigation, damit Runtime, Terminplanung und Editor dieselbe Hülle teilen. -->
 <header class="topbar">
   <h1>Flow UI Prototype</h1>
   <nav aria-label="Module">
@@ -6,6 +7,7 @@
     <a routerLink="/editor" routerLinkActive="active">Editor</a>
   </nav>
 </header>
+<!-- Der Inhaltsbereich rendert die jeweils aktivierte Feature-Route. -->
 <main>
   <router-outlet />
 </main>

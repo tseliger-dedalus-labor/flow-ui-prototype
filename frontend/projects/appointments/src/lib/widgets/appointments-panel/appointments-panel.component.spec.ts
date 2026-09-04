@@ -5,6 +5,7 @@ import { PatientApiService } from 'patient-workflow';
 import { AppointmentsApiService } from '../../appointments-api.service';
 import { AppointmentsPanelComponent } from './appointments-panel.component';
 
+/** Testdoppel für den Termin- und Patienten-API-Zugriff im Stationspanel. */
 class ApiServiceMock {
   getAppointments = jasmine.createSpy('getAppointments').and.returnValue(of([
     { id: 'a-1', wardId: 'ward-a', patientId: 'p-100', patientName: 'Anna Weber', date: '2026-09-04', time: '09:00', reason: 'Kontrolle' }
@@ -15,6 +16,11 @@ class ApiServiceMock {
   ));
 }
 
+/**
+ * Schützt das Stations-Terminpanel als fachliche Oberfläche für die Terminverwaltung.
+ * Die Suite stellt sicher, dass Laden, Anlegen und Berechtigungssteuerung zusammen die
+ * erwartete Architektur für stationäre Termine bilden.
+ */
 describe('AppointmentsPanelComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -54,6 +60,7 @@ describe('AppointmentsPanelComponent', () => {
     fixture.componentRef.setInput('wardId', 'ward-a');
     fixture.detectChanges();
 
+    // Ohne Schreibrecht bleibt die Erfassungsmaske verborgen, die Liste muss aber sichtbar bleiben.
     expect(fixture.nativeElement.querySelector('form')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Anna Weber');
   });

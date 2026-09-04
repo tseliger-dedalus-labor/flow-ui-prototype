@@ -1,4 +1,5 @@
 @if (showSidebar) {
+  <!-- Zweispaltiges Runtime-Layout mit optionaler Navigations- oder Kontext-Sidebar. -->
   <div
     class="flow-layout"
     [class.flow-layout-right]="sidebar?.position === 'RIGHT'"
@@ -11,6 +12,7 @@
     </div>
   </div>
 } @else {
+  <!-- Ohne Sidebar wird nur der Hauptknoten direkt gerendert. -->
   <div class="flow-content flow-content-standalone">
     <app-flow-renderer [node]="node" [context]="context" />
   </div>

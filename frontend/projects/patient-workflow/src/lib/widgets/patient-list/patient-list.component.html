@@ -3,6 +3,7 @@
   <p class="hint">Bitte zuerst eine Station wählen.</p>
 }
 @if (wardId) {
+  <!-- Die Liste bleibt absichtlich generisch; fachliche Unterschiede werden über den Modus und nachfolgende Flow-Knoten abgebildet. -->
   <ul class="cards">
     @for (patient of patients; track patient) {
       <li>

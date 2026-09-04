@@ -1,6 +1,9 @@
 import { defineFlowComponent, IxtDisplayType } from 'flow-platform';
 import { AppointmentsPanelComponent } from './widgets/appointments-panel/appointments-panel.component';
 
+/**
+ * Deklariert alle Flow-Komponenten des Terminplanungs-Moduls für Manifest-Generierung und Runtime.
+ */
 export const FLOW_COMPONENTS = [
   defineFlowComponent(AppointmentsPanelComponent, {
     id: 'appointments-panel',

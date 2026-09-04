@@ -1,5 +1,8 @@
 import { Component, Input } from '@angular/core';
 
+/**
+ * Platzhalter-Container für patientenbezogene Unter-Widgets innerhalb eines Flows.
+ */
 @Component({
   selector: 'app-patient-view',
   standalone: true,

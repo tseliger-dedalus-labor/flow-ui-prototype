@@ -1,6 +1,11 @@
 import { FlowEngineService } from './flow-engine.service';
 import { FlowDefinition } from './models';
 
+/**
+ * Schützt die Laufzeitmaschine der Flow-Plattform.
+ * Die Suite verifiziert Kontextweitergabe, Zurück-Navigation und Sidebar-Verhalten als
+ * Kernvertrag für Rendering, Validierung und Editor-Vorschau.
+ */
 describe('FlowEngineService', () => {
   let service: FlowEngineService;
 
@@ -40,6 +45,7 @@ describe('FlowEngineService', () => {
 
     service.initialize(flow);
     service.transition('wardSelected', { wardId: 'ward-a' });
+    // Der Kontext des vorherigen Schritts muss für nachfolgende Transitionen erhalten bleiben.
     service.transition('patientSelected', { patientId: 'p-1' });
 
     let context!: Record<string, unknown>;
@@ -109,6 +115,7 @@ describe('FlowEngineService', () => {
 
     service.initialize(flow);
     service.transitionFrom('wards', 'wardSelected', { wardId: 'ward-a' });
+    // Die Sidebar darf beim Nachladen des Hauptknotens denselben persistenten Kontext behalten.
     service.transitionFrom('wards', 'wardSelected', { wardId: 'ward-b' });
 
     let nodeId: string | undefined;

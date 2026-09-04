@@ -1,41 +1,77 @@
 import { IxtDisplayType } from './ixt-display-type';
 
+/**
+ * Fachliche Typisierung für Flow-Inputs und Output-Payloads.
+ */
 export type SemanticType = 'STRING' | 'MODE' | 'WARD_ID' | 'PATIENT_ID';
+/**
+ * Herkunft eines Input-Bindings innerhalb einer Flow-Definition.
+ */
 export type BindingSource = 'STATIC' | 'CONTEXT';
 
+/**
+ * Beschreibt einen einzelnen Input einer Flow-Komponente.
+ */
 export interface InputDescriptor {
+  /** Öffentlicher Angular-Input-Name. */
   name: string;
+  /** Fachlicher Datentyp, gegen den Flows validiert werden. */
   semanticType: SemanticType;
+  /** Kennzeichnet Inputs, die vor der Ausführung gebunden sein müssen. */
   required: boolean;
+  /** Optionale Menge zulässiger Literalwerte. */
   allowedValues: string[];
 }
 
+/**
+ * Beschreibt ein vom Widget ausgelöstes Event.
+ */
 export interface OutputDescriptor {
+  /** Öffentlicher Angular-Output-Name. */
   name: string;
+  /** Payload-Felder mit ihren semantischen Typen. */
   payload: Record<string, SemanticType>;
 }
 
+/**
+ * Metadaten einer Flow-fähigen Angular-Komponente.
+ */
 export interface ComponentDescriptor {
+  /** Eindeutige technische Komponenten-ID. */
   id: string;
+  /** Anzeigename für Editor und Registry. */
   title: string;
+  /** Optionales fachliches Anzeigeformat aus der ixserv-Welt. */
   displayType?: IxtDisplayType;
+  /** Kennzeichnet Container-Komponenten, die Kindknoten rendern dürfen. */
   container: boolean;
+  /** Deklarierte Inputs der Komponente. */
   inputs: InputDescriptor[];
+  /** Deklarierte Outputs der Komponente. */
   outputs: OutputDescriptor[];
 }
 
+/**
+ * Bindet einen Flow-Input entweder an einen statischen Wert oder an den Laufzeitkontext.
+ */
 export interface InputBinding {
   source: BindingSource;
   staticValue?: unknown;
   contextKey?: string;
 }
 
+/**
+ * Beschreibt eine Kante im Flow-Graphen, ausgelöst durch einen Component-Output.
+ */
 export interface FlowTransition {
   onOutput: string;
   targetNodeId: string;
   contextMapping: Record<string, string>;
 }
 
+/**
+ * Knoten des Flow-Graphen inklusive verschachtelter Kindknoten.
+ */
 export interface FlowNode {
   id: string;
   componentId: string;
@@ -45,8 +81,14 @@ export interface FlowNode {
   requiredPermissions?: string[];
 }
 
+/**
+ * Erlaubte Positionen für die optionale Flow-Sidebar.
+ */
 export type SidebarPosition = 'LEFT' | 'RIGHT';
 
+/**
+ * Konfiguriert die sekundäre Sidebar-Ansicht eines Flows.
+ */
 export interface FlowSidebar {
   nodeId: string;
   position: SidebarPosition;
@@ -54,6 +96,9 @@ export interface FlowSidebar {
   ariaLabel?: string;
 }
 
+/**
+ * Serverseitig persistierte Definition eines renderbaren Flows.
+ */
 export interface FlowDefinition {
   id: string;
   name: string;
@@ -62,17 +107,26 @@ export interface FlowDefinition {
   nodes: FlowNode[];
 }
 
+/**
+ * Kompakte Übersicht über verfügbare Flows.
+ */
 export interface FlowSummary {
   id: string;
   name: string;
   active: boolean;
 }
 
+/**
+ * Einzelner Validierungsfehler eines Flows.
+ */
 export interface ValidationIssue {
   path: string;
   message: string;
 }
 
+/**
+ * Ergebnis einer Flow-Validierung.
+ */
 export interface ValidationResult {
   valid: boolean;
   issues: ValidationIssue[];

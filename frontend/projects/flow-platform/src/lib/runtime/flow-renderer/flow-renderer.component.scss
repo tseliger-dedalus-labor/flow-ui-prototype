@@ -3,6 +3,7 @@
 }
 
 .children {
+  /* Die Einrückung markiert verschachtelte Container visuell, ohne weitere Rahmen um die Widgets zu erzwingen. */
   margin-top: 0.75rem;
   padding-left: 0.75rem;
   border-left: 2px solid #e0e5f5;

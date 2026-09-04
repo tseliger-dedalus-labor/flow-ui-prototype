@@ -12,6 +12,7 @@
 
   @if (flow; as currentFlow) {
     <div class="editor-grid">
+      <!-- Globale Flow-Eigenschaften und Sidebar-Konfiguration. -->
       <section class="card">
         <h3>Flow</h3>
         <label>ID <input [(ngModel)]="currentFlow.id" (ngModelChange)="triggerValidation()" /></label>
@@ -60,6 +61,7 @@
         </label>
       </section>
       @if (selectedNode; as node) {
+        <!-- Knotenspezifische Konfiguration, Bindings und Transitionen. -->
         <section class="card">
           <h3>Knoten {{ node.id }}</h3>
           <label>Komponente
@@ -137,6 +139,7 @@
           <input [ngModel]="childIds(node)" (ngModelChange)="setChildren(node, $event)" />
         </section>
       }
+      <!-- Rückmeldung aus der serverseitigen Validierung und Persistenz. -->
       <section class="card">
         <h3>Validierung</h3>
         <button type="button" (click)="validate()">Jetzt validieren</button>

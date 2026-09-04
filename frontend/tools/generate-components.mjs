@@ -4,6 +4,10 @@ import path from 'node:path';
 import process from 'node:process';
 import ts from 'typescript';
 
+/**
+ * Analysiert Flow-Komponenten in allen Frontend-Projekten, validiert deren Metadaten
+ * und synchronisiert daraus generierte Komponenten-Manifeste.
+ */
 const frontendRoot = process.cwd();
 const checkOnly = process.argv.includes('--check');
 const projectsRoot = path.join(frontendRoot, 'projects');
@@ -12,6 +16,7 @@ const ixtDisplayTypes = loadIxtDisplayTypes();
 const generatedManifests = [];
 const errors = [];
 
+// Jedes Paket wird unabhängig geprüft, damit Fehler präzise dem jeweiligen Feature-Modul zugeordnet bleiben.
 for (const entry of fs.readdirSync(projectsRoot, { withFileTypes: true })) {
   if (!entry.isDirectory()) {
     continue;
@@ -44,6 +49,7 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
+// Im Check-Modus wird nur Drift erkannt; sonst werden die Manifeste auf das validierte Soll geschrieben.
 for (const generated of generatedManifests) {
   if (checkOnly) {
     const current = fs.existsSync(generated.path) ? fs.readFileSync(generated.path, 'utf8') : '';
@@ -65,6 +71,9 @@ if (checkOnly && process.exitCode !== 1) {
   console.log('Alle Komponenten-Manifeste sind vollständig und aktuell.');
 }
 
+/**
+ * Validiert die Paketkonventionen eines Projekts und erzeugt dessen Manifestmodell.
+ */
 function validateProject(projectRoot, packageJson) {
   if (typeof packageJson.name !== 'string' || packageJson.name.trim() === '') {
     errors.push(`${relativePath(path.join(projectRoot, 'package.json'))}: Paketname fehlt.`);
@@ -105,6 +114,7 @@ function validateProject(projectRoot, packageJson) {
   const checker = program.getTypeChecker();
   const projectSourceFiles = program.getSourceFiles()
     .filter((sourceFile) => isPathInside(sourceFile.fileName, path.join(projectRoot, 'src')));
+  // Definitionen stammen aus FLOW_COMPONENTS, erwartete Komponenten aus den konfigurierten Root-Verzeichnissen.
   const definitions = findDefinitions(projectSourceFiles, checker, projectRoot);
   const expectedComponents = findExpectedComponents(projectSourceFiles, projectRoot, roots);
 
@@ -151,11 +161,15 @@ function validateProject(projectRoot, packageJson) {
   });
 }
 
+/**
+ * Findet die einzige exportierte FLOW_COMPONENTS-Liste und alle darin enthaltenen defineFlowComponent-Aufrufe.
+ */
 function findDefinitions(sourceFiles, checker, projectRoot) {
   const collections = [];
   const allDefinitionCalls = [];
 
   for (const sourceFile of sourceFiles) {
+    // Auch außerhalb von FLOW_COMPONENTS platzierte Aufrufe werden gesammelt, um Regelverstöße gezielt zu melden.
     visit(sourceFile, (node) => {
       if (isDefineFlowComponentCall(node)) {
         allDefinitionCalls.push(node);
@@ -220,6 +234,9 @@ function findDefinitions(sourceFiles, checker, projectRoot) {
   return definitions;
 }
 
+/**
+ * Löst eine definierte Flow-Komponente auf und wertet ihren Descriptor statisch aus.
+ */
 function parseDefinition(call, checker) {
   const sourceFile = call.getSourceFile();
   const location = locationOf(call, sourceFile);
@@ -259,6 +276,9 @@ function parseDefinition(call, checker) {
   };
 }
 
+/**
+ * Ermittelt alle Angular-Komponenten unterhalb der konfigurierten flowComponentRoots.
+ */
 function findExpectedComponents(sourceFiles, projectRoot, configuredRoots) {
   const roots = configuredRoots.map((root) => path.resolve(projectRoot, root));
   const expected = [];
@@ -278,6 +298,9 @@ function findExpectedComponents(sourceFiles, projectRoot, configuredRoots) {
   return expected;
 }
 
+/**
+ * Prüft, ob deklarierte Komponenten und erwartete Angular-Komponenten deckungsgleich sind.
+ */
 function validateDefinitionCoverage(definitions, expectedComponents, projectRoot) {
   const definitionsByClass = new Map();
   for (const definition of definitions) {
@@ -302,6 +325,7 @@ function validateDefinitionCoverage(definitions, expectedComponents, projectRoot
   }
 
   for (const definition of definitions) {
+    // So wird auch erkannt, wenn versehentlich eine Komponente außerhalb der offiziellen Roots registriert wird.
     if (!expectedKeys.has(classKey(definition.componentClass))) {
       errors.push(
         `${definition.location}: '${className(definition.componentClass)}' liegt außerhalb der ` +
@@ -311,6 +335,9 @@ function validateDefinitionCoverage(definitions, expectedComponents, projectRoot
   }
 }
 
+/**
+ * Validiert Descriptor-Schema, semantische Typen und Angular-Bindings jeder Flow-Komponente.
+ */
 function validateDescriptors(definitions, checker) {
   for (const definition of definitions) {
     const { componentClass, descriptor, location } = definition;
@@ -352,6 +379,9 @@ function validateDescriptors(definitions, checker) {
   }
 }
 
+/**
+ * Prüft Form und fachliche Typisierung aller Input-Descriptoren.
+ */
 function validateInputDescriptors(inputs, location) {
   const names = new Set();
   for (const input of inputs) {
@@ -377,6 +407,9 @@ function validateInputDescriptors(inputs, location) {
   }
 }
 
+/**
+ * Prüft Form und Payload-Typisierung aller Output-Descriptoren.
+ */
 function validateOutputDescriptors(outputs, location) {
   const names = new Set();
   for (const output of outputs) {
@@ -406,6 +439,9 @@ function validateOutputDescriptors(outputs, location) {
   }
 }
 
+/**
+ * Spiegelt Angular-Inputs und -Outputs aus Klassenmitgliedern und Komponentenmetadaten in validierbare Maps.
+ */
 function validateAngularBindings(componentClass, descriptor, location, checker) {
   const angularInputs = new Map();
   const angularOutputs = new Map();
@@ -470,6 +506,7 @@ function validateAngularBindings(componentClass, descriptor, location, checker) 
     }
   }
 
+  // Zusätzlich unterstützt der Generator statische inputs/outputs-Arrays in @Component-Metadaten.
   addComponentMetadataBindings(componentClass, 'inputs', angularInputs, location, checker);
   addComponentMetadataBindings(componentClass, 'outputs', angularOutputs, location, checker);
 
@@ -523,6 +560,9 @@ function validateAngularBindings(componentClass, descriptor, location, checker) 
   }
 }
 
+/**
+ * Meldet Unterschiede zwischen Angular-Binding-Namen und Flow-Descriptor-Namen.
+ */
 function compareBindingNames(kind, angularBindings, descriptorBindings, location) {
   for (const name of angularBindings.keys()) {
     if (!descriptorBindings.has(name)) {
@@ -536,6 +576,9 @@ function compareBindingNames(kind, angularBindings, descriptorBindings, location
   }
 }
 
+/**
+ * Wertet ein AST-Fragment auf einen rein statischen JavaScript-Wert aus.
+ */
 function evaluateLiteral(node, checker) {
   const expression = unwrapExpression(node);
   if (!expression) {
@@ -582,6 +625,7 @@ function evaluateLiteral(node, checker) {
       if (!name) {
         throw new Error('Metadaten dürfen keine berechneten Property-Namen enthalten.');
       }
+      // Die statische Auswertung bleibt rekursiv, damit auch verschachtelte Payload-Definitionen validierbar sind.
       result[name] = evaluateLiteral(property.initializer, checker);
     }
     return result;
@@ -591,6 +635,9 @@ function evaluateLiteral(node, checker) {
   );
 }
 
+/**
+ * Liest Alias und required-Status aus einem @Input-Decorator.
+ */
 function inputDecoratorMetadata(decorator, fallbackName) {
   const call = unwrapExpression(decorator.expression);
   const argument = ts.isCallExpression(call) ? call.arguments[0] : undefined;
@@ -607,12 +654,18 @@ function inputDecoratorMetadata(decorator, fallbackName) {
   return { name: fallbackName, required: false };
 }
 
+/**
+ * Ermittelt den öffentlichen Namen eines @Output-Bindings.
+ */
 function outputBindingName(decorator, fallbackName) {
   const call = unwrapExpression(decorator.expression);
   const argument = ts.isCallExpression(call) ? unwrapExpression(call.arguments[0]) : undefined;
   return argument && ts.isStringLiteralLike(argument) ? argument.text : fallbackName;
 }
 
+/**
+ * Liest Angular-Signal-Inputs und -Outputs aus einer Property-Initialisierung.
+ */
 function signalBindingMetadata(initializer, bindingName, fallbackName) {
   const expression = unwrapExpression(initializer);
   if (!expression || !ts.isCallExpression(expression)) {
@@ -646,6 +699,9 @@ function signalBindingMetadata(initializer, bindingName, fallbackName) {
   };
 }
 
+/**
+ * Ermittelt die Payload-Felder eines EventEmitters aus Initializer oder Property-Typ.
+ */
 function eventEmitterPayloadKeys(member, checker) {
   let typeNode;
   const initializer = ts.isPropertyDeclaration(member) ? unwrapExpression(member.initializer) : undefined;
@@ -659,6 +715,9 @@ function eventEmitterPayloadKeys(member, checker) {
   return payloadKeysFromTypeNode(typeNode, checker);
 }
 
+/**
+ * Liest die Property-Namen eines Objekt-Typs für Output-Payload-Vergleiche aus.
+ */
 function payloadKeysFromTypeNode(typeNode, checker) {
   if (!typeNode) {
     return undefined;
@@ -673,6 +732,9 @@ function payloadKeysFromTypeNode(typeNode, checker) {
   return checker.getPropertiesOfType(type).map((property) => property.getName());
 }
 
+/**
+ * Extrahiert Literalwerte aus einem String-Union-Typ.
+ */
 function stringUnionValues(typeNode, checker) {
   if (!typeNode) {
     return undefined;
@@ -691,6 +753,9 @@ function stringUnionValues(typeNode, checker) {
   return values;
 }
 
+/**
+ * Liefert den Typknoten eines Inputs oder Setters für weitere Typauswertung.
+ */
 function bindingTypeNode(member) {
   if (ts.isSetAccessorDeclaration(member)) {
     return member.parameters[0]?.type;
@@ -698,6 +763,9 @@ function bindingTypeNode(member) {
   return member.type;
 }
 
+/**
+ * Ergänzt Inputs oder Outputs, die direkt in der @Component-Metadatenstruktur deklariert wurden.
+ */
 function addComponentMetadataBindings(componentClass, propertyName, bindings, location, checker) {
   const componentDecorator = getDecorator(componentClass, 'Component');
   const componentCall = componentDecorator && unwrapExpression(componentDecorator.expression);
@@ -742,6 +810,7 @@ function addComponentMetadataBindings(componentClass, propertyName, bindings, lo
       && candidate.name
       && propertyNameOf(candidate.name) === parsed.memberName
     );
+    // Selbst wenn das Klassenmitglied fehlt, wird der Binding-Name gespeichert, damit der Validator den Konflikt erklären kann.
     bindings.set(parsed.publicName, propertyName === 'inputs'
       ? {
           member,
@@ -755,6 +824,9 @@ function addComponentMetadataBindings(componentClass, propertyName, bindings, lo
   }
 }
 
+/**
+ * Parst einen einzelnen Eintrag aus @Component.inputs oder @Component.outputs.
+ */
 function parseComponentMetadataBinding(node, input) {
   const expression = unwrapExpression(node);
   if (expression && ts.isStringLiteralLike(expression)) {
@@ -779,6 +851,9 @@ function parseComponentMetadataBinding(node, input) {
   };
 }
 
+/**
+ * Findet einen Decorator mit dem angegebenen Namen an einem AST-Knoten.
+ */
 function getDecorator(node, name) {
   const decorators = ts.canHaveDecorators(node) ? ts.getDecorators(node) ?? [] : [];
   return decorators.find((decorator) => {
@@ -792,6 +867,9 @@ function getDecorator(node, name) {
   });
 }
 
+/**
+ * Liest eine String-Property aus einem Objektliteral.
+ */
 function stringProperty(objectLiteral, name) {
   const property = objectLiteral.properties.find((candidate) =>
     ts.isPropertyAssignment(candidate) && propertyNameOf(candidate.name) === name
@@ -802,6 +880,9 @@ function stringProperty(objectLiteral, name) {
   return value && ts.isStringLiteralLike(value) ? value.text : undefined;
 }
 
+/**
+ * Liest eine Boolean-Property aus einem Objektliteral.
+ */
 function booleanProperty(objectLiteral, name) {
   const property = objectLiteral.properties.find((candidate) =>
     ts.isPropertyAssignment(candidate) && propertyNameOf(candidate.name) === name
@@ -818,6 +899,9 @@ function booleanProperty(objectLiteral, name) {
   return undefined;
 }
 
+/**
+ * Prüft Pflicht- und optionale Felder eines einfachen Objektmodells auf exakte Schlüsselmenge.
+ */
 function validateExactKeys(value, requiredKeys, optionalKeysOrLocation, location) {
   const optionalKeys = Array.isArray(optionalKeysOrLocation) ? optionalKeysOrLocation : [];
   const resolvedLocation = Array.isArray(optionalKeysOrLocation) ? location : optionalKeysOrLocation;
@@ -834,12 +918,18 @@ function validateExactKeys(value, requiredKeys, optionalKeysOrLocation, location
   }
 }
 
+/**
+ * Stellt sicher, dass ein Wert als nicht-leerer String vorliegt.
+ */
 function validateNonEmptyString(value, label) {
   if (typeof value !== 'string' || value.trim() === '') {
     errors.push(`${label} muss ein nicht-leerer String sein.`);
   }
 }
 
+/**
+ * Vergleicht zwei Stringmengen deterministisch und erzeugt bei Abweichungen eine verständliche Fehlermeldung.
+ */
 function compareStringSets(actual, expected, message) {
   if (!Array.isArray(expected)) {
     return;
@@ -851,6 +941,9 @@ function compareStringSets(actual, expected, message) {
   }
 }
 
+/**
+ * Lädt die erlaubten semantischen Typen direkt aus dem Flow-Plattform-Modell.
+ */
 function loadSemanticTypes() {
   const modelsPath = path.join(frontendRoot, 'projects', 'flow-platform', 'src', 'lib', 'models.ts');
   const sourceFile = ts.createSourceFile(
@@ -879,6 +972,9 @@ function loadSemanticTypes() {
   throw new Error(`SemanticType konnte nicht aus ${relativePath(modelsPath)} gelesen werden.`);
 }
 
+/**
+ * Lädt alle gültigen IxtDisplayType-Werte direkt aus dem Enum der Flow-Plattform.
+ */
 function loadIxtDisplayTypes() {
   const enumPath = path.join(
     frontendRoot,
@@ -913,6 +1009,9 @@ function loadIxtDisplayTypes() {
   throw new Error(`IxtDisplayType konnte nicht aus ${relativePath(enumPath)} gelesen werden.`);
 }
 
+/**
+ * Sammelt Dateien rekursiv unterhalb eines Verzeichnisses anhand eines Prädikats.
+ */
 function collectFiles(directory, predicate) {
   const files = [];
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -926,6 +1025,9 @@ function collectFiles(directory, predicate) {
   return files;
 }
 
+/**
+ * Erkennt Projekte, die Flow-Widget-APIs nutzen und daher ein Manifest deklarieren müssen.
+ */
 function usesFlowComponentApi(projectRoot) {
   const sourceRoot = path.join(projectRoot, 'src');
   if (!fs.existsSync(sourceRoot)) {
@@ -957,11 +1059,17 @@ function usesFlowComponentApi(projectRoot) {
   });
 }
 
+/**
+ * Durchläuft einen AST rekursiv in Tiefensuche.
+ */
 function visit(node, callback) {
   callback(node);
   node.forEachChild((child) => visit(child, callback));
 }
 
+/**
+ * Prüft, ob ein AST-Knoten ein defineFlowComponent-Aufruf ist.
+ */
 function isDefineFlowComponentCall(node) {
   if (!ts.isCallExpression(node)) {
     return false;
@@ -970,6 +1078,9 @@ function isDefineFlowComponentCall(node) {
   return ts.isIdentifier(expression) && expression.text === 'defineFlowComponent';
 }
 
+/**
+ * Entfernt reine Hüllen wie Klammern, Type Assertions oder Non-Null-Ausdrücke.
+ */
 function unwrapExpression(node) {
   let current = node;
   while (
@@ -986,6 +1097,9 @@ function unwrapExpression(node) {
   return current;
 }
 
+/**
+ * Extrahiert einen Property-Namen aus Identifiern und Literalnamen.
+ */
 function propertyNameOf(name) {
   if (ts.isIdentifier(name) || ts.isStringLiteralLike(name) || ts.isNumericLiteral(name)) {
     return name.text;
@@ -993,40 +1107,67 @@ function propertyNameOf(name) {
   return undefined;
 }
 
+/**
+ * Prüft, ob ein Knoten den angegebenen Modifier trägt.
+ */
 function hasModifier(node, kind) {
   return node.modifiers?.some((modifier) => modifier.kind === kind) ?? false;
 }
 
+/**
+ * Liefert den lesbaren Namen einer Komponentenklasse.
+ */
 function className(componentClass) {
   return componentClass.name?.text ?? '<anonym>';
 }
 
+/**
+ * Erzeugt einen stabilen Schlüssel aus Dateipfad und Klassenname.
+ */
 function classKey(componentClass) {
   return `${path.resolve(componentClass.getSourceFile().fileName)}#${className(componentClass)}`;
 }
 
+/**
+ * Formatiert die Quellposition eines AST-Knotens für Fehlermeldungen.
+ */
 function locationOf(node, sourceFile) {
   const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
   return `${relativePath(sourceFile.fileName)}:${position.line + 1}`;
 }
 
+/**
+ * Liest und parst eine JSON-Datei synchron.
+ */
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+/**
+ * Prüft, ob ein Wert ein schlichtes Objektliteral repräsentiert.
+ */
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+/**
+ * Prüft, ob eine Datei innerhalb eines Verzeichnisses liegt.
+ */
 function isPathInside(file, directory) {
   const relative = path.relative(path.resolve(directory), path.resolve(file));
   return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
 }
 
+/**
+ * Wandelt absolute Pfade in frontend-relative Diagnostikpfade um.
+ */
 function relativePath(file) {
   return path.relative(frontendRoot, file).replaceAll('\\', '/');
 }
 
+/**
+ * Vereinheitlicht Zeilenenden für inhaltsbasierte Manifest-Vergleiche.
+ */
 function normalizeNewlines(value) {
   return value.replaceAll('\r\n', '\n');
 }

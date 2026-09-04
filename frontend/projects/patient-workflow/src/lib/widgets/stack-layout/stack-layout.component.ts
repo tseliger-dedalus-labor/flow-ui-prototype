@@ -1,5 +1,8 @@
 import { Component } from '@angular/core';
 
+/**
+ * Minimaler Container, der gestapelte Kindknoten optisch zusammenfasst.
+ */
 @Component({
   selector: 'app-stack-layout',
   standalone: true,

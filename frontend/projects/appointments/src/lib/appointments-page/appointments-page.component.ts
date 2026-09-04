@@ -3,6 +3,9 @@ import { Component, OnInit } from '@angular/core';
 import { combineLatest, Observable } from 'rxjs';
 import { FlowApiService, FlowEngineService, FlowLayoutComponent, FlowNode, FlowSidebar } from 'flow-platform';
 
+/**
+ * Einstiegskomponente für die Terminplanungs-Runtime.
+ */
 @Component({
   selector: 'app-appointments-page',
   imports: [CommonModule, FlowLayoutComponent],
@@ -27,6 +30,9 @@ export class AppointmentsPageComponent implements OnInit {
     });
   }
 
+  /**
+   * Lädt den für die Terminplanung vorgesehenen Flow.
+   */
   ngOnInit(): void {
     this.api.getFlow('flow-appointments').subscribe({
       next: (definition) => this.engine.initialize(definition),
@@ -34,6 +40,9 @@ export class AppointmentsPageComponent implements OnInit {
     });
   }
 
+  /**
+   * Delegiert den Rücksprung an die Flow-Engine.
+   */
   back(): void {
     this.engine.goBack();
   }

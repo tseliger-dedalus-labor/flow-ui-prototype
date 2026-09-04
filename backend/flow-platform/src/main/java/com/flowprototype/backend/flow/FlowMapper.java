@@ -6,17 +6,37 @@ import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
+/**
+ * Konvertiert zwischen persistierter Flow-Entität und Schnittstellenmodell.
+ *
+ * <p>Die relationale Tabelle hält ID, Name und Aktivstatus in eigenen Spalten,
+ * während die restliche Graphstruktur als JSON-CLOB abgelegt wird. So bleiben
+ * einfache Abfragen effizient und die verschachtelte Flow-Definition dennoch
+ * ohne aufwendiges relationales Schema speicherbar.</p>
+ */
 @Component
 public class FlowMapper {
     private final ObjectMapper objectMapper;
 
+    /**
+     * Erstellt den Umsetzer mit dem zentralen JSON-Objektabbildner des Moduls.
+     *
+     * @param objectMapper Objektabbildner für Serialisierung und Deserialisierung.
+     */
     public FlowMapper(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Baut aus einer Datenbankentität wieder eine vollständige Definition des Flows.
+     *
+     * @param entity Persistierte Flow-Entität.
+     * @return Deserialisierte Flowbeschreibung inklusive relationaler Metadaten.
+     */
     public FlowDefinition toDefinition(FlowEntity entity) {
         try {
             FlowDefinition definition = objectMapper.readValue(entity.getDefinitionJson(), FlowDefinition.class);
+            // ID und Anzeigename bleiben relational gespiegelt, damit sie ohne JSON-Parsen verfügbar sind.
             definition.setId(entity.getId());
             definition.setName(entity.getName());
             return definition;
@@ -25,6 +45,13 @@ public class FlowMapper {
         }
     }
 
+    /**
+     * Wandelt ein Schnittstellenmodell in das persistierte Tabellenformat um.
+     *
+     * @param definition Zu speichernde Flowbeschreibung.
+     * @param active Aktivstatus der Entität.
+     * @return Persistierbare Entität mit JSON-Nutzlast.
+     */
     public FlowEntity toEntity(FlowDefinition definition, boolean active) {
         FlowEntity entity = new FlowEntity();
         entity.setId(definition.getId());
@@ -32,6 +59,7 @@ public class FlowMapper {
         entity.setActive(active);
         try {
             FlowDefinition payload = new FlowDefinition();
+            // Relationale Metadaten werden absichtlich nicht doppelt in der JSON-Nutzlast gespeichert.
             payload.setEntryNodeId(definition.getEntryNodeId());
             payload.setSidebar(definition.getSidebar());
             payload.setNodes(definition.getNodes());

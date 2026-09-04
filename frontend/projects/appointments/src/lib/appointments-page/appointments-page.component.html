@@ -6,6 +6,7 @@
   }
   @if (vm$ | async; as vm) {
     @if (vm.node) {
+      <!-- Die Flow-Runtime rendert hier denselben Engine-Zustand wie im Benutzerbereich, ergänzt um Termin-Widgets. -->
       <app-flow-layout
         [node]="vm.node"
         [sidebarNode]="vm.sidebarNode"

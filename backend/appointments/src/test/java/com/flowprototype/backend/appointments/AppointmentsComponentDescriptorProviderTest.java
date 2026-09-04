@@ -8,6 +8,10 @@ import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Prüft die aus dem Terminmodul geladene Komponentenbeschreibung einschließlich
+ * Ward-Kontext und eindeutiger ixserv-Darstellungstyp-Zuordnung.
+ */
 class AppointmentsComponentDescriptorProviderTest {
     @Test
     void contributesAppointmentsComponent() {

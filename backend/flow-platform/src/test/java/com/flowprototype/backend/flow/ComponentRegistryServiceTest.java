@@ -9,6 +9,13 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/**
+ * Prüft die globalen Eindeutigkeitsregeln des Komponentenverzeichnisses.
+ *
+ * <p>Die Tests schützen insbesondere den Anwendungsstart: doppelte technische
+ * Komponenten-IDs oder mehrfach belegte ixserv-Darstellungstypen müssen bereits
+ * beim Aufbau des Spring-Kontexts abgelehnt werden.</p>
+ */
 class ComponentRegistryServiceTest {
     @Test
     void aggregatesContributedDescriptors() {

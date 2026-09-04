@@ -6,6 +6,9 @@ import { PatientApiService } from 'patient-workflow';
 import { Appointment } from '../../appointment';
 import { AppointmentsApiService } from '../../appointments-api.service';
 
+/**
+ * Zeigt Stations-Termine an und erlaubt bei ausreichender Berechtigung das Anlegen neuer Einträge.
+ */
 @Component({
   selector: 'app-appointments-panel',
   imports: [FormsModule],
@@ -30,6 +33,9 @@ export class AppointmentsPanelComponent implements OnChanges, OnDestroy {
     this.canSchedule = permissions.hasAll(['APPOINTMENTS_WRITE']);
   }
 
+  /**
+   * Lädt bei Änderungen der Station sowohl bestehende Termine als auch auswählbare Patienten.
+   */
   ngOnChanges(): void {
     this.loadSubscription?.unsubscribe();
     this.createSubscription?.unsubscribe();
@@ -39,6 +45,7 @@ export class AppointmentsPanelComponent implements OnChanges, OnDestroy {
     if (!this.wardId) {
       return;
     }
+    // Beide Datenquellen werden gemeinsam geladen, damit Formular und Liste stets denselben Stationskontext zeigen.
     this.loadSubscription = forkJoin({
       appointments: this.appointmentsApi.getAppointments(this.wardId),
       patients: this.patientApi.getPatients(this.wardId)
@@ -49,10 +56,16 @@ export class AppointmentsPanelComponent implements OnChanges, OnDestroy {
     });
   }
 
+  /**
+   * Prüft, ob alle Pflichtfelder für einen neuen Termin befüllt sind.
+   */
   isDraftComplete(): boolean {
     return Object.values(this.draft).every(Boolean);
   }
 
+  /**
+   * Persistiert den Entwurf und ergänzt die lokale Liste optimistisch mit der Serverantwort.
+   */
   schedule(): void {
     if (!this.isDraftComplete()) {
       return;
@@ -64,6 +77,9 @@ export class AppointmentsPanelComponent implements OnChanges, OnDestroy {
     });
   }
 
+  /**
+   * Beendet laufende Requests beim Zerstören des Widgets.
+   */
   ngOnDestroy(): void {
     this.loadSubscription?.unsubscribe();
     this.createSubscription?.unsubscribe();

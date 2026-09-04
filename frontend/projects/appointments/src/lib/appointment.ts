@@ -1,3 +1,6 @@
+/**
+ * Beschreibt einen Stations-Termin aus dem Appointments-Backend.
+ */
 export interface Appointment {
   id: string;
   wardId: string;
