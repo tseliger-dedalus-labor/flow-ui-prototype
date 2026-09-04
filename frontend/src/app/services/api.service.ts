@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ComponentDescriptor, FlowDefinition, FlowSummary, ValidationResult } from '../models';
+import { Appointment, ComponentDescriptor, FlowDefinition, FlowSummary, ValidationResult } from '../models';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -44,6 +44,14 @@ export class ApiService {
 
   getPatient(patientId: string): Observable<{ id: string; name: string; birthDate: string }> {
     return this.http.get<{ id: string; name: string; birthDate: string }>(`${this.baseUrl}/patients/${patientId}`);
+  }
+
+  getAppointments(wardId: string): Observable<Appointment[]> {
+    return this.http.get<Appointment[]>(`${this.baseUrl}/wards/${wardId}/appointments`);
+  }
+
+  createAppointment(wardId: string, appointment: Pick<Appointment, 'patientId' | 'date' | 'time' | 'reason'>): Observable<Appointment> {
+    return this.http.post<Appointment>(`${this.baseUrl}/wards/${wardId}/appointments`, appointment);
   }
 
   getFindings(patientId: string): Observable<Array<{ id: string; text: string }>> {

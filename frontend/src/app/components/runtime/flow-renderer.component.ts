@@ -11,24 +11,30 @@ import { DemographicsPanelComponent } from '../widgets/demographics-panel.compon
 import { FindingsPanelComponent } from '../widgets/findings-panel.component';
 import { OrdersPanelComponent } from '../widgets/orders-panel.component';
 import { TransfusionsPanelComponent } from '../widgets/transfusions-panel.component';
+import { AppointmentsPanelComponent } from '../widgets/appointments-panel.component';
+import { PermissionService } from '../../services/permission.service';
 
 @Component({
     selector: 'app-flow-renderer',
     template: `
     <section class="node-shell">
       <ng-container #host />
-      @if (node.children.length) {
-        <div class="children">
-          @for (child of node.children; track child) {
-            <app-flow-renderer
-              [node]="child"
-              [context]="context" />
-          }
-        </div>
+      @if (hasAccess) {
+        @if (node.children.length) {
+          <div class="children">
+            @for (child of node.children; track child) {
+              <app-flow-renderer
+                [node]="child"
+                [context]="context" />
+            }
+          </div>
+        }
+      } @else {
+        <p class="access-denied">Keine Berechtigung für diese Komponente.</p>
       }
     </section>
     `,
-    styles: ['.node-shell { margin-bottom: 1rem; } .children { margin-top: 0.75rem; padding-left: 0.75rem; border-left: 2px solid #e0e5f5; }'],
+    styles: ['.node-shell { margin-bottom: 1rem; } .children { margin-top: 0.75rem; padding-left: 0.75rem; border-left: 2px solid #e0e5f5; } .access-denied { color: #a32727; }'],
     imports: [forwardRef(() => FlowRendererComponent)]
 })
 export class FlowRendererComponent implements OnChanges, OnDestroy {
@@ -46,11 +52,13 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
     'demographics-panel': DemographicsPanelComponent,
     'findings-panel': FindingsPanelComponent,
     'orders-panel': OrdersPanelComponent,
-    'transfusions-panel': TransfusionsPanelComponent
+    'transfusions-panel': TransfusionsPanelComponent,
+    'appointments-panel': AppointmentsPanelComponent
   };
   private subscriptions: Subscription[] = [];
+  hasAccess = true;
 
-  constructor(private readonly engine: FlowEngineService) {}
+  constructor(private readonly engine: FlowEngineService, private readonly permissions: PermissionService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['node'] && !changes['context']) {
@@ -62,6 +70,10 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
   private renderNode(): void {
     this.cleanupSubscriptions();
     this.host.clear();
+    this.hasAccess = this.permissions.hasAll(this.node.requiredPermissions ?? []);
+    if (!this.hasAccess) {
+      return;
+    }
     const componentType = this.componentMap[this.node.componentId];
     if (!componentType) {
       return;

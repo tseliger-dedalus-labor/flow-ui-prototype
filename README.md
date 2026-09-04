@@ -84,6 +84,18 @@ npm start
 npm run build
 ```
 
+## Frontend-Module
+
+Die Shell stellt die gemeinsame Toolbar bereit und lädt die Module unabhängig:
+
+- Benutzer-UI: `/runtime`
+- Stationsbezogene Terminplanung: `/appointments`
+- Editor: `/editor`
+
+Weitere Module können als eigene Feature-Routen in der Shell registriert werden.
+Die Berechtigungen eines Flow-Knotens werden im Editor als kommaseparierte Werte konfiguriert.
+Das Terminplanungsmodul verwendet beispielhaft `APPOINTMENTS_READ`; die Berechtigungen sind im Prototyp clientseitig gemockt.
+
 ## Editor-Workflow (`/editor`)
 
 1. Flow auswählen

@@ -39,6 +39,7 @@ export interface FlowNode {
   inputBindings: Record<string, InputBinding>;
   children: FlowNode[];
   transitions: FlowTransition[];
+  requiredPermissions?: string[];
 }
 
 export interface FlowDefinition {
@@ -62,4 +63,14 @@ export interface ValidationIssue {
 export interface ValidationResult {
   valid: boolean;
   issues: ValidationIssue[];
+}
+
+export interface Appointment {
+  id: string;
+  wardId: string;
+  patientId: string;
+  patientName: string;
+  date: string;
+  time: string;
+  reason: string;
 }

@@ -11,6 +11,7 @@ public class FlowNode {
     private Map<String, InputBinding> inputBindings = new HashMap<>();
     private List<FlowNode> children = new ArrayList<>();
     private List<FlowTransition> transitions = new ArrayList<>();
+    private List<String> requiredPermissions = new ArrayList<>();
 
     public FlowNode() {}
 
@@ -24,4 +25,6 @@ public class FlowNode {
     public void setChildren(List<FlowNode> children) { this.children = children; }
     public List<FlowTransition> getTransitions() { return transitions; }
     public void setTransitions(List<FlowTransition> transitions) { this.transitions = transitions; }
+    public List<String> getRequiredPermissions() { return requiredPermissions; }
+    public void setRequiredPermissions(List<String> requiredPermissions) { this.requiredPermissions = requiredPermissions; }
 }

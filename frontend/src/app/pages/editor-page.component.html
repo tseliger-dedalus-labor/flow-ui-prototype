@@ -41,6 +41,12 @@
               }
             </select>
           </label>
+          <label>Berechtigungen (Komma-getrennt)
+            <input
+              [ngModel]="requiredPermissionsAsText(node)"
+              (ngModelChange)="setRequiredPermissions(node, $event)"
+              placeholder="z. B. APPOINTMENTS_READ" />
+          </label>
           @if (descriptor(node.componentId); as desc) {
             <div>
               <h4>Input-Bindings</h4>
