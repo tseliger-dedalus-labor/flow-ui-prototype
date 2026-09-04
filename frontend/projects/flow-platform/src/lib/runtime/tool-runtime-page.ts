@@ -1,5 +1,6 @@
 import { Directive, OnDestroy, OnInit } from '@angular/core';
 import { combineLatest, Observable, Subscription } from 'rxjs';
+import { AContentPresenter } from 'ui-framework';
 import { FlowApiService } from '../flow-api.service';
 import { FlowEngineService, FlowEngineState } from '../flow-engine.service';
 import { FlowNode, FlowSidebar, FlowSummary, Tool } from '../models';
@@ -17,7 +18,7 @@ const FLOW_TABS_SCOPE_PREFIX = 'flow-tabs:';
  * Gemeinsame Steuerungslogik für Tool-Einstiege mit einem oder mehreren auswählbaren Flows.
  */
 @Directive()
-export abstract class ToolRuntimePage implements OnInit, OnDestroy {
+export abstract class ToolRuntimePage extends AContentPresenter implements OnInit, OnDestroy {
   flows: FlowSummary[] = [];
   selectedFlowId = '';
   flowStarted = false;
@@ -34,10 +35,11 @@ export abstract class ToolRuntimePage implements OnInit, OnDestroy {
     public readonly engine: FlowEngineService,
     private readonly api: FlowApiService,
     private readonly viewRouter: ViewRouterService,
-    private readonly tool: Tool,
+    tool: Tool,
     private readonly listError: string,
     private readonly loadError: string
   ) {
+    super(tool);
     this.vm$ = combineLatest({
       node: this.engine.currentNode$,
       sidebarNode: this.engine.sidebarNode$,
@@ -56,6 +58,7 @@ export abstract class ToolRuntimePage implements OnInit, OnDestroy {
    */
   ngOnInit(): void {
     const restoredState = this.readRestoredState();
+    this.loading = true;
     this.api.getFlows(this.tool).subscribe({
       next: (flows) => {
         this.flows = flows;
@@ -65,13 +68,19 @@ export abstract class ToolRuntimePage implements OnInit, OnDestroy {
         this.selectedFlowId = restoredFlowExists ? restoredState!.flowId : flows[0]?.id ?? '';
         if (flows.length === 0) {
           this.error = 'Für dieses Tool ist kein Flow verfügbar.';
+          this.loading = false;
         } else if (restoredFlowExists) {
           this.loadFlow(restoredState!.engine);
         } else if (flows.length === 1) {
           this.startFlow();
+        } else {
+          this.loading = false;
         }
       },
-      error: () => this.error = this.listError
+      error: () => {
+        this.error = this.listError;
+        this.loading = false;
+      }
     });
   }
 
@@ -85,20 +94,26 @@ export abstract class ToolRuntimePage implements OnInit, OnDestroy {
 
   private loadFlow(restoredState?: FlowEngineState): void {
     if (!this.selectedFlowId) {
+      this.loading = false;
       return;
     }
     this.error = '';
     this.flowStarted = false;
+    this.loading = true;
     this.api.getFlow(this.selectedFlowId).subscribe({
       next: (definition) => {
         this.engine.initialize(definition, restoredState);
         this.flowStarted = true;
+        this.loading = false;
         const state = this.engine.snapshot();
         if (state) {
           this.persistState(state);
         }
       },
-      error: () => this.error = this.loadError
+      error: () => {
+        this.error = this.loadError;
+        this.loading = false;
+      }
     });
   }
 
