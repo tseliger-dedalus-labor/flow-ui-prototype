@@ -1,6 +1,13 @@
 {
   "$schema": "../../node_modules/ng-packagr/ng-package.schema.json",
   "dest": "../../dist/appointments",
+  "assets": [
+    {
+      "glob": "appointments.components.json",
+      "input": "src",
+      "output": "."
+    }
+  ],
   "lib": {
     "entryFile": "src/public-api.ts"
   }

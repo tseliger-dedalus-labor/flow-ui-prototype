@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "module": "patient-workflow",
+  "moduleVersion": "1.0.0",
+  "components": [
+    {
+      "id": "ward-list",
+      "title": "Stationsliste",
+      "container": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "wardSelected",
+          "payload": {
+            "wardId": "WARD_ID"
+          }
+        }
+      ]
+    },
+    {
+      "id": "patient-list",
+      "title": "Patientenliste",
+      "container": false,
+      "inputs": [
+        {
+          "name": "wardId",
+          "semanticType": "WARD_ID",
+          "required": true,
+          "allowedValues": []
+        },
+        {
+          "name": "mode",
+          "semanticType": "MODE",
+          "required": true,
+          "allowedValues": [
+            "normal",
+            "findings",
+            "orders",
+            "transfusions"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "patientSelected",
+          "payload": {
+            "patientId": "PATIENT_ID"
+          }
+        }
+      ]
+    },
+    {
+      "id": "patient-view",
+      "title": "Patientenansicht",
+      "container": true,
+      "inputs": [
+        {
+          "name": "patientId",
+          "semanticType": "PATIENT_ID",
+          "required": true,
+          "allowedValues": []
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "id": "stack-layout",
+      "title": "Stack-Layout",
+      "container": true,
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "demographics-panel",
+      "title": "Stammdaten",
+      "container": false,
+      "inputs": [
+        {
+          "name": "patientId",
+          "semanticType": "PATIENT_ID",
+          "required": true,
+          "allowedValues": []
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "id": "findings-panel",
+      "title": "Befunde",
+      "container": false,
+      "inputs": [
+        {
+          "name": "patientId",
+          "semanticType": "PATIENT_ID",
+          "required": true,
+          "allowedValues": []
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "id": "orders-panel",
+      "title": "Aufträge",
+      "container": false,
+      "inputs": [
+        {
+          "name": "patientId",
+          "semanticType": "PATIENT_ID",
+          "required": true,
+          "allowedValues": []
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "id": "transfusions-panel",
+      "title": "Transfusionen",
+      "container": false,
+      "inputs": [
+        {
+          "name": "patientId",
+          "semanticType": "PATIENT_ID",
+          "required": true,
+          "allowedValues": []
+        }
+      ],
+      "outputs": []
+    }
+  ]
+}

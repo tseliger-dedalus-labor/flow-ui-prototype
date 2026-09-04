@@ -29,4 +29,16 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>${project.basedir}/../../frontend/projects/patient-workflow/src</directory>
+                <includes>
+                    <include>patient-workflow.components.json</include>
+                </includes>
+                <targetPath>META-INF/flow-components</targetPath>
+            </resource>
+        </resources>
+    </build>
 </project>

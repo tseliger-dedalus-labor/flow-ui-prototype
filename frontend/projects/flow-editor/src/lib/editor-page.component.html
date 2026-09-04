@@ -85,6 +85,16 @@
                       }
                     </select>
                   </label>
+                  @if (transition.onOutput) {
+                    <p>
+                      Direkt kompatible Ziele:
+                      @for (target of compatibleTargets(node, transition.onOutput); track target; let last = $last) {
+                        <code>{{ target.id }}</code> ({{ descriptor(target.componentId)?.title }}){{ last ? '' : ', ' }}
+                      } @empty {
+                        keine
+                      }
+                    </p>
+                  }
                   <label>Context-Mapping (key:value, pro Zeile)</label>
                   <textarea
                     [ngModel]="mappingAsText(transition.contextMapping)"

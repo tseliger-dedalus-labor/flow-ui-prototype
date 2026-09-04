@@ -8,16 +8,17 @@ import { PatientViewComponent } from './widgets/patient-view.component';
 import { StackLayoutComponent } from './widgets/stack-layout.component';
 import { TransfusionsPanelComponent } from './widgets/transfusions-panel.component';
 import { WardListComponent } from './widgets/ward-list.component';
+import { patientWorkflowComponent } from './component-manifest';
 
 export function providePatientWorkflowWidgets(): Provider[] {
   return [
-    provideFlowWidget('ward-list', WardListComponent),
-    provideFlowWidget('patient-list', PatientListComponent),
-    provideFlowWidget('patient-view', PatientViewComponent),
-    provideFlowWidget('stack-layout', StackLayoutComponent),
-    provideFlowWidget('demographics-panel', DemographicsPanelComponent),
-    provideFlowWidget('findings-panel', FindingsPanelComponent),
-    provideFlowWidget('orders-panel', OrdersPanelComponent),
-    provideFlowWidget('transfusions-panel', TransfusionsPanelComponent)
+    provideFlowWidget(patientWorkflowComponent('ward-list'), WardListComponent),
+    provideFlowWidget(patientWorkflowComponent('patient-list'), PatientListComponent),
+    provideFlowWidget(patientWorkflowComponent('patient-view'), PatientViewComponent),
+    provideFlowWidget(patientWorkflowComponent('stack-layout'), StackLayoutComponent),
+    provideFlowWidget(patientWorkflowComponent('demographics-panel'), DemographicsPanelComponent),
+    provideFlowWidget(patientWorkflowComponent('findings-panel'), FindingsPanelComponent),
+    provideFlowWidget(patientWorkflowComponent('orders-panel'), OrdersPanelComponent),
+    provideFlowWidget(patientWorkflowComponent('transfusions-panel'), TransfusionsPanelComponent)
   ];
 }

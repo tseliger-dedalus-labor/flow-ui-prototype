@@ -15,7 +15,7 @@ Backend und Frontend sind als getrennt baubare, versionierte Artefakte organisie
 
 `backend/application` und die Angular-Anwendung unter `frontend/src` sind ausschließlich Composition Hosts. Sie wählen die einzubindenden Module aus, liefern Demo-Seed-Daten und stellen die gemeinsame Navigation bereit.
 
-Backend-Module erweitern die Registry über `ComponentDescriptorProvider`. Frontend-Module registrieren dynamische Komponenten über den Multi-Provider `FLOW_WIDGET`. Dadurch kennen Plattform und Renderer keine konkreten Fachmodule.
+Frontend-Module beschreiben ihre Flow-Komponenten in einem versionierten `*.components.json`-Manifest und registrieren dynamische Komponenten über den Multi-Provider `FLOW_WIDGET`. Das Manifest wird beim Paketbau mit ausgeliefert und von den korrespondierenden Backend-Modulen über `ComponentDescriptorProvider` in die Registry geladen. Dadurch verwenden Renderer, Backend-Validierung und Editor dieselbe Metadatenquelle.
 
 Jedes `pom.xml` beziehungsweise `projects/*/package.json` enthält eine eigene Artefaktversion. Abhängigkeiten zwischen Modulen referenzieren explizite Versionen und können bei Releases einzeln angehoben werden.
 
@@ -108,6 +108,10 @@ Die Shell stellt nur die gemeinsame Toolbar und die Composition-Routen bereit. S
 Weitere Module können eigene Routen, API-Clients und Widget-Provider exportieren, ohne die Flow-Plattform zu ändern.
 Die Berechtigungen eines Flow-Knotens werden im Editor als kommaseparierte Werte konfiguriert.
 Das Terminplanungsmodul verwendet beispielhaft `APPOINTMENTS_READ`; die Berechtigungen sind im Prototyp clientseitig gemockt.
+
+### Komponenten-Metadaten
+
+Jedes Frontend-Fachmodul liefert sein Manifest als Paket-Asset aus und verweist in `package.json` über `flowComponents` darauf. Das Manifest enthält Schema-, Modul- und Modulversionsangaben sowie IDs, Container-Eigenschaft, typisierte Inputs und Outputs aller registrierten Flow-Komponenten. Die Backend-Fachmodule übernehmen dieselben Dateien beim Maven-Build nach `META-INF/flow-components`; fehlende, falsch zugeordnete oder intern doppelte Metadaten verhindern den Start. `GET /api/flow-registry` stellt die zusammengeführte Beschreibung für Validierung und Editor bereit.
 
 ## Editor-Workflow (`/editor`)
 
