@@ -372,6 +372,82 @@ class FlowValidationServiceTest {
         ));
     }
 
+    @Test
+    void duplicateNodeIdsFail() {
+        FlowDefinition def = buildValid();
+        FlowNode duplicate = new FlowNode();
+        duplicate.setId("wards");
+        duplicate.setComponentId("ward-list");
+        def.getNodes().add(duplicate);
+
+        ValidationResult result = validator.validate(def);
+
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue ->
+            issue.getPath().equals("nodes.3.id")
+                && issue.getMessage().contains("mehrfach vorhanden")
+        ));
+    }
+
+    @Test
+    void childCycleFailsWithoutOverflowing() {
+        FlowDefinition def = buildValid();
+        FlowNode view = def.getNodes().stream().filter(node -> node.getId().equals("view")).findFirst().orElseThrow();
+        view.setChildren(List.of(view));
+
+        ValidationResult result = assertDoesNotThrow(() -> validator.validate(def));
+
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue ->
+            issue.getMessage().contains("keinen Zyklus")
+        ));
+    }
+
+    @Test
+    void unknownInputBindingFails() {
+        FlowDefinition def = buildValid();
+        FlowNode wards = def.getNodes().stream().filter(node -> node.getId().equals("wards")).findFirst().orElseThrow();
+        InputBinding binding = new InputBinding();
+        binding.setSource(BindingSource.STATIC);
+        binding.setStaticValue("unused");
+        wards.setInputBindings(Map.of("unknown", binding));
+
+        ValidationResult result = validator.validate(def);
+
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue ->
+            issue.getPath().equals("nodes.wards.inputBindings.unknown")
+        ));
+    }
+
+    @Test
+    void nullNodeCollectionsProduceIssuesInsteadOfExceptions() {
+        FlowDefinition def = buildValid();
+        FlowNode wards = def.getNodes().stream().filter(node -> node.getId().equals("wards")).findFirst().orElseThrow();
+        wards.setChildren(null);
+        wards.setTransitions(null);
+
+        ValidationResult result = assertDoesNotThrow(() -> validator.validate(def));
+
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue -> issue.getPath().equals("nodes.wards.children")));
+        assertTrue(result.getIssues().stream().anyMatch(issue -> issue.getPath().equals("nodes.wards.transitions")));
+    }
+
+    @Test
+    void nullTransitionContextMappingProducesIssueInsteadOfException() {
+        FlowDefinition def = buildValid();
+        FlowNode wards = def.getNodes().stream().filter(node -> node.getId().equals("wards")).findFirst().orElseThrow();
+        wards.getTransitions().get(0).setContextMapping(null);
+
+        ValidationResult result = assertDoesNotThrow(() -> validator.validate(def));
+
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue ->
+            issue.getMessage().contains("Context-Mapping darf nicht null sein")
+        ));
+    }
+
     /**
      * Baut den minimalen gültigen Pfad Stationsliste → Patientenliste →
      * Patientenansicht auf, der als Ausgangspunkt für alle Negativtests dient.
