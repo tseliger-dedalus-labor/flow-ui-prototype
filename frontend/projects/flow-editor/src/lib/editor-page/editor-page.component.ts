@@ -174,6 +174,20 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     this.validationTrigger.next();
   }
 
+  setSidebarEnabled(flow: FlowDefinition, enabled: boolean): void {
+    if (!enabled) {
+      delete flow.sidebar;
+    } else {
+      flow.sidebar = {
+        nodeId: flow.entryNodeId || flow.nodes[0]?.id || '',
+        position: 'LEFT',
+        width: 280,
+        ariaLabel: 'Flow-Navigation'
+      };
+    }
+    this.validationTrigger.next();
+  }
+
   mappingAsText(mapping: Record<string, string>): string {
     return Object.entries(mapping ?? {})
       .map(([key, value]) => `${key}:${value}`)

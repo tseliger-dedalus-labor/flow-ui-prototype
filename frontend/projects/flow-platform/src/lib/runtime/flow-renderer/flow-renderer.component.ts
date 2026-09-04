@@ -60,7 +60,9 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
     for (const transition of this.node.transitions ?? []) {
       const emitter = instance[transition.onOutput];
       if (emitter instanceof EventEmitter) {
-        this.subscriptions.push(emitter.subscribe((value) => this.engine.transition(transition.onOutput, value)));
+        this.subscriptions.push(
+          emitter.subscribe((value) => this.engine.transitionFrom(this.node.id, transition.onOutput, value))
+        );
       }
     }
   }

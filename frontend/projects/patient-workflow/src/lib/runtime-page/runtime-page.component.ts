@@ -1,20 +1,30 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { combineLatest, Observable } from 'rxjs';
-import { FlowApiService, FlowEngineService, FlowNode, FlowRendererComponent } from 'flow-platform';
+import { FlowApiService, FlowEngineService, FlowLayoutComponent, FlowNode, FlowSidebar } from 'flow-platform';
 
 @Component({
     selector: 'app-runtime-page',
-    imports: [CommonModule, FlowRendererComponent],
+    imports: [CommonModule, FlowLayoutComponent],
     templateUrl: './runtime-page.component.html',
     styleUrl: './runtime-page.component.scss'
 })
 export class RuntimePageComponent implements OnInit {
   error = '';
-  vm$: Observable<{ node: FlowNode | null; context: Record<string, unknown> }>;
+  vm$: Observable<{
+    node: FlowNode | null;
+    sidebarNode: FlowNode | null;
+    sidebar: FlowSidebar | null;
+    context: Record<string, unknown>;
+  }>;
 
   constructor(public readonly engine: FlowEngineService, private readonly api: FlowApiService) {
-    this.vm$ = combineLatest({ node: this.engine.currentNode$, context: this.engine.context$ });
+    this.vm$ = combineLatest({
+      node: this.engine.currentNode$,
+      sidebarNode: this.engine.sidebarNode$,
+      sidebar: this.engine.sidebar$,
+      context: this.engine.context$
+    });
   }
 
   ngOnInit(): void {

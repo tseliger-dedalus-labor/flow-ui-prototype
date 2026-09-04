@@ -78,4 +78,48 @@ describe('FlowEngineService', () => {
     expect(nodeIds[nodeIds.length - 1]).toBe('start');
     expect(context['wardId']).toBeUndefined();
   });
+
+  it('supports transitions emitted by a persistent sidebar node', () => {
+    const flow: FlowDefinition = {
+      id: 'f',
+      name: 'flow',
+      entryNodeId: 'wards',
+      sidebar: {
+        nodeId: 'wards',
+        position: 'LEFT',
+        width: 280
+      },
+      nodes: [
+        {
+          id: 'wards',
+          componentId: 'ward-list',
+          inputBindings: {},
+          children: [],
+          transitions: [{ onOutput: 'wardSelected', targetNodeId: 'patients', contextMapping: { wardId: '$event.wardId' } }]
+        },
+        {
+          id: 'patients',
+          componentId: 'patient-list',
+          inputBindings: {},
+          children: [],
+          transitions: []
+        }
+      ]
+    };
+
+    service.initialize(flow);
+    service.transitionFrom('wards', 'wardSelected', { wardId: 'ward-a' });
+    service.transitionFrom('wards', 'wardSelected', { wardId: 'ward-b' });
+
+    let nodeId: string | undefined;
+    let sidebarNodeId: string | undefined;
+    let context!: Record<string, unknown>;
+    service.currentNode$.subscribe((node) => nodeId = node?.id);
+    service.sidebarNode$.subscribe((node) => sidebarNodeId = node?.id);
+    service.context$.subscribe((value) => context = value);
+
+    expect(nodeId).toBe('patients');
+    expect(sidebarNodeId).toBe('wards');
+    expect(context['wardId']).toBe('ward-b');
+  });
 });

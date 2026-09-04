@@ -8,7 +8,7 @@ import { FlowRendererComponent } from './flow-renderer.component';
 import { FLOW_WIDGET } from '../flow-widget';
 
 class FlowEngineServiceMock {
-  transition = jasmine.createSpy('transition');
+  transitionFrom = jasmine.createSpy('transitionFrom');
 }
 
 @Component({ selector: 'flow-test-view', template: '' })
@@ -93,8 +93,8 @@ describe('FlowRendererComponent', () => {
     const patientList = fixture.debugElement.query(By.directive(TestListComponent));
     (patientList.componentInstance as TestListComponent).patientSelected.emit({ patientId: 'p-1' });
 
-    expect(engine.transition).toHaveBeenCalledTimes(1);
-    expect(engine.transition).toHaveBeenCalledWith('patientSelected', { patientId: 'p-1' });
+    expect(engine.transitionFrom).toHaveBeenCalledTimes(1);
+    expect(engine.transitionFrom).toHaveBeenCalledWith('patients', 'patientSelected', { patientId: 'p-1' });
   });
 
   it('does not render a node without its required permission', () => {

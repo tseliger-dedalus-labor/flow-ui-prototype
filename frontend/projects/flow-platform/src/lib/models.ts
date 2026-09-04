@@ -42,10 +42,20 @@ export interface FlowNode {
   requiredPermissions?: string[];
 }
 
+export type SidebarPosition = 'LEFT' | 'RIGHT';
+
+export interface FlowSidebar {
+  nodeId: string;
+  position: SidebarPosition;
+  width: number;
+  ariaLabel?: string;
+}
+
 export interface FlowDefinition {
   id: string;
   name: string;
   entryNodeId: string;
+  sidebar?: FlowSidebar;
   nodes: FlowNode[];
 }
 

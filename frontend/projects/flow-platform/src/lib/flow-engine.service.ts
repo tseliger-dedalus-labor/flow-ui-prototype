@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { FlowDefinition, FlowNode } from './models';
+import { FlowDefinition, FlowNode, FlowSidebar } from './models';
 
 @Injectable()
 export class FlowEngineService {
@@ -9,9 +9,13 @@ export class FlowEngineService {
   private history: Array<{ nodeId: string; context: Record<string, unknown> }> = [];
 
   private currentNodeSubject = new BehaviorSubject<FlowNode | null>(null);
+  private sidebarNodeSubject = new BehaviorSubject<FlowNode | null>(null);
+  private sidebarSubject = new BehaviorSubject<FlowSidebar | null>(null);
   private contextSubject = new BehaviorSubject<Record<string, unknown>>({});
 
   readonly currentNode$ = this.currentNodeSubject.asObservable();
+  readonly sidebarNode$ = this.sidebarNodeSubject.asObservable();
+  readonly sidebar$ = this.sidebarSubject.asObservable();
   readonly context$ = this.contextSubject.asObservable();
 
   initialize(definition: FlowDefinition): void {
@@ -20,6 +24,8 @@ export class FlowEngineService {
     this.history = [];
     const entry = this.nodeMap.get(definition.entryNodeId) ?? null;
     this.currentNodeSubject.next(entry);
+    this.sidebarNodeSubject.next(definition.sidebar ? this.nodeMap.get(definition.sidebar.nodeId) ?? null : null);
+    this.sidebarSubject.next(definition.sidebar ?? null);
     this.contextSubject.next({});
   }
 
@@ -28,7 +34,16 @@ export class FlowEngineService {
     if (!currentNode) {
       return;
     }
-    const transition = currentNode.transitions.find((item) => item.onOutput === outputName);
+    this.transitionFrom(currentNode.id, outputName, payload);
+  }
+
+  transitionFrom(sourceNodeId: string, outputName: string, payload: unknown): void {
+    const sourceNode = this.nodeMap.get(sourceNodeId);
+    const currentNode = this.currentNodeSubject.value;
+    if (!sourceNode || !currentNode) {
+      return;
+    }
+    const transition = sourceNode.transitions.find((item) => item.onOutput === outputName);
     if (!transition) {
       return;
     }

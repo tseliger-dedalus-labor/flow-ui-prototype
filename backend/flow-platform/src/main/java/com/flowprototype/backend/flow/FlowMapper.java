@@ -33,6 +33,7 @@ public class FlowMapper {
         try {
             FlowDefinition payload = new FlowDefinition();
             payload.setEntryNodeId(definition.getEntryNodeId());
+            payload.setSidebar(definition.getSidebar());
             payload.setNodes(definition.getNodes());
             entity.setDefinitionJson(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(payload));
         } catch (JacksonException e) {

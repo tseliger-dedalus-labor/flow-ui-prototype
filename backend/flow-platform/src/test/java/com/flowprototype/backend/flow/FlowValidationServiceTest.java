@@ -131,6 +131,33 @@ class FlowValidationServiceTest {
         assertTrue(result.getIssues().stream().anyMatch(issue -> issue.getMessage().contains("Mehrere Transitionen")));
     }
 
+    @Test
+    void validSidebarPasses() {
+        FlowDefinition def = buildValid();
+        FlowSidebar sidebar = new FlowSidebar();
+        sidebar.setNodeId("wards");
+        sidebar.setPosition(SidebarPosition.RIGHT);
+        sidebar.setWidth(320);
+        def.setSidebar(sidebar);
+
+        ValidationResult result = validator.validate(def);
+
+        assertTrue(result.isValid(), () -> "Expected valid sidebar, got: " + result.getIssues().stream().map(ValidationIssue::getMessage).toList());
+    }
+
+    @Test
+    void unknownSidebarNodeFails() {
+        FlowDefinition def = buildValid();
+        FlowSidebar sidebar = new FlowSidebar();
+        sidebar.setNodeId("missing");
+        def.setSidebar(sidebar);
+
+        ValidationResult result = validator.validate(def);
+
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue -> issue.getPath().equals("sidebar.nodeId")));
+    }
+
     private FlowDefinition buildValid() {
         FlowDefinition def = new FlowDefinition();
         def.setId("f");

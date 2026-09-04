@@ -11,6 +11,8 @@ class ApiServiceMock {
 
 class FlowEngineServiceMock {
   currentNode$ = new BehaviorSubject(null);
+  sidebarNode$ = new BehaviorSubject(null);
+  sidebar$ = new BehaviorSubject(null);
   context$ = new BehaviorSubject<Record<string, unknown>>({});
   initialize() {}
   goBack() {}

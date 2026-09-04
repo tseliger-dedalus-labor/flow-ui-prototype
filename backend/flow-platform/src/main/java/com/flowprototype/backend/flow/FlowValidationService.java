@@ -26,6 +26,15 @@ public class FlowValidationService {
         if (!nodes.containsKey(definition.getEntryNodeId())) {
             issues.add(new ValidationIssue("entryNodeId", "Entry-Knoten existiert nicht."));
         }
+        FlowSidebar sidebar = definition.getSidebar();
+        if (sidebar != null) {
+            if (!nodes.containsKey(sidebar.getNodeId())) {
+                issues.add(new ValidationIssue("sidebar.nodeId", "Sidebar-Knoten existiert nicht."));
+            }
+            if (sidebar.getWidth() == null || sidebar.getWidth() < 160) {
+                issues.add(new ValidationIssue("sidebar.width", "Sidebar-Breite muss mindestens 160 Pixel betragen."));
+            }
+        }
 
         Map<String, ComponentDescriptor> descriptorsById = registry.getAll().stream().collect(Collectors.toMap(ComponentDescriptor::getId, Function.identity()));
         Map<String, Map<String, SemanticType>> contextByNode = computeContextTypes(definition, nodes, descriptorsById, issues);

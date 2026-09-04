@@ -4,5 +4,6 @@ export * from './lib/flow-api.service';
 export * from './lib/flow-engine.service';
 export * from './lib/models';
 export * from './lib/permission.service';
+export * from './lib/runtime/flow-layout/flow-layout.component';
 export * from './lib/runtime/flow-renderer/flow-renderer.component';
 export * from './lib/runtime/flow-widget';

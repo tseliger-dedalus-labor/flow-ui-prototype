@@ -7,6 +7,7 @@ public class FlowDefinition {
     private String id;
     private String name;
     private String entryNodeId;
+    private FlowSidebar sidebar;
     private List<FlowNode> nodes = new ArrayList<>();
 
     public FlowDefinition() {}
@@ -17,6 +18,8 @@ public class FlowDefinition {
     public void setName(String name) { this.name = name; }
     public String getEntryNodeId() { return entryNodeId; }
     public void setEntryNodeId(String entryNodeId) { this.entryNodeId = entryNodeId; }
+    public FlowSidebar getSidebar() { return sidebar; }
+    public void setSidebar(FlowSidebar sidebar) { this.sidebar = sidebar; }
     public List<FlowNode> getNodes() { return nodes; }
     public void setNodes(List<FlowNode> nodes) { this.nodes = nodes; }
 }

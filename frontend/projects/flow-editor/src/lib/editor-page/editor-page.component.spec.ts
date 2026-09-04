@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { FlowApiService, FlowNode } from 'flow-platform';
+import { FlowApiService, FlowDefinition, FlowNode } from 'flow-platform';
 import { EditorPageComponent } from './editor-page.component';
 
 class ApiServiceMock {
@@ -56,6 +56,28 @@ describe('EditorPageComponent', () => {
     fixture.componentInstance.setRequiredPermissions(node, ' APPOINTMENTS_READ, APPOINTMENTS_WRITE, APPOINTMENTS_READ ');
 
     expect(node.requiredPermissions).toEqual(['APPOINTMENTS_READ', 'APPOINTMENTS_WRITE']);
+  });
+
+  it('creates and removes sidebar configuration', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    const flow: FlowDefinition = {
+      id: 'flow',
+      name: 'Test',
+      entryNodeId: 'wards',
+      nodes: [{ id: 'wards', componentId: 'ward-list', inputBindings: {}, children: [], transitions: [] }]
+    };
+
+    component.setSidebarEnabled(flow, true);
+    expect(flow.sidebar).toEqual({
+      nodeId: 'wards',
+      position: 'LEFT',
+      width: 280,
+      ariaLabel: 'Flow-Navigation'
+    });
+
+    component.setSidebarEnabled(flow, false);
+    expect(flow.sidebar).toBeUndefined();
   });
 
   it('suggests targets whose required inputs match an output type', () => {

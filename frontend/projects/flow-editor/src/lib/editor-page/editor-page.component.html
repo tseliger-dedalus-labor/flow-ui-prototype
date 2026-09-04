@@ -23,6 +23,34 @@
             }
           </select>
         </label>
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            [ngModel]="!!currentFlow.sidebar"
+            (ngModelChange)="setSidebarEnabled(currentFlow, $event)" />
+          Sidebar verwenden
+        </label>
+        @if (currentFlow.sidebar; as sidebar) {
+          <label>Sidebar-Knoten
+            <select [(ngModel)]="sidebar.nodeId" (ngModelChange)="triggerValidation()">
+              @for (node of currentFlow.nodes; track node) {
+                <option [value]="node.id">{{ node.id }}</option>
+              }
+            </select>
+          </label>
+          <label>Sidebar-Position
+            <select [(ngModel)]="sidebar.position" (ngModelChange)="triggerValidation()">
+              <option value="LEFT">Links</option>
+              <option value="RIGHT">Rechts</option>
+            </select>
+          </label>
+          <label>Sidebar-Breite (px)
+            <input type="number" min="160" [(ngModel)]="sidebar.width" (ngModelChange)="triggerValidation()" />
+          </label>
+          <label>Sidebar ARIA-Label
+            <input [(ngModel)]="sidebar.ariaLabel" (ngModelChange)="triggerValidation()" />
+          </label>
+        }
         <label>Knoten bearbeiten
           <select [(ngModel)]="selectedNodeId">
             @for (node of currentFlow.nodes; track node) {

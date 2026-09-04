@@ -36,6 +36,12 @@ Relationale Metadaten + CLOB/JSON:
   "id": "flow-normal",
   "name": "Standardfluss",
   "entryNodeId": "wards",
+  "sidebar": {
+    "nodeId": "wards",
+    "position": "LEFT",
+    "width": 280,
+    "ariaLabel": "Stationsauswahl"
+  },
   "nodes": [
     {
       "id": "wards",
@@ -59,6 +65,8 @@ Relationale Metadaten + CLOB/JSON:
   ]
 }
 ```
+
+Die optionale `sidebar`-Konfiguration referenziert einen beliebigen Flow-Knoten. Wenn der Sidebar-Knoten zugleich der aktuelle Hauptknoten ist, wird er nur im Hauptbereich dargestellt. Nach einer Transition bleibt derselbe Knoten als Sidebar sichtbar und kann weiterhin eigene Transitionen auslösen. Position, Breite und ARIA-Bezeichnung sind im Flow-Editor konfigurierbar.
 
 ## Backend starten (`backend/`)
 
@@ -134,8 +142,9 @@ Die generierten Manifeste bleiben versionierte Paket-Assets. Das veröffentlicht
 4. Input-Bindings (STATIC/CONTEXT) setzen
 5. Transitionen und Context-Mappings bearbeiten
 6. Kindknoten für Container zusammenstellen
-7. Live-Validierung prüfen
-8. Speichern via Backend
+7. Optionalen Sidebar-Knoten, Position und Breite konfigurieren
+8. Live-Validierung prüfen
+9. Speichern via Backend
 
 ## REST-API-Übersicht
 

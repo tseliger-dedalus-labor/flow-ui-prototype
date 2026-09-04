@@ -6,7 +6,11 @@
   }
   @if (vm$ | async; as vm) {
     @if (vm.node) {
-      <app-flow-renderer [node]="vm.node" [context]="vm.context" />
+      <app-flow-layout
+        [node]="vm.node"
+        [sidebarNode]="vm.sidebarNode"
+        [sidebar]="vm.sidebar"
+        [context]="vm.context" />
     }
   }
 </section>

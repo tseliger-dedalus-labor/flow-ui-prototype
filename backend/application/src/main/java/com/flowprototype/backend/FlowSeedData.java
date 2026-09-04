@@ -31,6 +31,7 @@ public class FlowSeedData implements CommandLineRunner {
         normalFlow.setId("flow-normal");
         normalFlow.setName("Standardfluss");
         normalFlow.setEntryNodeId("wards");
+        normalFlow.setSidebar(sidebar("wards"));
 
         FlowNode wards = new FlowNode();
         wards.setId("wards");
@@ -80,6 +81,7 @@ public class FlowSeedData implements CommandLineRunner {
         ordersFlow.setId("flow-orders");
         ordersFlow.setName("Auftragsfokus");
         ordersFlow.setEntryNodeId("wards2");
+        ordersFlow.setSidebar(sidebar("wards2"));
 
         FlowNode wards2 = new FlowNode();
         wards2.setId("wards2");
@@ -122,6 +124,7 @@ public class FlowSeedData implements CommandLineRunner {
         appointmentsFlow.setId("flow-appointments");
         appointmentsFlow.setName("Stationsbezogene Terminplanung");
         appointmentsFlow.setEntryNodeId("appointmentWards");
+        appointmentsFlow.setSidebar(sidebar("appointmentWards"));
 
         FlowNode appointmentWards = new FlowNode();
         appointmentWards.setId("appointmentWards");
@@ -157,5 +160,14 @@ public class FlowSeedData implements CommandLineRunner {
         b.setContextKey("patientId");
         node.setInputBindings(Map.of("patientId", b));
         return node;
+    }
+
+    private FlowSidebar sidebar(String nodeId) {
+        FlowSidebar sidebar = new FlowSidebar();
+        sidebar.setNodeId(nodeId);
+        sidebar.setPosition(SidebarPosition.LEFT);
+        sidebar.setWidth(280);
+        sidebar.setAriaLabel("Stationsauswahl");
+        return sidebar;
     }
 }

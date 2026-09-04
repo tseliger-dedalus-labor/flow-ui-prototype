@@ -1,0 +1,17 @@
+@if (showSidebar) {
+  <div
+    class="flow-layout"
+    [class.flow-layout-right]="sidebar?.position === 'RIGHT'"
+    [style.--flow-sidebar-width]="sidebarWidth">
+    <aside class="flow-sidebar" [attr.aria-label]="sidebar?.ariaLabel || 'Flow-Navigation'">
+      <app-flow-renderer [node]="sidebarNode!" [context]="context" />
+    </aside>
+    <div class="flow-content">
+      <app-flow-renderer [node]="node" [context]="context" />
+    </div>
+  </div>
+} @else {
+  <div class="flow-content flow-content-standalone">
+    <app-flow-renderer [node]="node" [context]="context" />
+  </div>
+}
