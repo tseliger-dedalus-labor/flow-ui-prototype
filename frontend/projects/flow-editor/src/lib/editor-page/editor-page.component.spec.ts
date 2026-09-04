@@ -1,14 +1,26 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { FlowApiService, FlowDefinition, FlowNode } from 'flow-platform';
+import { FlowApiService, FlowDefinition, FlowNode, ViewRouterService } from 'flow-platform';
 import { EditorPageComponent } from './editor-page.component';
 
 /** API-Doppel mit kontrolliertem Validierungsverhalten für die Editor-Interaktion. */
 class ApiServiceMock {
   failValidation = false;
+  flows: Array<{ id: string; name: string; tool: 'WebclientTool'; active: boolean }> = [];
   getRegistry() { return of([]); }
-  getFlows() { return of([]); }
-  getFlow() { return of({ id: 'f', name: 'n', tool: 'WebclientTool', entryNodeId: 'e', nodes: [] }); }
+  getFlows() { return of(this.flows); }
+  getFlow(id: string) {
+    return of({
+      id,
+      name: id,
+      tool: 'WebclientTool' as const,
+      entryNodeId: 'first',
+      nodes: [
+        { id: 'first', componentId: 'ward-list', inputBindings: {}, children: [], transitions: [] },
+        { id: 'second', componentId: 'patient-list', inputBindings: {}, children: [], transitions: [] }
+      ]
+    });
+  }
   updateFlow(flow: unknown) { return of(flow); }
   validateFlow() {
     if (this.failValidation) {
@@ -16,6 +28,14 @@ class ApiServiceMock {
     }
     return of({ valid: false, issues: [{ path: 'nodes.x', message: 'Fehler' }] });
   }
+}
+
+class ViewRouterServiceMock {
+  state: unknown;
+  readonly writes: unknown[] = [];
+
+  read() { return this.state; }
+  write(_scope: string, state: unknown) { this.writes.push(state); }
 }
 
 /**
@@ -27,7 +47,10 @@ describe('EditorPageComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EditorPageComponent],
-      providers: [{ provide: FlowApiService, useClass: ApiServiceMock }]
+      providers: [
+        { provide: FlowApiService, useClass: ApiServiceMock },
+        { provide: ViewRouterService, useClass: ViewRouterServiceMock }
+      ]
     }).compileComponents();
   });
 
@@ -166,5 +189,25 @@ describe('EditorPageComponent', () => {
 
     // Nur Ziele mit kompatiblen semantischen Eingaben dürfen vorgeschlagen werden.
     expect(component.compatibleTargets(source, 'selected').map((node) => node.id)).toEqual(['s', 'm', 'c']);
+  });
+
+  it('restores the selected flow and node from the linked editor state', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const api = TestBed.inject(FlowApiService) as unknown as ApiServiceMock;
+    const viewRouter = TestBed.inject(ViewRouterService) as unknown as ViewRouterServiceMock;
+    api.flows = [
+      { id: 'flow-a', name: 'A', tool: 'WebclientTool', active: true },
+      { id: 'flow-b', name: 'B', tool: 'WebclientTool', active: false }
+    ];
+    viewRouter.state = { flowId: 'flow-b', nodeId: 'second' };
+
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.selectedFlowId).toBe('flow-b');
+    expect(fixture.componentInstance.selectedNodeId).toBe('second');
+    expect(viewRouter.writes).toContain(jasmine.objectContaining({
+      flowId: 'flow-b',
+      nodeId: 'second'
+    }));
   });
 });

@@ -2,6 +2,12 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { FlowDefinition, FlowNode, FlowSidebar } from './models';
 
+export interface FlowEngineState {
+  currentNodeId: string | null;
+  context: Record<string, unknown>;
+  history: Array<{ nodeId: string; context: Record<string, unknown> }>;
+}
+
 /**
  * Verwaltet den navigierbaren Laufzeitzustand eines Flows inklusive Kontext und Rücksprunghistorie.
  */
@@ -16,6 +22,7 @@ export class FlowEngineService {
   private sidebarNodeSubject = new BehaviorSubject<FlowNode | null>(null);
   private sidebarSubject = new BehaviorSubject<FlowSidebar | null>(null);
   private contextSubject = new BehaviorSubject<Record<string, unknown>>({});
+  private stateSubject = new BehaviorSubject<FlowEngineState | null>(null);
 
   /** Beobachtet den aktuell aktiven Hauptknoten. */
   readonly currentNode$ = this.currentNodeSubject.asObservable();
@@ -25,18 +32,28 @@ export class FlowEngineService {
   readonly sidebar$ = this.sidebarSubject.asObservable();
   /** Beobachtet den zwischen Knoten weitergereichten Flow-Kontext. */
   readonly context$ = this.contextSubject.asObservable();
+  /** Beobachtet den vollständig serialisierbaren Navigationszustand. */
+  readonly state$ = this.stateSubject.asObservable();
 
   /**
    * Initialisiert den Engine-Zustand mit einer neuen Flow-Definition und setzt Navigation sowie Kontext zurück.
    */
-  initialize(definition: FlowDefinition): void {
+  initialize(definition: FlowDefinition, restoredState?: FlowEngineState): void {
     this.definition = definition;
     this.nodeMap = new Map(definition.nodes.map((node) => [node.id, node]));
-    this.history = [];
     const entry = this.nodeMap.get(definition.entryNodeId) ?? null;
-    this.currentNodeSubject.next(entry);
-    this.updateSidebar(entry);
-    this.contextSubject.next({});
+    const currentNode = restoredState
+      ? this.nodeMap.get(restoredState.currentNodeId ?? '') ?? entry
+      : entry;
+    this.history = restoredState
+      ? restoredState.history
+        .filter((item) => this.nodeMap.has(item.nodeId))
+        .map((item) => ({ nodeId: item.nodeId, context: { ...item.context } }))
+      : [];
+    this.currentNodeSubject.next(currentNode);
+    this.updateSidebar(currentNode);
+    this.contextSubject.next(restoredState ? { ...restoredState.context } : {});
+    this.emitState();
   }
 
   /**
@@ -76,6 +93,7 @@ export class FlowEngineService {
     const targetNode = this.nodeMap.get(transition.targetNodeId) ?? null;
     this.currentNodeSubject.next(targetNode);
     this.updateSidebar(targetNode);
+    this.emitState();
   }
 
   /**
@@ -90,6 +108,7 @@ export class FlowEngineService {
     this.currentNodeSubject.next(previousNode);
     this.updateSidebar(previousNode);
     this.contextSubject.next(previous.context);
+    this.emitState();
   }
 
   /**
@@ -100,12 +119,53 @@ export class FlowEngineService {
   }
 
   /**
+   * Liefert einen vom internen Zustand entkoppelten Snapshot für URL-Persistenz.
+   */
+  snapshot(): FlowEngineState | null {
+    const state = this.stateSubject.value;
+    return state ? {
+      currentNodeId: state.currentNodeId,
+      context: { ...state.context },
+      history: state.history.map((item) => ({
+        nodeId: item.nodeId,
+        context: { ...item.context }
+      }))
+    } : null;
+  }
+
+  /**
+   * Prüft unbekannte URL-Daten vor der Wiederherstellung des Engine-Zustands.
+   */
+  static isState(value: unknown): value is FlowEngineState {
+    if (!isRecord(value)) {
+      return false;
+    }
+    const currentNodeId = value['currentNodeId'];
+    const history = value['history'];
+    return (typeof currentNodeId === 'string' || currentNodeId === null)
+      && isRecord(value['context'])
+      && Array.isArray(history)
+      && history.every((item) => isHistoryEntry(item));
+  }
+
+  /**
    * Aktiviert die knotenspezifische Sidebar oder den Flow-Fallback.
    */
   private updateSidebar(node: FlowNode | null): void {
     const sidebar = node?.sidebar ?? this.definition?.sidebar ?? null;
     this.sidebarSubject.next(sidebar);
     this.sidebarNodeSubject.next(sidebar ? this.nodeMap.get(sidebar.nodeId) ?? null : null);
+  }
+
+  private emitState(): void {
+    this.stateSubject.next({
+      currentNodeId: this.currentNodeSubject.value?.id ?? null,
+      context: { ...this.contextSubject.value },
+      history: this.history.map((item) => ({
+        nodeId: item.nodeId,
+        context: { ...item.context }
+      }))
+    });
   }
 
   /**
@@ -122,4 +182,14 @@ export class FlowEngineService {
     }
     return expression;
   }
+}
+
+function isHistoryEntry(value: unknown): value is FlowEngineState['history'][number] {
+  return isRecord(value)
+    && typeof value['nodeId'] === 'string'
+    && isRecord(value['context']);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

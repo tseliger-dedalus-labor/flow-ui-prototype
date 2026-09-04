@@ -2,7 +2,23 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, debounceTime } from 'rxjs';
-import { ComponentDescriptor, FlowApiService, FlowDefinition, FlowNode, TOOL_MODULES, Tool, ValidationIssue } from 'flow-platform';
+import {
+  ComponentDescriptor,
+  FlowApiService,
+  FlowDefinition,
+  FlowNode,
+  TOOL_MODULES,
+  Tool,
+  ValidationIssue,
+  ViewRouterService
+} from 'flow-platform';
+
+interface RoutedEditorState {
+  flowId: string;
+  nodeId: string;
+}
+
+const EDITOR_SCOPE = 'flow-editor';
 
 /**
  * Bietet eine einfache Authoring-Oberfläche zum Laden, Prüfen und Speichern von Flow-Definitionen.
@@ -28,7 +44,10 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   private readonly validationTrigger = new Subject<void>();
   private readonly validationSubscription: Subscription;
 
-  constructor(private readonly api: FlowApiService) {
+  constructor(
+    private readonly api: FlowApiService,
+    private readonly viewRouter: ViewRouterService
+  ) {
     // Validierung wird bewusst entprellt, damit Formularänderungen nicht für jeden Tastenanschlag HTTP-Requests auslösen.
     this.validationSubscription = this.validationTrigger.pipe(debounceTime(300)).subscribe(() => this.validate());
   }
@@ -37,12 +56,16 @@ export class EditorPageComponent implements OnInit, OnDestroy {
    * Lädt Komponenten-Registry und Flow-Liste für die initiale Editoransicht.
    */
   ngOnInit(): void {
+    const restoredState = this.readRestoredState();
     this.api.getRegistry().subscribe((registry) => this.registry = registry);
     this.api.getFlows().subscribe((flows) => {
       this.flows = flows.map((flow) => ({ id: flow.id, name: flow.name }));
       if (this.flows.length > 0) {
-        this.selectedFlowId = this.flows[0].id;
-        this.loadFlow();
+        this.selectedFlowId = restoredState
+          && this.flows.some((flow) => flow.id === restoredState.flowId)
+          ? restoredState.flowId
+          : this.flows[0].id;
+        this.loadFlow(restoredState?.nodeId);
       }
     });
   }
@@ -50,19 +73,23 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   /**
    * Lädt den aktuell ausgewählten Flow als bearbeitbare Kopie und setzt den Editorzustand zurück.
    */
-  loadFlow(): void {
+  loadFlow(preferredNodeId?: string): void {
     if (!this.selectedFlowId) {
       return;
     }
     this.api.getFlow(this.selectedFlowId).subscribe((flow) => {
       this.flow = structuredClone(flow);
       this.flow.nodes.forEach((node) => this.ensureInputBindings(node));
-      this.selectedNodeId = this.flow.nodes[0]?.id ?? '';
+      this.selectedNodeId = preferredNodeId
+        && this.flow.nodes.some((node) => node.id === preferredNodeId)
+        ? preferredNodeId
+        : this.flow.nodes[0]?.id ?? '';
       this.issues = [];
       this.status = '';
       this.validationPerformed = false;
       // Direkt nach dem Laden wird eine erste, entprellte Validierung ausgelöst.
       this.validationTrigger.next();
+      this.persistViewState();
     });
   }
 
@@ -71,6 +98,14 @@ export class EditorPageComponent implements OnInit, OnDestroy {
    */
   get selectedNode(): FlowNode | undefined {
     return this.flow?.nodes.find((node) => node.id === this.selectedNodeId);
+  }
+
+  /**
+   * Aktiviert einen Editor-Knoten und übernimmt die Auswahl in den teilbaren Link.
+   */
+  selectNode(nodeId: string): void {
+    this.selectedNodeId = nodeId;
+    this.persistViewState();
   }
 
   /**
@@ -197,6 +232,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
         const fallbackNodeId = this.flow.nodes[0]?.id ?? '';
         this.selectedNodeId = this.flow.nodes.some((node) => node.id === preferredNodeId) ? preferredNodeId : fallbackNodeId;
         this.status = 'Flow gespeichert.';
+        this.persistViewState();
         // Nach dem Speichern wird bewusst sofort die serverseitige Validierung erneut angezeigt.
         this.validate();
       },
@@ -305,4 +341,28 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.validationSubscription.unsubscribe();
   }
+
+  private readRestoredState(): RoutedEditorState | null {
+    const value = this.viewRouter.read(EDITOR_SCOPE);
+    if (!isRecord(value)
+      || typeof value['flowId'] !== 'string'
+      || typeof value['nodeId'] !== 'string') {
+      return null;
+    }
+    return { flowId: value['flowId'], nodeId: value['nodeId'] };
+  }
+
+  private persistViewState(): void {
+    if (!this.selectedFlowId) {
+      return;
+    }
+    this.viewRouter.write(EDITOR_SCOPE, {
+      flowId: this.selectedFlowId,
+      nodeId: this.selectedNodeId
+    } satisfies RoutedEditorState);
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

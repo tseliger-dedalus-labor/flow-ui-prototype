@@ -89,6 +89,8 @@ export interface FlowNode {
 export interface EmbeddedFlowContainer {
   flowChildren: FlowNode[];
   flowContext: Record<string, unknown>;
+  /** Stabile Knoten-ID für containerlokalen, URL-serialisierbaren UI-Zustand. */
+  flowContainerId?: string;
 }
 
 /**

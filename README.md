@@ -119,6 +119,13 @@ Weitere Module können eigene Routen, API-Clients und Widget-Provider exportiere
 Die Berechtigungen eines Flow-Knotens werden im Editor als kommaseparierte Werte konfiguriert.
 Das Terminplanungsmodul verwendet beispielhaft `APPOINTMENTS_READ`; die Berechtigungen sind im Prototyp clientseitig gemockt.
 
+Die aktuelle Ansicht wird durch den zentralen `ViewRouterService` im Query-Parameter `view` der jeweiligen Modulroute
+gespeichert. Runtime-Routen sichern den ausgewählten Flow, den aktiven Knoten, Kontext und Rücksprunghistorie.
+Tab-Container ergänzen aktive und dynamisch geöffnete Tabs unter ihrer Flow-Knoten-ID; der Editor sichert Flow- und
+Knotenauswahl. Dadurch kann die aktuelle URL direkt als Lesezeichen oder Link gespeichert und vollständig
+wiederhergestellt werden. Weitere Module können eigene Zustandsbereiche über `ViewRouterService.read(...)` und
+`ViewRouterService.write(...)` ergänzen.
+
 ### Komponenten-Metadaten
 
 Jedes Frontend-Fachmodul definiert seine Widgets typisiert in einer exportierten `FLOW_COMPONENTS`-Liste mit `defineFlowComponent(...)`. Diese Liste ist die gemeinsame Quelle für die Angular-Provider und das generierte `*.components.json`-Manifest. Modulname und Modulversion werden aus dem jeweiligen `package.json` übernommen.

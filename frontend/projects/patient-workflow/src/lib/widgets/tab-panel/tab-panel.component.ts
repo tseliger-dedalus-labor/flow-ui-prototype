@@ -6,7 +6,8 @@ import {
   FlowRendererComponent,
   FlowTabRequest,
   FlowTabService,
-  FlowWidgetRegistration
+  FlowWidgetRegistration,
+  ViewRouterService
 } from 'flow-platform';
 import { Subscription } from 'rxjs';
 
@@ -16,6 +17,13 @@ interface TabEntry {
   node: FlowNode;
   closable: boolean;
 }
+
+interface RoutedTabPanelState {
+  activeKey: string;
+  dynamicTabs: FlowTabRequest[];
+}
+
+const FLOW_TABS_SCOPE_PREFIX = 'flow-tabs:';
 
 /**
  * Stellt jeden zugewiesenen Flow-Kindknoten in einem eigenen Tab dar.
@@ -34,6 +42,9 @@ export class TabPanelComponent implements EmbeddedFlowContainer, OnDestroy {
 
   private assignedChildren: FlowNode[] = [];
   private readonly dynamicTabs: TabEntry[] = [];
+  private containerId = '';
+  private restoredActiveKey = '';
+  private restoredContainerId = '';
   flowContext: Record<string, unknown> = {};
   activeKey = '';
 
@@ -42,7 +53,8 @@ export class TabPanelComponent implements EmbeddedFlowContainer, OnDestroy {
 
   constructor(
     @Optional() @Inject(FLOW_WIDGET) widgets: FlowWidgetRegistration[] | null,
-    tabs: FlowTabService
+    tabs: FlowTabService,
+    private readonly viewRouter: ViewRouterService
   ) {
     this.titles = Object.fromEntries(
       (widgets ?? []).map((widget) => [widget.componentId, widget.descriptor.title])
@@ -56,9 +68,18 @@ export class TabPanelComponent implements EmbeddedFlowContainer, OnDestroy {
 
   set flowChildren(children: FlowNode[]) {
     this.assignedChildren = children;
-    if (!this.tabs.some((tab) => tab.key === this.activeKey)) {
-      this.activeKey = this.tabs[0]?.key ?? '';
-    }
+    this.restoreState();
+    this.ensureActiveTab();
+  }
+
+  get flowContainerId(): string {
+    return this.containerId;
+  }
+
+  set flowContainerId(value: string) {
+    this.containerId = value;
+    this.restoreState();
+    this.ensureActiveTab();
   }
 
   get tabs(): TabEntry[] {
@@ -79,6 +100,7 @@ export class TabPanelComponent implements EmbeddedFlowContainer, OnDestroy {
   selectTab(key: string): void {
     if (this.tabs.some((tab) => tab.key === key)) {
       this.activeKey = key;
+      this.persistState();
     }
   }
 
@@ -101,6 +123,7 @@ export class TabPanelComponent implements EmbeddedFlowContainer, OnDestroy {
       const remainingTabs = this.tabs;
       this.activeKey = remainingTabs[Math.min(closedIndex, remainingTabs.length - 1)]?.key ?? '';
     }
+    this.persistState();
   }
 
   /**
@@ -144,6 +167,7 @@ export class TabPanelComponent implements EmbeddedFlowContainer, OnDestroy {
     const existing = this.dynamicTabs.find((tab) => tab.key === request.key);
     if (existing) {
       this.activeKey = existing.key;
+      this.persistState();
       return;
     }
     const tab: TabEntry = {
@@ -154,5 +178,71 @@ export class TabPanelComponent implements EmbeddedFlowContainer, OnDestroy {
     };
     this.dynamicTabs.push(tab);
     this.activeKey = tab.key;
+    this.persistState();
   }
+
+  private restoreState(): void {
+    if (!this.containerId || this.restoredContainerId === this.containerId) {
+      return;
+    }
+    this.restoredContainerId = this.containerId;
+    const value = this.viewRouter.read(`${FLOW_TABS_SCOPE_PREFIX}${this.containerId}`);
+    if (!isRoutedTabPanelState(value)) {
+      return;
+    }
+    this.dynamicTabs.splice(0, this.dynamicTabs.length, ...value.dynamicTabs.map((tab) => ({
+      ...tab,
+      closable: true
+    })));
+    this.restoredActiveKey = value.activeKey;
+  }
+
+  private ensureActiveTab(): void {
+    if (this.restoredActiveKey && this.tabs.some((tab) => tab.key === this.restoredActiveKey)) {
+      this.activeKey = this.restoredActiveKey;
+      this.restoredActiveKey = '';
+      return;
+    }
+    if (!this.tabs.some((tab) => tab.key === this.activeKey)) {
+      this.activeKey = this.tabs[0]?.key ?? '';
+    }
+  }
+
+  private persistState(): void {
+    if (!this.containerId) {
+      return;
+    }
+    this.viewRouter.write(`${FLOW_TABS_SCOPE_PREFIX}${this.containerId}`, {
+      activeKey: this.activeKey,
+      dynamicTabs: this.dynamicTabs.map(({ key, title, node }) => ({ key, title, node }))
+    } satisfies RoutedTabPanelState);
+  }
+}
+
+function isRoutedTabPanelState(value: unknown): value is RoutedTabPanelState {
+  return isRecord(value)
+    && typeof value['activeKey'] === 'string'
+    && Array.isArray(value['dynamicTabs'])
+    && value['dynamicTabs'].every((tab) => isFlowTabRequest(tab));
+}
+
+function isFlowTabRequest(value: unknown): value is FlowTabRequest {
+  return isRecord(value)
+    && typeof value['key'] === 'string'
+    && typeof value['title'] === 'string'
+    && isFlowNode(value['node']);
+}
+
+function isFlowNode(value: unknown): value is FlowNode {
+  return isRecord(value)
+    && typeof value['id'] === 'string'
+    && typeof value['componentId'] === 'string'
+    && isRecord(value['inputBindings'])
+    && Array.isArray(value['children'])
+    && value['children'].every((child) => isFlowNode(child))
+    && Array.isArray(value['transitions']);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

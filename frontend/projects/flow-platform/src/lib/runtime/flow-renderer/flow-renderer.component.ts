@@ -71,6 +71,7 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
 
     const instance = ref.instance as Record<string, unknown>;
     if (this.isEmbeddedContainer(instance)) {
+      instance.flowContainerId = this.node.id;
       instance.flowChildren = this.node.children ?? [];
       instance.flowContext = this.context;
       this.rendersOwnChildren = true;

@@ -1,6 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { BehaviorSubject, of } from 'rxjs';
-import { FlowApiService, FlowDefinition, FlowEngineService, Tool } from 'flow-platform';
+import {
+  FlowApiService,
+  FlowDefinition,
+  FlowEngineService,
+  FlowEngineState,
+  Tool,
+  ViewRouterService
+} from 'flow-platform';
 import { AppointmentsPageComponent } from './appointments-page.component';
 
 /** API-Doppel für die Tool-Zuordnung und das automatische Starten eines eindeutigen Termin-Flows. */
@@ -32,11 +39,22 @@ class FlowEngineServiceMock {
   sidebarNode$ = new BehaviorSubject(null);
   sidebar$ = new BehaviorSubject(null);
   context$ = new BehaviorSubject<Record<string, unknown>>({});
+  state$ = new BehaviorSubject<FlowEngineState | null>(null);
   initializedFlowIds: string[] = [];
 
-  initialize(flow: FlowDefinition) { this.initializedFlowIds.push(flow.id); }
+  initialize(flow: FlowDefinition) {
+    this.initializedFlowIds.push(flow.id);
+    this.state$.next({ currentNodeId: flow.entryNodeId, context: {}, history: [] });
+  }
+  snapshot() { return this.state$.value; }
   goBack() {}
   canGoBack() { return false; }
+}
+
+class ViewRouterServiceMock {
+  read() { return undefined; }
+  write() {}
+  clearByPrefix() {}
 }
 
 describe('AppointmentsPageComponent', () => {
@@ -45,7 +63,8 @@ describe('AppointmentsPageComponent', () => {
       imports: [AppointmentsPageComponent],
       providers: [
         { provide: FlowApiService, useClass: ApiServiceMock },
-        { provide: FlowEngineService, useClass: FlowEngineServiceMock }
+        { provide: FlowEngineService, useClass: FlowEngineServiceMock },
+        { provide: ViewRouterService, useClass: ViewRouterServiceMock }
       ]
     }).compileComponents();
   });

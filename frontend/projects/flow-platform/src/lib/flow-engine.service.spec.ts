@@ -216,4 +216,50 @@ describe('FlowEngineService', () => {
     expect(sidebarNode).toBeNull();
     expect(sidebar).toBeNull();
   });
+
+  it('restores the active node, context and back history from a routed state', () => {
+    const flow: FlowDefinition = {
+      id: 'f',
+      name: 'flow',
+      tool: 'WebclientTool',
+      entryNodeId: 'start',
+      nodes: [
+        {
+          id: 'start',
+          componentId: 'ward-list',
+          inputBindings: {},
+          children: [],
+          transitions: []
+        },
+        {
+          id: 'detail',
+          componentId: 'patient-view',
+          inputBindings: {},
+          children: [],
+          transitions: []
+        }
+      ]
+    };
+
+    service.initialize(flow, {
+      currentNodeId: 'detail',
+      context: { patientId: 'p-1', caseId: 'F-1' },
+      history: [{ nodeId: 'start', context: { wardId: 'ward-a' } }]
+    });
+
+    expect(service.snapshot()).toEqual({
+      currentNodeId: 'detail',
+      context: { patientId: 'p-1', caseId: 'F-1' },
+      history: [{ nodeId: 'start', context: { wardId: 'ward-a' } }]
+    });
+    expect(service.canGoBack()).toBeTrue();
+
+    service.goBack();
+
+    expect(service.snapshot()).toEqual({
+      currentNodeId: 'start',
+      context: { wardId: 'ward-a' },
+      history: []
+    });
+  });
 });

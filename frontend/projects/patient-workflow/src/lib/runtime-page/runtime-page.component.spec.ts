@@ -1,6 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { BehaviorSubject, of, throwError } from 'rxjs';
-import { FlowApiService, FlowDefinition, FlowEngineService, FlowSummary, Tool } from 'flow-platform';
+import {
+  FlowApiService,
+  FlowDefinition,
+  FlowEngineService,
+  FlowEngineState,
+  FlowSummary,
+  Tool,
+  ViewRouterService
+} from 'flow-platform';
 import { RuntimePageComponent } from './runtime-page.component';
 
 /** Mockt die Tool-gefilterte Flow-Auswahl und das anschließende Laden einer Definition. */
@@ -34,10 +42,31 @@ class FlowEngineServiceMock {
   sidebarNode$ = new BehaviorSubject(null);
   sidebar$ = new BehaviorSubject(null);
   context$ = new BehaviorSubject<Record<string, unknown>>({});
+  state$ = new BehaviorSubject<FlowEngineState | null>(null);
   initializedFlowIds: string[] = [];
-  initialize(flow: FlowDefinition) { this.initializedFlowIds.push(flow.id); }
+  restoredStates: Array<FlowEngineState | undefined> = [];
+  initialize(flow: FlowDefinition, restoredState?: FlowEngineState) {
+    this.initializedFlowIds.push(flow.id);
+    this.restoredStates.push(restoredState);
+    this.state$.next(restoredState ?? {
+      currentNodeId: flow.entryNodeId,
+      context: {},
+      history: []
+    });
+  }
+  snapshot() { return this.state$.value; }
   goBack() {}
   canGoBack() { return false; }
+}
+
+class ViewRouterServiceMock {
+  state: unknown;
+  readonly writes: unknown[] = [];
+  clearedPrefixes: string[] = [];
+
+  read() { return this.state; }
+  write(_scope: string, state: unknown) { this.writes.push(state); }
+  clearByPrefix(prefix: string) { this.clearedPrefixes.push(prefix); }
 }
 
 /**
@@ -51,7 +80,8 @@ describe('RuntimePageComponent', () => {
       imports: [RuntimePageComponent],
       providers: [
         { provide: FlowApiService, useClass: ApiServiceMock },
-        { provide: FlowEngineService, useClass: FlowEngineServiceMock }
+        { provide: FlowEngineService, useClass: FlowEngineServiceMock },
+        { provide: ViewRouterService, useClass: ViewRouterServiceMock }
       ]
     }).compileComponents();
   });
@@ -101,5 +131,29 @@ describe('RuntimePageComponent', () => {
     expect(api.loadedFlowIds).toEqual(['flow-normal']);
     expect(engine.initializedFlowIds).toEqual(['flow-normal']);
     expect(fixture.componentInstance.flowStarted).toBeTrue();
+  });
+
+  it('restores a linked flow automatically even when several flows are available', () => {
+    const fixture = TestBed.createComponent(RuntimePageComponent);
+    const api = TestBed.inject(FlowApiService) as unknown as ApiServiceMock;
+    const engine = TestBed.inject(FlowEngineService) as unknown as FlowEngineServiceMock;
+    const viewRouter = TestBed.inject(ViewRouterService) as unknown as ViewRouterServiceMock;
+    const restoredEngine: FlowEngineState = {
+      currentNodeId: 'detail',
+      context: { patientId: 'p-1' },
+      history: [{ nodeId: 'entry', context: {} }]
+    };
+    api.failList = false;
+    api.flows = [
+      { id: 'flow-normal', name: 'Standardfluss', tool: 'WebclientTool', active: true },
+      { id: 'flow-orders', name: 'Auftragsfokus', tool: 'WebclientTool', active: false }
+    ];
+    viewRouter.state = { flowId: 'flow-orders', engine: restoredEngine };
+
+    fixture.detectChanges();
+
+    expect(api.loadedFlowIds).toEqual(['flow-orders']);
+    expect(engine.restoredStates).toEqual([restoredEngine]);
+    expect(viewRouter.clearedPrefixes).toEqual([]);
   });
 });

@@ -60,7 +60,7 @@
           </label>
         }
         <label>Knoten bearbeiten
-          <select [(ngModel)]="selectedNodeId">
+          <select [ngModel]="selectedNodeId" (ngModelChange)="selectNode($event)">
             @for (node of currentFlow.nodes; track node) {
               <option [value]="node.id">{{ node.id }}</option>
             }

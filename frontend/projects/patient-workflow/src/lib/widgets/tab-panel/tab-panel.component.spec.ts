@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { FLOW_WIDGET, FlowEngineService, FlowNode, FlowTabService } from 'flow-platform';
+import { FLOW_WIDGET, FlowEngineService, FlowNode, FlowTabService, ViewRouterService } from 'flow-platform';
 import { TabPanelComponent } from './tab-panel.component';
 
 @Component({
@@ -22,6 +22,14 @@ class TestTransfusionsComponent {}
 @Component({ selector: 'app-test-order', template: 'Auftrag-Inhalt' })
 class TestOrderComponent {}
 
+class ViewRouterServiceMock {
+  state: unknown;
+  readonly writes: Array<{ scope: string; state: unknown }> = [];
+
+  read() { return this.state; }
+  write(scope: string, state: unknown) { this.writes.push({ scope, state }); }
+}
+
 /**
  * Schützt die tabweise Darstellung zugewiesener Flow-Komponenten.
  */
@@ -33,6 +41,7 @@ describe('TabPanelComponent', () => {
       imports: [TabPanelComponent],
       providers: [
         FlowEngineService,
+        { provide: ViewRouterService, useClass: ViewRouterServiceMock },
         {
           provide: FLOW_WIDGET,
           useValue: {
@@ -110,6 +119,22 @@ describe('TabPanelComponent', () => {
     expect(fixture.debugElement.queryAll(By.css('[role="tab"]'))
       .map((tab) => tab.nativeElement.textContent.trim()))
       .toEqual(['Aufträge', 'Transfusionen', 'Auftrag R-child']);
+    expect(fixture.nativeElement.textContent).toContain('Auftrag-Inhalt');
+  });
+
+  it('restores dynamic tabs and the active tab from the linked view state', () => {
+    const viewRouter = TestBed.inject(ViewRouterService) as unknown as ViewRouterServiceMock;
+    viewRouter.state = {
+      activeKey: 'order:F-1:R-linked',
+      dynamicTabs: [dynamicOrder('R-linked')]
+    };
+    fixture.componentInstance.flowContainerId = 'patient-tabs';
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.queryAll(By.css('[role="tab"]'))
+      .map((tab) => tab.nativeElement.textContent.trim()))
+      .toEqual(['Aufträge', 'Transfusionen', 'Auftrag R-linked']);
+    expect(fixture.componentInstance.activeKey).toBe('order:F-1:R-linked');
     expect(fixture.nativeElement.textContent).toContain('Auftrag-Inhalt');
   });
 });
