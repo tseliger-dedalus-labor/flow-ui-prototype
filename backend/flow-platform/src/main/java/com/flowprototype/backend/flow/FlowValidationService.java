@@ -43,7 +43,23 @@ public class FlowValidationService {
             issues.add(new ValidationIssue("tool", "Flow muss einem Tool zugeordnet sein."));
         }
 
-        Map<String, FlowNode> nodes = definition.getNodes().stream().collect(Collectors.toMap(FlowNode::getId, Function.identity(), (a, b) -> a));
+        Map<String, FlowNode> nodes = new LinkedHashMap<>();
+        List<FlowNode> flowNodes = definition.getNodes().stream().filter(Objects::nonNull).toList();
+        for (int index = 0; index < definition.getNodes().size(); index++) {
+            FlowNode node = definition.getNodes().get(index);
+            if (node == null) {
+                issues.add(new ValidationIssue("nodes." + index, "Knoten darf nicht null sein."));
+                continue;
+            }
+            if (node.getId() == null || node.getId().isBlank()) {
+                issues.add(new ValidationIssue("nodes." + index + ".id", "Knoten-ID fehlt."));
+                continue;
+            }
+            if (nodes.putIfAbsent(node.getId(), node) != null) {
+                issues.add(new ValidationIssue("nodes." + index + ".id", "Knoten-ID '" + node.getId() + "' ist mehrfach vorhanden."));
+            }
+            validateNodeStructure(node, "nodes." + node.getId(), new HashSet<>(), Collections.newSetFromMap(new IdentityHashMap<>()), issues);
+        }
         if (!nodes.containsKey(definition.getEntryNodeId())) {
             issues.add(new ValidationIssue("entryNodeId", "Entry-Knoten existiert nicht."));
         }
@@ -56,7 +72,7 @@ public class FlowValidationService {
         Map<String, Map<String, SemanticType>> contextByNode = computeContextTypes(definition, nodes, descriptorsById, issues);
         Set<String> mainNodeIds = mainNodeIds(definition);
         Set<String> childNodeIds = childNodeIds(definition);
-        Set<String> sidebarNodeIds = definition.getNodes().stream()
+        Set<String> sidebarNodeIds = flowNodes.stream()
             .map(FlowNode::getSidebar)
             .filter(Objects::nonNull)
             .map(FlowSidebar::getNodeId)
@@ -65,7 +81,7 @@ public class FlowValidationService {
             sidebarNodeIds.add(definition.getSidebar().getNodeId());
         }
 
-        for (FlowNode node : definition.getNodes()) {
+        for (FlowNode node : flowNodes) {
             ComponentDescriptor descriptor = descriptorsById.get(node.getComponentId());
             if (descriptor == null) {
                 issues.add(new ValidationIssue("nodes." + node.getId() + ".componentId", "Komponente '" + node.getComponentId() + "' existiert nicht in der Registry."));
@@ -105,10 +121,19 @@ public class FlowValidationService {
             }
 
             // Nur Container dürfen verschachtelte Layoutknoten tragen; Fachkomponenten bleiben Blätter im Baum.
-            if (!node.getChildren().isEmpty() && !descriptor.isContainer()) {
+            if (!childrenOf(node).isEmpty() && !descriptor.isContainer()) {
                 issues.add(new ValidationIssue("nodes." + node.getId() + ".children", "Kindknoten sind nur bei Container-Komponenten erlaubt."));
             }
 
+            Set<String> inputNames = descriptor.getInputs().stream().map(InputDescriptor::getName).collect(Collectors.toSet());
+            for (String bindingName : bindings.keySet()) {
+                if (!inputNames.contains(bindingName)) {
+                    issues.add(new ValidationIssue(
+                        "nodes." + node.getId() + ".inputBindings." + bindingName,
+                        "Input '" + bindingName + "' ist für die Komponente nicht definiert."
+                    ));
+                }
+            }
             for (InputDescriptor input : descriptor.getInputs()) {
                 InputBinding binding = bindings.get(input.getName());
                 if (input.isRequired() && binding == null) {
@@ -139,7 +164,10 @@ public class FlowValidationService {
 
             Map<String, OutputDescriptor> outputs = descriptor.getOutputs().stream().collect(Collectors.toMap(OutputDescriptor::getName, Function.identity()));
             Set<String> seenTransitionOutputs = new HashSet<>();
-            for (FlowTransition transition : node.getTransitions()) {
+            for (FlowTransition transition : transitionsOf(node)) {
+                if (transition == null) {
+                    continue;
+                }
                 // Pro Ausgabe gibt es höchstens einen Folgeknoten, damit die Laufzeitnavigation deterministisch bleibt.
                 if (!seenTransitionOutputs.add(transition.getOnOutput())) {
                     issues.add(new ValidationIssue("nodes." + node.getId() + ".transitions", "Mehrere Transitionen für Output '" + transition.getOnOutput() + "' sind nicht erlaubt."));
@@ -161,7 +189,7 @@ public class FlowValidationService {
                 // Jede Transition erzeugt ihren eigenen Kontextzustand, der Ereignisnutzlast und vorhandenen Kontext kombiniert.
                 Map<String, SemanticType> postTransitionContext = new HashMap<>(availableContext);
                 OutputDescriptor outputDescriptor = outputs.get(transition.getOnOutput());
-                for (Map.Entry<String, String> mapping : transition.getContextMapping().entrySet()) {
+                for (Map.Entry<String, String> mapping : contextMappingOf(transition).entrySet()) {
                     SemanticType mappedType = mappedType(mapping.getValue(), outputDescriptor, availableContext);
                     if (mappedType == null) {
                         issues.add(new ValidationIssue("nodes." + node.getId() + ".transitions", "Context-Mapping '" + mapping.getValue() + "' kann nicht aufgelöst werden."));
@@ -215,6 +243,9 @@ public class FlowValidationService {
         do {
             changed = false;
             for (FlowNode node : definition.getNodes()) {
+                if (node == null) {
+                    continue;
+                }
                 Map<String, SemanticType> currentContext = contextByNode.get(node.getId());
                 if (currentContext == null) {
                     continue;
@@ -223,7 +254,10 @@ public class FlowValidationService {
                 if (sourceDesc == null) {
                     continue;
                 }
-                for (FlowNode child : node.getChildren()) {
+                for (FlowNode child : childrenOf(node)) {
+                    if (child == null) {
+                        continue;
+                    }
                     FlowNode childNode = nodes.get(child.getId());
                     if (childNode != null) {
                         // Layout-Kindknoten werden mit demselben Laufzeitkontext wie ihr Elternknoten gerendert.
@@ -282,14 +316,17 @@ public class FlowValidationService {
         boolean changed = false;
         Map<String, OutputDescriptor> outputs = sourceDescriptor.getOutputs().stream()
             .collect(Collectors.toMap(OutputDescriptor::getName, Function.identity()));
-        for (FlowTransition transition : sourceNode.getTransitions()) {
+        for (FlowTransition transition : transitionsOf(sourceNode)) {
+            if (transition == null) {
+                continue;
+            }
             FlowNode targetNode = nodes.get(transition.getTargetNodeId());
             OutputDescriptor output = outputs.get(transition.getOnOutput());
             if (targetNode == null || output == null) {
                 continue;
             }
             Map<String, SemanticType> candidate = new HashMap<>(currentContext);
-            for (Map.Entry<String, String> mapping : transition.getContextMapping().entrySet()) {
+            for (Map.Entry<String, String> mapping : contextMappingOf(transition).entrySet()) {
                 SemanticType mappedType = mappedType(mapping.getValue(), output, currentContext);
                 if (mappedType != null) {
                     candidate.put(mapping.getKey(), mappedType);
@@ -309,7 +346,9 @@ public class FlowValidationService {
             ids.add(definition.getEntryNodeId());
         }
         definition.getNodes().stream()
-            .flatMap(node -> node.getTransitions().stream())
+            .filter(Objects::nonNull)
+            .flatMap(node -> transitionsOf(node).stream())
+            .filter(Objects::nonNull)
             .map(FlowTransition::getTargetNodeId)
             .filter(Objects::nonNull)
             .forEach(ids::add);
@@ -322,15 +361,20 @@ public class FlowValidationService {
     private Set<String> childNodeIds(FlowDefinition definition) {
         Set<String> ids = new HashSet<>();
         for (FlowNode node : definition.getNodes()) {
-            collectChildNodeIds(node, ids);
+            if (node != null) {
+                collectChildNodeIds(node, ids, Collections.newSetFromMap(new IdentityHashMap<>()));
+            }
         }
         return ids;
     }
 
-    private void collectChildNodeIds(FlowNode node, Set<String> ids) {
-        for (FlowNode child : node.getChildren()) {
-            if (ids.add(child.getId())) {
-                collectChildNodeIds(child, ids);
+    private void collectChildNodeIds(FlowNode node, Set<String> ids, Set<FlowNode> visited) {
+        if (!visited.add(node)) {
+            return;
+        }
+        for (FlowNode child : childrenOf(node)) {
+            if (child != null && ids.add(child.getId())) {
+                collectChildNodeIds(child, ids, visited);
             }
         }
     }
@@ -387,7 +431,10 @@ public class FlowValidationService {
 
         Map<String, OutputDescriptor> outputs = descriptor.getOutputs().stream()
             .collect(Collectors.toMap(OutputDescriptor::getName, Function.identity()));
-        for (FlowTransition transition : sidebarNode.getTransitions()) {
+        for (FlowTransition transition : transitionsOf(sidebarNode)) {
+            if (transition == null) {
+                continue;
+            }
             OutputDescriptor output = outputs.get(transition.getOnOutput());
             FlowNode target = nodes.get(transition.getTargetNodeId());
             if (output == null || target == null) {
@@ -395,7 +442,7 @@ public class FlowValidationService {
             }
 
             Map<String, SemanticType> postTransitionContext = new HashMap<>(hostContext);
-            for (Map.Entry<String, String> mapping : transition.getContextMapping().entrySet()) {
+            for (Map.Entry<String, String> mapping : contextMappingOf(transition).entrySet()) {
                 SemanticType mappedType = mappedType(mapping.getValue(), output, hostContext);
                 if (mappedType == null) {
                     issues.add(new ValidationIssue(path + ".transitions", "Sidebar-Context-Mapping '" + mapping.getValue() + "' kann nicht aufgelöst werden."));
@@ -475,6 +522,59 @@ public class FlowValidationService {
             return currentContext.get(key);
         }
         return SemanticType.STRING;
+    }
+
+    private void validateNodeStructure(
+        FlowNode node,
+        String path,
+        Set<String> ancestorIds,
+        Set<FlowNode> ancestors,
+        List<ValidationIssue> issues
+    ) {
+        if (node.getChildren() == null) {
+            issues.add(new ValidationIssue(path + ".children", "Kindknotenliste darf nicht null sein."));
+        }
+        if (node.getTransitions() == null) {
+            issues.add(new ValidationIssue(path + ".transitions", "Transitionsliste darf nicht null sein."));
+        } else if (node.getTransitions().stream().anyMatch(Objects::isNull)) {
+            issues.add(new ValidationIssue(path + ".transitions", "Transition darf nicht null sein."));
+        }
+
+        boolean repeatedObject = !ancestors.add(node);
+        boolean repeatedId = node.getId() != null && !ancestorIds.add(node.getId());
+        if (repeatedObject || repeatedId) {
+            issues.add(new ValidationIssue(path + ".children", "Kindknoten dürfen keinen Zyklus bilden."));
+            return;
+        }
+        for (FlowNode child : childrenOf(node)) {
+            if (child == null) {
+                issues.add(new ValidationIssue(path + ".children", "Kindknoten darf nicht null sein."));
+            } else {
+                validateNodeStructure(child, path + ".children." + child.getId(), ancestorIds, ancestors, issues);
+            }
+        }
+        ancestors.remove(node);
+        if (node.getId() != null) {
+            ancestorIds.remove(node.getId());
+        }
+
+        for (FlowTransition transition : transitionsOf(node)) {
+            if (transition != null && transition.getContextMapping() == null) {
+                issues.add(new ValidationIssue(path + ".transitions", "Context-Mapping darf nicht null sein."));
+            }
+        }
+    }
+
+    private List<FlowNode> childrenOf(FlowNode node) {
+        return node.getChildren() == null ? List.of() : node.getChildren();
+    }
+
+    private List<FlowTransition> transitionsOf(FlowNode node) {
+        return node.getTransitions() == null ? List.of() : node.getTransitions();
+    }
+
+    private Map<String, String> contextMappingOf(FlowTransition transition) {
+        return transition.getContextMapping() == null ? Map.of() : transition.getContextMapping();
     }
 
     /**
