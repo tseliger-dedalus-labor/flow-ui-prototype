@@ -28,5 +28,5 @@ Die folgenden Befehle werden aus dem Verzeichnis `frontend/` ausgeführt:
 
 ```bash
 npm run build:flow-platform
-npx --offline ng test flow-platform --watch=false
+npx ng test flow-platform --watch=false
 ```

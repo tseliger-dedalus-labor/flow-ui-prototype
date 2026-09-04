@@ -86,19 +86,19 @@ Jeder Knoten kann eine eigene `sidebar`-Konfiguration besitzen. Dadurch zeigt di
 
 ```bash
 cd backend
-mvn -o -pl application -am package
+mvn -pl application -am package
 java -jar application/target/application-1.0.0.jar
 ```
 
 ### Module einzeln bauen
 
 ```bash
-mvn -o test package
-mvn -o -pl flow-platform -am test package
-mvn -o -pl patient-workflow -am test package
-mvn -o -pl appointments -am test package
-mvn -o -pl flow-editor -am test package
-mvn -o -pl application -am test package
+mvn test package
+mvn -pl flow-platform -am test package
+mvn -pl patient-workflow -am test package
+mvn -pl appointments -am test package
+mvn -pl flow-editor -am test package
+mvn -pl application -am test package
 ```
 
 ## Frontend starten (`frontend/`)
@@ -108,8 +108,7 @@ cd frontend
 npm start
 ```
 
-Die Frontend-Befehle verwenden die lokal installierten Abhängigkeiten. Falls `node_modules` noch nicht vorhanden ist,
-kann die Installation ohne Netzwerkzugriff mit `npm install --offline` versucht werden.
+Falls `node_modules` noch nicht vorhanden ist, können die Abhängigkeiten mit `npm install` installiert werden.
 
 ### Build
 
