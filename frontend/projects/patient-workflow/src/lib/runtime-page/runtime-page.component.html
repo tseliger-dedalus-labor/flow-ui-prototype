@@ -1,17 +1,32 @@
 <section>
-  <h2>Runtime</h2>
-  <button type="button" (click)="back()" [disabled]="!engine.canGoBack()">Zurück</button>
+  <h2>Webclient</h2>
+  @if (flows.length > 1) {
+    <div class="flow-selection">
+      <label>
+        Flow auswählen
+        <select [(ngModel)]="selectedFlowId">
+          @for (flow of flows; track flow.id) {
+            <option [value]="flow.id">{{ flow.name }}</option>
+          }
+        </select>
+      </label>
+      <button type="button" (click)="startFlow()">Flow starten</button>
+    </div>
+  }
   @if (error) {
     <p class="error">{{ error }}</p>
   }
-  @if (vm$ | async; as vm) {
-    @if (vm.node) {
-      <!-- Der Flow wird vollständig datengetrieben aus Engine-Zustand und registrierten Widgets aufgebaut. -->
-      <app-flow-layout
-        [node]="vm.node"
-        [sidebarNode]="vm.sidebarNode"
-        [sidebar]="vm.sidebar"
-        [context]="vm.context" />
+  @if (flowStarted) {
+    <button type="button" (click)="back()" [disabled]="!engine.canGoBack()">Zurück</button>
+    @if (vm$ | async; as vm) {
+      @if (vm.node) {
+        <!-- Der Flow wird vollständig datengetrieben aus Engine-Zustand und registrierten Widgets aufgebaut. -->
+        <app-flow-layout
+          [node]="vm.node"
+          [sidebarNode]="vm.sidebarNode"
+          [sidebar]="vm.sidebar"
+          [context]="vm.context" />
+      }
     }
   }
 </section>

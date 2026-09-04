@@ -2,7 +2,6 @@ package com.flowprototype.backend;
 
 import com.flowprototype.backend.flow.FlowMapper;
 import com.flowprototype.backend.flow.model.*;
-import com.flowprototype.backend.flow.model.*;
 import com.flowprototype.backend.persistence.FlowEntity;
 import com.flowprototype.backend.persistence.FlowRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -51,6 +50,7 @@ public class FlowSeedData implements CommandLineRunner {
         FlowDefinition normalFlow = new FlowDefinition();
         normalFlow.setId("flow-normal");
         normalFlow.setName("Standardfluss");
+        normalFlow.setTool(Tool.WebclientTool);
         normalFlow.setEntryNodeId("wards");
         normalFlow.setSidebar(sidebar("wards"));
 
@@ -104,6 +104,7 @@ public class FlowSeedData implements CommandLineRunner {
         FlowDefinition ordersFlow = new FlowDefinition();
         ordersFlow.setId("flow-orders");
         ordersFlow.setName("Auftragsfokus");
+        ordersFlow.setTool(Tool.WebclientTool);
         ordersFlow.setEntryNodeId("wards2");
         ordersFlow.setSidebar(sidebar("wards2"));
 
@@ -147,6 +148,7 @@ public class FlowSeedData implements CommandLineRunner {
         FlowDefinition appointmentsFlow = new FlowDefinition();
         appointmentsFlow.setId("flow-appointments");
         appointmentsFlow.setName("Stationsbezogene Terminplanung");
+        appointmentsFlow.setTool(Tool.AppointmentTool);
         appointmentsFlow.setEntryNodeId("appointmentWards");
         appointmentsFlow.setSidebar(sidebar("appointmentWards"));
 

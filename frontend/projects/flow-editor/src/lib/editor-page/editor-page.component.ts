@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, debounceTime } from 'rxjs';
-import { ComponentDescriptor, FlowApiService, FlowDefinition, FlowNode, ValidationIssue } from 'flow-platform';
+import { ComponentDescriptor, FlowApiService, FlowDefinition, FlowNode, TOOL_MODULES, Tool, ValidationIssue } from 'flow-platform';
 
 /**
  * Bietet eine einfache Authoring-Oberfläche zum Laden, Prüfen und Speichern von Flow-Definitionen.
@@ -14,6 +14,8 @@ import { ComponentDescriptor, FlowApiService, FlowDefinition, FlowNode, Validati
     styleUrl: './editor-page.component.scss'
 })
 export class EditorPageComponent implements OnInit, OnDestroy {
+  readonly tools: Tool[] = ['WebclientTool', 'AppointmentTool'];
+  readonly toolModules = TOOL_MODULES;
   flows: Array<{ id: string; name: string }> = [];
   registry: ComponentDescriptor[] = [];
   flow?: FlowDefinition;

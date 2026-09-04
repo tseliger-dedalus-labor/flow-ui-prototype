@@ -39,6 +39,9 @@ public class FlowValidationService {
             issues.add(new ValidationIssue("flow", "Flow enthält keine Knoten."));
             return new ValidationResult(issues);
         }
+        if (definition.getTool() == null) {
+            issues.add(new ValidationIssue("tool", "Flow muss einem Tool zugeordnet sein."));
+        }
 
         Map<String, FlowNode> nodes = definition.getNodes().stream().collect(Collectors.toMap(FlowNode::getId, Function.identity(), (a, b) -> a));
         if (!nodes.containsKey(definition.getEntryNodeId())) {
@@ -180,6 +183,13 @@ public class FlowValidationService {
                 if (sourceDesc == null) {
                     continue;
                 }
+                for (FlowNode child : node.getChildren()) {
+                    FlowNode childNode = nodes.get(child.getId());
+                    if (childNode != null) {
+                        // Layout-Kindknoten werden mit demselben Laufzeitkontext wie ihr Elternknoten gerendert.
+                        changed |= mergeContext(childNode, currentContext, contextByNode, reportedConflicts, issues);
+                    }
+                }
                 Map<String, OutputDescriptor> outputs = sourceDesc.getOutputs().stream().collect(Collectors.toMap(OutputDescriptor::getName, Function.identity()));
                 for (FlowTransition transition : node.getTransitions()) {
                     FlowNode targetNode = nodes.get(transition.getTargetNodeId());
@@ -197,24 +207,42 @@ public class FlowValidationService {
                         }
                     }
 
-                    Map<String, SemanticType> existing = contextByNode.computeIfAbsent(targetNode.getId(), ignored -> new HashMap<>());
-                    for (Map.Entry<String, SemanticType> e : candidate.entrySet()) {
-                        SemanticType old = existing.get(e.getKey());
-                        if (old == null) {
-                            existing.put(e.getKey(), e.getValue());
-                            changed = true;
-                        } else if (old != e.getValue()) {
-                            String conflictId = targetNode.getId() + "::" + e.getKey();
-                            if (reportedConflicts.add(conflictId)) {
-                                issues.add(new ValidationIssue("nodes." + targetNode.getId(), "Context-Key '" + e.getKey() + "' hat widersprüchliche Typen auf unterschiedlichen Pfaden."));
-                            }
-                        }
-                    }
+                    changed |= mergeContext(targetNode, candidate, contextByNode, reportedConflicts, issues);
                 }
             }
         } while (changed);
 
         return contextByNode;
+    }
+
+    /**
+     * Vereinigt neue Kontexttypen mit der bereits bekannten Sicht eines Zielknotens.
+     */
+    private boolean mergeContext(
+        FlowNode targetNode,
+        Map<String, SemanticType> candidate,
+        Map<String, Map<String, SemanticType>> contextByNode,
+        Set<String> reportedConflicts,
+        List<ValidationIssue> issues
+    ) {
+        boolean changed = false;
+        Map<String, SemanticType> existing = contextByNode.computeIfAbsent(targetNode.getId(), ignored -> new HashMap<>());
+        for (Map.Entry<String, SemanticType> entry : candidate.entrySet()) {
+            SemanticType old = existing.get(entry.getKey());
+            if (old == null) {
+                existing.put(entry.getKey(), entry.getValue());
+                changed = true;
+            } else if (old != entry.getValue()) {
+                String conflictId = targetNode.getId() + "::" + entry.getKey();
+                if (reportedConflicts.add(conflictId)) {
+                    issues.add(new ValidationIssue(
+                        "nodes." + targetNode.getId(),
+                        "Context-Key '" + entry.getKey() + "' hat widersprüchliche Typen auf unterschiedlichen Pfaden."
+                    ));
+                }
+            }
+        }
+        return changed;
     }
 
     /**

@@ -111,8 +111,8 @@ npm run build:flow-editor
 
 Die Shell stellt nur die gemeinsame Toolbar und die Composition-Routen bereit. Sie lädt die separat gebauten Pakete lazy:
 
-- Benutzer-UI: `/runtime`
-- Stationsbezogene Terminplanung: `/appointments`
+- Webclient (`WebclientTool`, Modul `patient-workflow`): `/runtime`
+- Terminplanung (`AppointmentTool`, Modul `appointments`): `/appointments`
 - Editor: `/editor`
 
 Weitere Module können eigene Routen, API-Clients und Widget-Provider exportieren, ohne die Flow-Plattform zu ändern.
@@ -152,7 +152,7 @@ Die generierten Manifeste bleiben versionierte Paket-Assets. Das veröffentlicht
 
 ### Flow/Registry
 - `GET /api/flow-registry`
-- `GET /api/flows`
+- `GET /api/flows` (optional mit `?tool=WebclientTool` oder `?tool=AppointmentTool`)
 - `GET /api/flows/{id}`
 - `GET /api/flows/effective`
 - `POST /api/flows`

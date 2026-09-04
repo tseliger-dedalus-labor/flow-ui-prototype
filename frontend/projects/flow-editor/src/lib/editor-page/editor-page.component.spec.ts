@@ -8,7 +8,7 @@ class ApiServiceMock {
   failValidation = false;
   getRegistry() { return of([]); }
   getFlows() { return of([]); }
-  getFlow() { return of({ id: 'f', name: 'n', entryNodeId: 'e', nodes: [] }); }
+  getFlow() { return of({ id: 'f', name: 'n', tool: 'WebclientTool', entryNodeId: 'e', nodes: [] }); }
   updateFlow(flow: unknown) { return of(flow); }
   validateFlow() {
     if (this.failValidation) {
@@ -34,7 +34,7 @@ describe('EditorPageComponent', () => {
   it('applies validation issues to component state', () => {
     const fixture = TestBed.createComponent(EditorPageComponent);
     const component = fixture.componentInstance;
-    component.flow = { id: 'flow', name: 'Test', entryNodeId: 'start', nodes: [] };
+    component.flow = { id: 'flow', name: 'Test', tool: 'WebclientTool', entryNodeId: 'start', nodes: [] };
 
     component.validate();
 
@@ -48,7 +48,7 @@ describe('EditorPageComponent', () => {
     const component = fixture.componentInstance;
     const api = TestBed.inject(FlowApiService) as unknown as ApiServiceMock;
     api.failValidation = true;
-    component.flow = { id: 'flow', name: 'Test', entryNodeId: 'start', nodes: [] };
+    component.flow = { id: 'flow', name: 'Test', tool: 'WebclientTool', entryNodeId: 'start', nodes: [] };
 
     component.validate();
 
@@ -72,6 +72,7 @@ describe('EditorPageComponent', () => {
     const flow: FlowDefinition = {
       id: 'flow',
       name: 'Test',
+      tool: 'WebclientTool',
       entryNodeId: 'wards',
       nodes: [{ id: 'wards', componentId: 'ward-list', inputBindings: {}, children: [], transitions: [] }]
     };
@@ -119,7 +120,7 @@ describe('EditorPageComponent', () => {
       inputBindings: { wardId: { source: 'CONTEXT', contextKey: 'wardId' } },
       children: [], transitions: []
     };
-    component.flow = { id: 'flow', name: 'Test', entryNodeId: 's', nodes: [source, matching, other] };
+    component.flow = { id: 'flow', name: 'Test', tool: 'WebclientTool', entryNodeId: 's', nodes: [source, matching, other] };
 
     // Nur Ziele mit kompatiblen semantischen Eingaben dürfen vorgeschlagen werden.
     expect(component.compatibleTargets(source, 'selected').map((node) => node.id)).toEqual(['s', 'm']);

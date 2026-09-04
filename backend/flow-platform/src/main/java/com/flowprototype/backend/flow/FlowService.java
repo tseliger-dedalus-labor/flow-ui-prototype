@@ -1,6 +1,7 @@
 package com.flowprototype.backend.flow;
 
 import com.flowprototype.backend.flow.model.FlowDefinition;
+import com.flowprototype.backend.flow.model.Tool;
 import com.flowprototype.backend.flow.model.ValidationResult;
 import com.flowprototype.backend.persistence.FlowEntity;
 import com.flowprototype.backend.persistence.FlowRepository;
@@ -40,10 +41,17 @@ public class FlowService {
     /**
      * Liefert eine kompakte Übersicht aller gespeicherten Flows.
      *
-     * @return Zusammenfassungen mit ID, Name und Aktivstatus.
+     * @param tool Optionales Tool, auf dessen Flows die Liste eingeschränkt wird.
+     * @return Zusammenfassungen mit ID, Name, Tool und Aktivstatus.
      */
-    public List<FlowSummary> list() {
-        return repository.findAll().stream().map(e -> new FlowSummary(e.getId(), e.getName(), e.isActive())).toList();
+    public List<FlowSummary> list(Tool tool) {
+        return repository.findAll().stream()
+            .map(entity -> {
+                FlowDefinition definition = mapper.toDefinition(entity);
+                return new FlowSummary(entity.getId(), entity.getName(), definition.getTool(), entity.isActive());
+            })
+            .filter(summary -> tool == null || summary.getTool() == tool)
+            .toList();
     }
 
     /**

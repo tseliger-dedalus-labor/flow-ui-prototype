@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { FLOW_UI_API_BASE_URL } from './api-base-url';
-import { ComponentDescriptor, FlowDefinition, FlowSummary, ValidationResult } from './models';
+import { ComponentDescriptor, FlowDefinition, FlowSummary, Tool, ValidationResult } from './models';
 
 /**
  * Kapselt die HTTP-Grenze zum Flow-Backend und liefert bereits typisierte Domänenmodelle.
@@ -24,8 +24,9 @@ export class FlowApiService {
   /**
    * Liefert die verfügbaren Flows für die Editor-Auswahl.
    */
-  getFlows(): Observable<FlowSummary[]> {
-    return this.http.get<FlowSummary[]>(`${this.baseUrl}/flows`);
+  getFlows(tool?: Tool): Observable<FlowSummary[]> {
+    const query = tool ? `?tool=${encodeURIComponent(tool)}` : '';
+    return this.http.get<FlowSummary[]>(`${this.baseUrl}/flows${query}`);
   }
 
   /**

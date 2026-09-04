@@ -17,6 +17,7 @@ describe('FlowEngineService', () => {
     const flow: FlowDefinition = {
       id: 'f',
       name: 'flow',
+      tool: 'WebclientTool',
       entryNodeId: 'start',
       nodes: [
         {
@@ -59,6 +60,7 @@ describe('FlowEngineService', () => {
     const flow: FlowDefinition = {
       id: 'f',
       name: 'flow',
+      tool: 'WebclientTool',
       entryNodeId: 'start',
       nodes: [
         {
@@ -89,6 +91,7 @@ describe('FlowEngineService', () => {
     const flow: FlowDefinition = {
       id: 'f',
       name: 'flow',
+      tool: 'WebclientTool',
       entryNodeId: 'wards',
       sidebar: {
         nodeId: 'wards',

@@ -49,6 +49,17 @@ class FlowValidationServiceTest {
     }
 
     @Test
+    void missingToolFails() {
+        FlowDefinition def = buildValid();
+        def.setTool(null);
+
+        ValidationResult result = validator.validate(def);
+
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue -> issue.getPath().equals("tool")));
+    }
+
+    @Test
     void missingRequiredInputFails() {
         FlowDefinition def = buildValid();
         FlowNode patientList = def.getNodes().stream().filter(n -> n.getId().equals("patients")).findFirst().orElseThrow();
@@ -88,6 +99,27 @@ class FlowValidationServiceTest {
         def.getNodes().add(child);
         ValidationResult result = validator.validate(def);
         assertFalse(result.isValid());
+    }
+
+    @Test
+    void childNodesInheritParentContext() {
+        FlowDefinition def = buildValid();
+        FlowNode patientView = def.getNodes().stream().filter(n -> n.getId().equals("view")).findFirst().orElseThrow();
+
+        FlowNode demographics = new FlowNode();
+        demographics.setId("demographics");
+        demographics.setComponentId("demographics-panel");
+        InputBinding patientBinding = new InputBinding();
+        patientBinding.setSource(BindingSource.CONTEXT);
+        patientBinding.setContextKey("patientId");
+        demographics.setInputBindings(Map.of("patientId", patientBinding));
+
+        patientView.setChildren(List.of(demographics));
+        def.getNodes().add(demographics);
+
+        ValidationResult result = validator.validate(def);
+
+        assertTrue(result.isValid(), () -> "Expected inherited context, got: " + result.getIssues().stream().map(ValidationIssue::getMessage).toList());
     }
 
     @Test
@@ -178,6 +210,7 @@ class FlowValidationServiceTest {
         FlowDefinition def = new FlowDefinition();
         def.setId("f");
         def.setName("test");
+        def.setTool(Tool.WebclientTool);
         def.setEntryNodeId("wards");
 
         FlowNode wards = new FlowNode();

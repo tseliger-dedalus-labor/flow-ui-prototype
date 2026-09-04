@@ -60,6 +60,7 @@ public class FlowMapper {
         try {
             FlowDefinition payload = new FlowDefinition();
             // Relationale Metadaten werden absichtlich nicht doppelt in der JSON-Nutzlast gespeichert.
+            payload.setTool(definition.getTool());
             payload.setEntryNodeId(definition.getEntryNodeId());
             payload.setSidebar(definition.getSidebar());
             payload.setNodes(definition.getNodes());

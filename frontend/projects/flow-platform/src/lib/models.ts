@@ -97,11 +97,25 @@ export interface FlowSidebar {
 }
 
 /**
+ * Technische Tool-IDs aus der ixserv-Tool-Enum.
+ */
+export type Tool = 'AppointmentTool' | 'WebclientTool';
+
+/**
+ * Verknüpft Tool-IDs mit den Lazy-Load-Modulen der Anwendung.
+ */
+export const TOOL_MODULES: Record<Tool, string> = {
+  AppointmentTool: 'appointments',
+  WebclientTool: 'patient-workflow'
+};
+
+/**
  * Serverseitig persistierte Definition eines renderbaren Flows.
  */
 export interface FlowDefinition {
   id: string;
   name: string;
+  tool: Tool;
   entryNodeId: string;
   sidebar?: FlowSidebar;
   nodes: FlowNode[];
@@ -113,6 +127,7 @@ export interface FlowDefinition {
 export interface FlowSummary {
   id: string;
   name: string;
+  tool: Tool;
   active: boolean;
 }
 

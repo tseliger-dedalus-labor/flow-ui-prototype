@@ -1,10 +1,14 @@
 package com.flowprototype.backend.flow;
 
 import com.flowprototype.backend.flow.model.FlowDefinition;
+import com.flowprototype.backend.flow.model.Tool;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * Stellt Laufzeit-Endpunkte für die Ausführung gespeicherter Flows bereit.
@@ -24,6 +28,17 @@ public class FlowController {
      */
     public FlowController(FlowService service) {
         this.service = service;
+    }
+
+    /**
+     * Liefert die verfügbaren Flows, optional eingeschränkt auf ein Tool.
+     *
+     * @param tool Tool, dessen Flows aufgelistet werden sollen.
+     * @return Passende Flow-Zusammenfassungen.
+     */
+    @GetMapping
+    public List<FlowSummary> list(@RequestParam(required = false) Tool tool) {
+        return service.list(tool);
     }
 
     /**

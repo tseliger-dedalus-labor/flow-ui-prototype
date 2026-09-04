@@ -1,18 +1,14 @@
 package com.flowprototype.backend.editor;
 
 import com.flowprototype.backend.flow.FlowService;
-import com.flowprototype.backend.flow.FlowSummary;
 import com.flowprototype.backend.flow.model.FlowDefinition;
 import com.flowprototype.backend.flow.model.ValidationResult;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 /**
  * Editorschnittstelle für Listen-, Speicher- und Validierungsoperationen auf Flows.
@@ -32,16 +28,6 @@ public class FlowEditorController {
      */
     public FlowEditorController(FlowService service) {
         this.service = service;
-    }
-
-    /**
-     * Liefert alle vorhandenen Flows als kompakte Liste.
-     *
-     * @return Flow-Zusammenfassungen für die Editorübersicht.
-     */
-    @GetMapping
-    public List<FlowSummary> list() {
-        return service.list();
     }
 
     /**

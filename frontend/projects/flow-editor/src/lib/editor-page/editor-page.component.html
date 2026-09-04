@@ -17,6 +17,13 @@
         <h3>Flow</h3>
         <label>ID <input [(ngModel)]="currentFlow.id" (ngModelChange)="triggerValidation()" /></label>
         <label>Name <input [(ngModel)]="currentFlow.name" (ngModelChange)="triggerValidation()" /></label>
+        <label>Tool
+          <select [(ngModel)]="currentFlow.tool" (ngModelChange)="triggerValidation()">
+            @for (tool of tools; track tool) {
+              <option [value]="tool">{{ tool }} ({{ toolModules[tool] }})</option>
+            }
+          </select>
+        </label>
         <label>Entry Node
           <select [(ngModel)]="currentFlow.entryNodeId" (ngModelChange)="triggerValidation()">
             @for (node of currentFlow.nodes; track node) {

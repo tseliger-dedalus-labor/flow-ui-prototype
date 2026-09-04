@@ -14,6 +14,7 @@ import java.util.List;
 public class FlowDefinition {
     private String id;
     private String name;
+    private Tool tool;
     private String entryNodeId;
     private FlowSidebar sidebar;
     private List<FlowNode> nodes = new ArrayList<>();
@@ -29,6 +30,10 @@ public class FlowDefinition {
     public String getName() { return name; }
     /** @param name Anzeigename des Flows. */
     public void setName(String name) { this.name = name; }
+    /** @return Tool, in dem der Flow angeboten und ausgeführt wird. */
+    public Tool getTool() { return tool; }
+    /** @param tool Tool, in dem der Flow angeboten und ausgeführt wird. */
+    public void setTool(Tool tool) { this.tool = tool; }
     /** @return ID des Einstiegsknotens für die Laufzeitnavigation. */
     public String getEntryNodeId() { return entryNodeId; }
     /** @param entryNodeId ID des Einstiegsknotens für die Laufzeitnavigation. */
