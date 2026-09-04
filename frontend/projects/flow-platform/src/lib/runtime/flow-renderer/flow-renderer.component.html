@@ -1,7 +1,7 @@
 <section class="node-shell">
   <!-- Host-Slot für die dynamisch instanziierte Fachkomponente. -->
   <ng-container #host />
-  @if (hasAccess) {
+  @if (hasAccess && hasValidPresenter) {
     @if (node.children.length && !rendersOwnChildren) {
       <!-- Container-Knoten rendern ihre Kindknoten rekursiv mit demselben Laufzeitkontext. -->
       <div class="children">
@@ -12,7 +12,9 @@
         }
       </div>
     }
-  } @else {
+  } @else if (!hasAccess) {
     <p class="access-denied">Keine Berechtigung für diese Komponente.</p>
+  } @else {
+    <p class="access-denied">Komponente ist für diesen Darstellungsbereich nicht zugelassen.</p>
   }
 </section>

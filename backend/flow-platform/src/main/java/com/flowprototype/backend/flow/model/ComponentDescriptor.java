@@ -13,6 +13,7 @@ public class ComponentDescriptor {
     private String id;
     private String title;
     private IxtDisplayType displayType;
+    private PresenterType presenter = PresenterType.CONTENT;
     private boolean container;
     private List<InputDescriptor> inputs = new ArrayList<>();
     private List<OutputDescriptor> outputs = new ArrayList<>();
@@ -36,6 +37,21 @@ public class ComponentDescriptor {
         if (inputs != null) {
             this.inputs = inputs;
         }
+
+        /**
+         * Erstellt eine Komponentenbeschreibung mit festem Darstellungsbereich.
+         */
+        public ComponentDescriptor(
+            String id,
+            String title,
+            PresenterType presenter,
+            boolean container,
+            List<InputDescriptor> inputs,
+            List<OutputDescriptor> outputs
+        ) {
+            this(id, title, container, inputs, outputs);
+            this.presenter = presenter;
+        }
         if (outputs != null) {
             this.outputs = outputs;
         }
@@ -53,6 +69,10 @@ public class ComponentDescriptor {
     public IxtDisplayType getDisplayType() { return displayType; }
     /** @param displayType Zugeordneter ixserv-Display-Typ oder {@code null}. */
     public void setDisplayType(IxtDisplayType displayType) { this.displayType = displayType; }
+    /** @return Zulässiger Darstellungsbereich der Komponente. */
+    public PresenterType getPresenter() { return presenter; }
+    /** @param presenter Zulässiger Darstellungsbereich der Komponente. */
+    public void setPresenter(PresenterType presenter) { this.presenter = presenter; }
     /** @return {@code true}, wenn die Komponente Kindknoten aufnehmen darf. */
     public boolean isContainer() { return container; }
     /** @param container Kennzeichnet Layout-Komponenten mit Kindknoten. */

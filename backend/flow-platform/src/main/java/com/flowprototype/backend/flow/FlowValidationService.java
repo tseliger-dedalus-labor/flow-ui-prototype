@@ -74,6 +74,19 @@ public class FlowValidationService {
                 issues.add(new ValidationIssue("nodes." + node.getId() + ".componentId", "Komponente '" + node.getComponentId() + "' existiert nicht in der Registry."));
                 continue;
             }
+            if (sidebarNodeIds.contains(node.getId()) && descriptor.getPresenter() != PresenterType.SIDEBAR) {
+                issues.add(new ValidationIssue(
+                    "nodes." + node.getId() + ".componentId",
+                    "Sidebar-Knoten benötigen eine SIDEBAR-Presenter-Komponente."
+                ));
+            }
+            if ((mainNodeIds.contains(node.getId()) || childNodeIds.contains(node.getId()))
+                && descriptor.getPresenter() != PresenterType.CONTENT) {
+                issues.add(new ValidationIssue(
+                    "nodes." + node.getId() + ".componentId",
+                    "Haupt- und Kindknoten benötigen eine CONTENT-Presenter-Komponente."
+                ));
+            }
 
             Map<String, InputBinding> bindings = node.getInputBindings() == null ? Map.of() : node.getInputBindings();
             Map<String, SemanticType> availableContext = contextByNode.getOrDefault(node.getId(), Map.of());

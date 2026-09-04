@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { PatientApiService } from '../../patient-api.service';
-import { PatientListSidebarComponent } from './patient-list.component';
+import { PatientListContentComponent } from './patient-list-content.component';
 
 /** Testdoppel für das Laden patientenbezogener Listen pro Station. */
 class ApiServiceMock {
@@ -15,16 +15,16 @@ class ApiServiceMock {
  * Die Suite stellt sicher, dass Stationswechsel die geladenen Patienten filtern und
  * keine veralteten Listen im UI verbleiben.
  */
-describe('PatientListSidebarComponent', () => {
+describe('PatientListContentComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PatientListSidebarComponent],
+      imports: [PatientListContentComponent],
       providers: [{ provide: PatientApiService, useClass: ApiServiceMock }]
     }).compileComponents();
   });
 
   it('clears patients when wardId is empty', () => {
-    const fixture = TestBed.createComponent(PatientListSidebarComponent);
+    const fixture = TestBed.createComponent(PatientListContentComponent);
     fixture.componentRef.setInput('wardId', 'ward-a');
     fixture.detectChanges();
     expect(fixture.componentInstance.patients.length).toBe(1);
@@ -36,7 +36,7 @@ describe('PatientListSidebarComponent', () => {
   });
 
   it('emits patient and case for a selection', () => {
-    const fixture = TestBed.createComponent(PatientListSidebarComponent);
+    const fixture = TestBed.createComponent(PatientListContentComponent);
     const selected = jasmine.createSpy('selected');
     fixture.componentInstance.patientSelected.subscribe(selected);
 

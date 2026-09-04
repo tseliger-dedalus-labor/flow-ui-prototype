@@ -55,7 +55,7 @@ public class FlowSeedData implements CommandLineRunner {
 
         FlowNode wards = new FlowNode();
         wards.setId("wards");
-        wards.setComponentId("ward-list");
+        wards.setComponentId("ward-list-content");
         FlowTransition toPatients = new FlowTransition();
         toPatients.setOnOutput("wardSelected");
         toPatients.setTargetNodeId("patients");
@@ -64,7 +64,7 @@ public class FlowSeedData implements CommandLineRunner {
 
         FlowNode patients = new FlowNode();
         patients.setId("patients");
-        patients.setComponentId("patient-list");
+        patients.setComponentId("patient-list-content");
         InputBinding wardBinding = new InputBinding();
         wardBinding.setSource(BindingSource.CONTEXT);
         wardBinding.setContextKey("wardId");
@@ -72,7 +72,7 @@ public class FlowSeedData implements CommandLineRunner {
         modeBinding.setSource(BindingSource.STATIC);
         modeBinding.setStaticValue("normal");
         patients.setInputBindings(Map.of("wardId", wardBinding, "mode", modeBinding));
-        patients.setSidebar(sidebar("wards", "Stationsauswahl"));
+        patients.setSidebar(sidebar("wardsSidebar", "Stationsauswahl"));
         FlowTransition toPatient = new FlowTransition();
         toPatient.setOnOutput("patientSelected");
         toPatient.setTargetNodeId("patientView");
@@ -92,7 +92,18 @@ public class FlowSeedData implements CommandLineRunner {
         caseBinding.setSource(BindingSource.CONTEXT);
         caseBinding.setContextKey("caseId");
         patientView.setInputBindings(Map.of("patientId", patientBinding, "caseId", caseBinding));
-        patientView.setSidebar(sidebar("patients", "Patientenauswahl"));
+        patientView.setSidebar(sidebar("patientsSidebar", "Patientenauswahl"));
+
+        FlowNode wardsSidebar = new FlowNode();
+        wardsSidebar.setId("wardsSidebar");
+        wardsSidebar.setComponentId("ward-list-sidebar");
+        wardsSidebar.setTransitions(List.of(toPatients));
+
+        FlowNode patientsSidebar = new FlowNode();
+        patientsSidebar.setId("patientsSidebar");
+        patientsSidebar.setComponentId("patient-list-sidebar");
+        patientsSidebar.setInputBindings(Map.of("wardId", wardBinding, "mode", modeBinding));
+        patientsSidebar.setTransitions(List.of(toPatient));
 
         FlowNode stack = new FlowNode();
         stack.setId("patientStack");
@@ -105,7 +116,9 @@ public class FlowSeedData implements CommandLineRunner {
 
         // Die Knoten bleiben absichtlich sowohl hier als flache Liste als auch über Kindknotenverweise referenzierbar,
         // weil Validierung, Persistenz und Editor jeden Knoten global per ID adressieren.
-        normalFlow.setNodes(List.of(wards, patients, patientView, stack, demographics, findings));
+        normalFlow.setNodes(List.of(
+            wards, patients, patientView, stack, demographics, findings, wardsSidebar, patientsSidebar
+        ));
 
         // Alternative Sicht für denselben Navigationspfad mit anderem fachlichen Fokus im Patientendetail.
         FlowDefinition ordersFlow = new FlowDefinition();
@@ -116,7 +129,7 @@ public class FlowSeedData implements CommandLineRunner {
 
         FlowNode wards2 = new FlowNode();
         wards2.setId("wards2");
-        wards2.setComponentId("ward-list");
+        wards2.setComponentId("ward-list-content");
         FlowTransition toPatients2 = new FlowTransition();
         toPatients2.setOnOutput("wardSelected");
         toPatients2.setTargetNodeId("patients2");
@@ -125,11 +138,11 @@ public class FlowSeedData implements CommandLineRunner {
 
         FlowNode patients2 = new FlowNode();
         patients2.setId("patients2");
-        patients2.setComponentId("patient-list");
+        patients2.setComponentId("patient-list-content");
         InputBinding ward2 = new InputBinding(); ward2.setSource(BindingSource.CONTEXT); ward2.setContextKey("wardId");
         InputBinding mode2 = new InputBinding(); mode2.setSource(BindingSource.STATIC); mode2.setStaticValue("orders");
         patients2.setInputBindings(Map.of("wardId", ward2, "mode", mode2));
-        patients2.setSidebar(sidebar("wards2", "Stationsauswahl"));
+        patients2.setSidebar(sidebar("wards2Sidebar", "Stationsauswahl"));
         FlowTransition toPatient2 = new FlowTransition();
         toPatient2.setOnOutput("patientSelected");
         toPatient2.setTargetNodeId("patientView2");
@@ -145,7 +158,18 @@ public class FlowSeedData implements CommandLineRunner {
         InputBinding pid2 = new InputBinding(); pid2.setSource(BindingSource.CONTEXT); pid2.setContextKey("patientId");
         InputBinding case2 = new InputBinding(); case2.setSource(BindingSource.CONTEXT); case2.setContextKey("caseId");
         patientView2.setInputBindings(Map.of("patientId", pid2, "caseId", case2));
-        patientView2.setSidebar(sidebar("patients2", "Patientenauswahl"));
+        patientView2.setSidebar(sidebar("patients2Sidebar", "Patientenauswahl"));
+
+        FlowNode wards2Sidebar = new FlowNode();
+        wards2Sidebar.setId("wards2Sidebar");
+        wards2Sidebar.setComponentId("ward-list-sidebar");
+        wards2Sidebar.setTransitions(List.of(toPatients2));
+
+        FlowNode patients2Sidebar = new FlowNode();
+        patients2Sidebar.setId("patients2Sidebar");
+        patients2Sidebar.setComponentId("patient-list-sidebar");
+        patients2Sidebar.setInputBindings(Map.of("wardId", ward2, "mode", mode2));
+        patients2Sidebar.setTransitions(List.of(toPatient2));
 
         FlowNode layout2 = new FlowNode();
         layout2.setId("layout2");
@@ -155,7 +179,9 @@ public class FlowSeedData implements CommandLineRunner {
         layout2.setChildren(List.of(orders, transfusions));
         patientView2.setChildren(List.of(layout2));
 
-        ordersFlow.setNodes(List.of(wards2, patients2, patientView2, layout2, orders, transfusions));
+        ordersFlow.setNodes(List.of(
+            wards2, patients2, patientView2, layout2, orders, transfusions, wards2Sidebar, patients2Sidebar
+        ));
 
         FlowDefinition appointmentsFlow = new FlowDefinition();
         appointmentsFlow.setId("flow-appointments");
@@ -165,7 +191,7 @@ public class FlowSeedData implements CommandLineRunner {
 
         FlowNode appointmentWards = new FlowNode();
         appointmentWards.setId("appointmentWards");
-        appointmentWards.setComponentId("ward-list");
+        appointmentWards.setComponentId("ward-list-content");
         FlowTransition toAppointments = new FlowTransition();
         toAppointments.setOnOutput("wardSelected");
         toAppointments.setTargetNodeId("appointments");
@@ -179,9 +205,13 @@ public class FlowSeedData implements CommandLineRunner {
         appointmentWard.setSource(BindingSource.CONTEXT);
         appointmentWard.setContextKey("wardId");
         appointments.setInputBindings(Map.of("wardId", appointmentWard));
-        appointments.setSidebar(sidebar("appointmentWards", "Stationsauswahl"));
+        appointments.setSidebar(sidebar("appointmentWardsSidebar", "Stationsauswahl"));
         appointments.setRequiredPermissions(List.of("APPOINTMENTS_READ"));
-        appointmentsFlow.setNodes(List.of(appointmentWards, appointments));
+        FlowNode appointmentWardsSidebar = new FlowNode();
+        appointmentWardsSidebar.setId("appointmentWardsSidebar");
+        appointmentWardsSidebar.setComponentId("ward-list-sidebar");
+        appointmentWardsSidebar.setTransitions(List.of(toAppointments));
+        appointmentsFlow.setNodes(List.of(appointmentWards, appointments, appointmentWardsSidebar));
         // Persistiert die Beispielflows im produktiven Format, also mit relationalen Metadaten und JSON-Definition.
         FlowEntity first = mapper.toEntity(normalFlow, true);
         FlowEntity second = mapper.toEntity(ordersFlow, false);

@@ -1,0 +1,21 @@
+<h2>Patientenliste <small>Modus: {{ mode }}</small></h2>
+@if (!wardId) {
+  <p class="hint">Bitte zuerst eine Station wählen.</p>
+}
+@if (wardId) {
+  <!-- Die Liste bleibt absichtlich generisch; fachliche Unterschiede werden über den Modus und nachfolgende Flow-Knoten abgebildet. -->
+  <ul class="cards">
+    @for (patient of patients; track patient) {
+      <li>
+        <strong>{{ patient.name }} ({{ patient.id }})</strong>
+        <div class="cases">
+          @for (patientCase of patient.cases; track patientCase.id) {
+            <button type="button" (click)="selectPatient(patient.id, patientCase.id)">
+              Fall {{ patientCase.id }} auswählen
+            </button>
+          }
+        </div>
+      </li>
+    }
+  </ul>
+}

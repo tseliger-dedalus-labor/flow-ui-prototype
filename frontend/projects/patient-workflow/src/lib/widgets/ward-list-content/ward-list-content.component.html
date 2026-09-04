@@ -1,0 +1,9 @@
+<h2>Stationsliste</h2>
+<!-- Die Stationsauswahl ist meist der erste Verzweigungspunkt für nachgelagerte Patienten-Widgets. -->
+<ul class="cards">
+  @for (ward of wards; track ward) {
+    <li>
+      <button type="button" (click)="selectWard(ward.id)">{{ ward.name }} ({{ ward.id }})</button>
+    </li>
+  }
+</ul>

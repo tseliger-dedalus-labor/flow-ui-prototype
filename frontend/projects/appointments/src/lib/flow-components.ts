@@ -9,6 +9,7 @@ export const FLOW_COMPONENTS = [
     id: 'appointments-panel',
     title: 'Terminplanung',
     displayType: IxtDisplayType.DISPTYPE_APP_WARD_OVERVIEW,
+    presenter: 'CONTENT',
     container: false,
     inputs: [
       {

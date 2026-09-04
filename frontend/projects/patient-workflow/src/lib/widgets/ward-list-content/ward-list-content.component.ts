@@ -1,17 +1,17 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { ASidebarPresenter } from 'ui-framework';
+import { AContentPresenter } from 'ui-framework';
 import { PatientApiService } from '../../patient-api.service';
 
 /**
  * Listet Stationen auf und meldet die Auswahl an die Flow-Engine zurück.
  */
 @Component({
-    selector: 'app-ward-list',
+    selector: 'app-ward-list-content',
     imports: [],
-    templateUrl: './ward-list.component.html',
-    styleUrl: './ward-list.component.scss'
+    templateUrl: './ward-list-content.component.html',
+    styleUrl: './ward-list-content.component.scss'
 })
-export class WardListSidebarComponent extends ASidebarPresenter implements OnInit {
+export class WardListContentComponent extends AContentPresenter implements OnInit {
   @Output() readonly wardSelected = new EventEmitter<{ wardId: string }>();
   wards: Array<{ id: string; name: string }> = [];
 

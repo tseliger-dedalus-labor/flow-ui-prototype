@@ -1,5 +1,7 @@
 import { Tool } from './tool';
 
+export type PresenterType = 'CONTENT' | 'SIDEBAR';
+
 /**
  * Gemeinsamer Zustand aller Presenter.
  */

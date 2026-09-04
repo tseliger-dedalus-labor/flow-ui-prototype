@@ -26,7 +26,7 @@
         </label>
         <label>Entry Node
           <select [(ngModel)]="currentFlow.entryNodeId" (ngModelChange)="triggerValidation()">
-            @for (node of currentFlow.nodes; track node) {
+            @for (node of contentNodes(); track node) {
               <option [value]="node.id">{{ node.id }}</option>
             }
           </select>
@@ -41,7 +41,7 @@
         @if (currentFlow.sidebar; as sidebar) {
           <label>Sidebar-Knoten
             <select [(ngModel)]="sidebar.nodeId" (ngModelChange)="triggerValidation()">
-              @for (node of currentFlow.nodes; track node) {
+              @for (node of sidebarNodes(); track node) {
                 <option [value]="node.id">{{ node.id }}</option>
               }
             </select>
@@ -73,7 +73,7 @@
           <h3>Knoten {{ node.id }}</h3>
           <label>Komponente
             <select [(ngModel)]="node.componentId" (ngModelChange)="ensureInputBindings(node)">
-              @for (descriptor of registry; track descriptor) {
+              @for (descriptor of descriptorsFor(node); track descriptor) {
                 <option [value]="descriptor.id">
                   {{ descriptor.id }}{{ descriptor.displayType ? ' (' + descriptor.displayType + ')' : '' }}
                 </option>
@@ -119,7 +119,7 @@
                   <label>Ziel
                     <select [(ngModel)]="transition.targetNodeId" (ngModelChange)="triggerValidation()">
                       <option value="">-</option>
-                      @for (target of currentFlow.nodes; track target) {
+                      @for (target of contentNodes(); track target) {
                         <option [value]="target.id">{{ target.id }}</option>
                       }
                     </select>
@@ -153,7 +153,7 @@
           @if (node.sidebar; as sidebar) {
             <label>Sidebar-Knoten
               <select [(ngModel)]="sidebar.nodeId" (ngModelChange)="triggerValidation()">
-                @for (candidate of currentFlow.nodes; track candidate) {
+                @for (candidate of sidebarNodes(); track candidate) {
                   <option [value]="candidate.id">{{ candidate.id }}</option>
                 }
               </select>

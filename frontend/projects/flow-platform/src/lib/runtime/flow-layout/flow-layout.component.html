@@ -5,7 +5,7 @@
     [class.flow-layout-right]="sidebar?.position === 'RIGHT'"
     [style.--flow-sidebar-width]="sidebarWidth">
     <aside class="flow-sidebar" [attr.aria-label]="sidebar?.ariaLabel || 'Flow-Navigation'">
-      <app-flow-renderer [node]="sidebarNode!" [context]="context" />
+      <app-flow-renderer [node]="sidebarNode!" [context]="context" presenter="SIDEBAR" />
     </aside>
     <div class="flow-content">
       <app-flow-renderer [node]="node" [context]="context" />
