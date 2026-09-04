@@ -1,4 +1,6 @@
 import { IxtDisplayType } from './ixt-display-type';
+export type { Tool } from 'ui-framework';
+import type { Tool } from 'ui-framework';
 
 /**
  * Fachliche Typisierung für Flow-Inputs und Output-Payloads.
@@ -111,8 +113,6 @@ export interface FlowSidebar {
 /**
  * Technische Tool-IDs aus der ixserv-Tool-Enum.
  */
-export type Tool = 'AppointmentTool' | 'WebclientTool';
-
 /**
  * Verknüpft Tool-IDs mit den Lazy-Load-Modulen der Anwendung.
  */

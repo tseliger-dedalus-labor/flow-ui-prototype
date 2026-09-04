@@ -10,6 +10,7 @@ import {
   ViewRouterService
 } from 'flow-platform';
 import { Subscription } from 'rxjs';
+import { AContentPresenter } from 'ui-framework';
 
 interface TabEntry {
   key: string;
@@ -36,7 +37,7 @@ const FLOW_TABS_SCOPE_PREFIX = 'flow-tabs:';
   templateUrl: './tab-panel.component.html',
   styleUrl: './tab-panel.component.scss'
 })
-export class TabPanelComponent implements EmbeddedFlowContainer, OnDestroy {
+export class TabPanelComponent extends AContentPresenter implements EmbeddedFlowContainer, OnDestroy {
   @ViewChildren('tabButton')
   private readonly tabButtons!: QueryList<ElementRef<HTMLButtonElement>>;
 
@@ -56,6 +57,7 @@ export class TabPanelComponent implements EmbeddedFlowContainer, OnDestroy {
     tabs: FlowTabService,
     private readonly viewRouter: ViewRouterService
   ) {
+    super('WebclientTool');
     this.titles = Object.fromEntries(
       (widgets ?? []).map((widget) => [widget.componentId, widget.descriptor.title])
     );

@@ -1,4 +1,5 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { ASidebarPresenter } from 'ui-framework';
 import { PatientApiService } from '../../patient-api.service';
 
 /**
@@ -10,11 +11,13 @@ import { PatientApiService } from '../../patient-api.service';
     templateUrl: './ward-list.component.html',
     styleUrl: './ward-list.component.scss'
 })
-export class WardListComponent implements OnInit {
+export class WardListComponent extends ASidebarPresenter implements OnInit {
   @Output() readonly wardSelected = new EventEmitter<{ wardId: string }>();
   wards: Array<{ id: string; name: string }> = [];
 
-  constructor(private readonly api: PatientApiService) {}
+  constructor(private readonly api: PatientApiService) {
+    super('WebclientTool');
+  }
 
   /**
    * Lädt die auswählbaren Stationen beim Initialisieren des Widgets.

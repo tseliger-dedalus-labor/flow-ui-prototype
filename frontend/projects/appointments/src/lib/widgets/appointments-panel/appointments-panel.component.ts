@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, Subscription } from 'rxjs';
 import { PermissionService } from 'flow-platform';
 import { PatientApiService } from 'patient-workflow';
+import { AContentPresenter } from 'ui-framework';
 import { Appointment } from '../../appointment';
 import { AppointmentsApiService } from '../../appointments-api.service';
 
@@ -15,7 +16,7 @@ import { AppointmentsApiService } from '../../appointments-api.service';
   templateUrl: './appointments-panel.component.html',
   styleUrl: './appointments-panel.component.scss'
 })
-export class AppointmentsPanelComponent implements OnChanges, OnDestroy {
+export class AppointmentsPanelComponent extends AContentPresenter implements OnChanges, OnDestroy {
   @Input({ required: true }) wardId = '';
 
   appointments: Appointment[] = [];
@@ -30,6 +31,7 @@ export class AppointmentsPanelComponent implements OnChanges, OnDestroy {
     private readonly patientApi: PatientApiService,
     permissions: PermissionService
   ) {
+    super('AppointmentTool');
     this.canSchedule = permissions.hasAll(['APPOINTMENTS_WRITE']);
   }
 

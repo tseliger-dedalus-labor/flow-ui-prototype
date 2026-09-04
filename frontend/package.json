@@ -5,8 +5,9 @@
     "ng": "ng",
     "start": "npm run build:modules && ng serve",
     "build": "npm run build:modules && ng build frontend",
-    "build:modules": "npm run generate:components && ng build flow-platform && ng build patient-workflow && ng build appointments && ng build flow-editor",
-    "build:flow-platform": "ng build flow-platform",
+    "build:modules": "npm run generate:components && ng build ui-framework && ng build flow-platform && ng build patient-workflow && ng build appointments && ng build flow-editor",
+    "build:ui-framework": "ng build ui-framework",
+    "build:flow-platform": "npm run build:ui-framework && ng build flow-platform",
     "build:patient-workflow": "npm run generate:components && npm run build:flow-platform && ng build patient-workflow",
     "build:appointments": "npm run build:patient-workflow && ng build appointments",
     "build:flow-editor": "npm run build:flow-platform && ng build flow-editor",
@@ -14,7 +15,7 @@
     "check:components": "node tools/generate-components.mjs --check",
     "watch": "npm run build:modules && ng build frontend --watch --configuration development",
     "pretest": "npm run check:components",
-    "test": "npm run build:modules && ng test frontend --watch=false && ng test flow-platform --watch=false && ng test patient-workflow --watch=false && ng test appointments --watch=false && ng test flow-editor --watch=false"
+    "test": "npm run build:modules && ng test frontend --watch=false && ng test ui-framework --watch=false && ng test flow-platform --watch=false && ng test patient-workflow --watch=false && ng test appointments --watch=false && ng test flow-editor --watch=false"
   },
   "private": true,
   "dependencies": {

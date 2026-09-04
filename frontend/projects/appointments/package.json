@@ -12,7 +12,8 @@
     "@angular/router": "^21.2.0",
     "flow-platform": "^1.0.0",
     "patient-workflow": "^1.0.0",
-    "rxjs": "^7.8.0"
+    "rxjs": "^7.8.0",
+    "ui-framework": "^1.0.0"
   },
   "dependencies": {
     "tslib": "^2.3.0"

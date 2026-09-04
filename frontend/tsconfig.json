@@ -18,6 +18,9 @@
       ],
       "patient-workflow": [
         "./dist/patient-workflow"
+      ],
+      "ui-framework": [
+        "./dist/ui-framework"
       ]
     },
     "noPropertyAccessFromIndexSignature": true,
@@ -42,6 +45,12 @@
     "strictTemplates": true
   },
   "references": [
+    {
+      "path": "./projects/ui-framework/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/ui-framework/tsconfig.spec.json"
+    },
     {
       "path": "./projects/flow-platform/tsconfig.lib.json"
     },

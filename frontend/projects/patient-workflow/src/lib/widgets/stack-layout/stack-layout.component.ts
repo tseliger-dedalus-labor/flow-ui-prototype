@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { AContentPresenter } from 'ui-framework';
 
 /**
  * Minimaler Container, der gestapelte Kindknoten optisch zusammenfasst.
@@ -9,4 +10,8 @@ import { Component } from '@angular/core';
   templateUrl: './stack-layout.component.html',
   styleUrl: './stack-layout.component.scss'
 })
-export class StackLayoutComponent {}
+export class StackLayoutComponent extends AContentPresenter {
+  constructor() {
+    super('WebclientTool');
+  }
+}
