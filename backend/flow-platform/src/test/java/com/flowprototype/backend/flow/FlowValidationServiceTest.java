@@ -347,6 +347,31 @@ class FlowValidationServiceTest {
         ));
     }
 
+    @Test
+    void sidebarPresenterAsNestedContentFails() {
+        FlowDefinition def = buildValid();
+        FlowNode view = def.getNodes().stream().filter(node -> node.getId().equals("view")).findFirst().orElseThrow();
+
+        FlowNode nestedContainer = new FlowNode();
+        nestedContainer.setId("nested");
+        nestedContainer.setComponentId("patient-view");
+        nestedContainer.setInputBindings(view.getInputBindings());
+
+        FlowNode nestedSidebarPresenter = new FlowNode();
+        nestedSidebarPresenter.setId("nested-sidebar");
+        nestedSidebarPresenter.setComponentId("ward-list-sidebar");
+        nestedContainer.setChildren(List.of(nestedSidebarPresenter));
+        view.setChildren(List.of(nestedContainer));
+        def.getNodes().addAll(List.of(nestedContainer, nestedSidebarPresenter));
+
+        ValidationResult result = validator.validate(def);
+
+        assertTrue(result.getIssues().stream().anyMatch(issue ->
+            issue.getPath().equals("nodes.nested-sidebar.componentId")
+                && issue.getMessage().contains("CONTENT-Presenter")
+        ));
+    }
+
     /**
      * Baut den minimalen gültigen Pfad Stationsliste → Patientenliste →
      * Patientenansicht auf, der als Ausgangspunkt für alle Negativtests dient.

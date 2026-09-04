@@ -55,10 +55,7 @@ public class FlowValidationService {
         Map<String, ComponentDescriptor> descriptorsById = registry.getAll().stream().collect(Collectors.toMap(ComponentDescriptor::getId, Function.identity()));
         Map<String, Map<String, SemanticType>> contextByNode = computeContextTypes(definition, nodes, descriptorsById, issues);
         Set<String> mainNodeIds = mainNodeIds(definition);
-        Set<String> childNodeIds = definition.getNodes().stream()
-            .flatMap(node -> node.getChildren().stream())
-            .map(FlowNode::getId)
-            .collect(Collectors.toSet());
+        Set<String> childNodeIds = childNodeIds(definition);
         Set<String> sidebarNodeIds = definition.getNodes().stream()
             .map(FlowNode::getSidebar)
             .filter(Objects::nonNull)
@@ -317,6 +314,25 @@ public class FlowValidationService {
             .filter(Objects::nonNull)
             .forEach(ids::add);
         return ids;
+    }
+
+    /**
+     * Ermittelt direkte und verschachtelte Kindknoten, die immer im Content-Bereich erscheinen.
+     */
+    private Set<String> childNodeIds(FlowDefinition definition) {
+        Set<String> ids = new HashSet<>();
+        for (FlowNode node : definition.getNodes()) {
+            collectChildNodeIds(node, ids);
+        }
+        return ids;
+    }
+
+    private void collectChildNodeIds(FlowNode node, Set<String> ids) {
+        for (FlowNode child : node.getChildren()) {
+            if (ids.add(child.getId())) {
+                collectChildNodeIds(child, ids);
+            }
+        }
     }
 
     /**

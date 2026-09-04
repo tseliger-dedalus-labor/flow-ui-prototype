@@ -13,7 +13,7 @@ public class ComponentDescriptor {
     private String id;
     private String title;
     private IxtDisplayType displayType;
-    private PresenterType presenter = PresenterType.CONTENT;
+    private PresenterType presenter;
     private boolean container;
     private List<InputDescriptor> inputs = new ArrayList<>();
     private List<OutputDescriptor> outputs = new ArrayList<>();
@@ -33,28 +33,29 @@ public class ComponentDescriptor {
     public ComponentDescriptor(String id, String title, boolean container, List<InputDescriptor> inputs, List<OutputDescriptor> outputs) {
         this.id = id;
         this.title = title;
+        this.presenter = PresenterType.CONTENT;
         this.container = container;
         if (inputs != null) {
             this.inputs = inputs;
         }
-
-        /**
-         * Erstellt eine Komponentenbeschreibung mit festem Darstellungsbereich.
-         */
-        public ComponentDescriptor(
-            String id,
-            String title,
-            PresenterType presenter,
-            boolean container,
-            List<InputDescriptor> inputs,
-            List<OutputDescriptor> outputs
-        ) {
-            this(id, title, container, inputs, outputs);
-            this.presenter = presenter;
-        }
         if (outputs != null) {
             this.outputs = outputs;
         }
+    }
+
+    /**
+     * Erstellt eine Komponentenbeschreibung mit festem Darstellungsbereich.
+     */
+    public ComponentDescriptor(
+        String id,
+        String title,
+        PresenterType presenter,
+        boolean container,
+        List<InputDescriptor> inputs,
+        List<OutputDescriptor> outputs
+    ) {
+        this(id, title, container, inputs, outputs);
+        this.presenter = presenter;
     }
 
     /** @return Technische Komponenten-ID. */

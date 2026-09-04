@@ -466,6 +466,10 @@ function validateAngularBindings(componentClass, descriptor, location, checker) 
     .flatMap((clause) => clause.types)
     .map((type) => type.expression.getText())
     .find((name) => presenterBaseClasses.has(name));
+  if (!presenterBaseClass) {
+    errors.push(`${location}: Flow-Komponenten müssen AContentPresenter oder ASidebarPresenter erweitern.`);
+    return;
+  }
   const expectedPresenter = presenterBaseClass === 'ASidebarPresenter' ? 'SIDEBAR' : 'CONTENT';
   if (descriptor.presenter !== expectedPresenter) {
     errors.push(
