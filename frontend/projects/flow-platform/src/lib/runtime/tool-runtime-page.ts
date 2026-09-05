@@ -2,8 +2,8 @@ import { Directive, OnDestroy, OnInit } from '@angular/core';
 import { combineLatest, Observable, Subscription } from 'rxjs';
 import { AContentPresenter } from 'ui-framework';
 import { FlowApiService } from '../flow-api.service';
-import { FlowEngineService, FlowEngineState } from '../flow-engine.service';
-import { FlowNode, FlowSidebar, FlowSummary, Tool } from '../models';
+import { FlowEngineService, FlowEngineState, FlowSidebarPanel } from '../flow-engine.service';
+import { FlowNode, FlowSidebar, FlowSummary, SidebarMode, Tool } from '../models';
 import { ViewRouterService } from '../routing/view-router.service';
 
 interface RoutedToolRuntimeState {
@@ -27,6 +27,8 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
     node: FlowNode | null;
     sidebarNode: FlowNode | null;
     sidebar: FlowSidebar | null;
+    sidebarPanels: FlowSidebarPanel[];
+    sidebarMode: SidebarMode;
     context: Record<string, unknown>;
   }>;
   private readonly engineStateSubscription: Subscription;
@@ -44,6 +46,8 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
       node: this.engine.currentNode$,
       sidebarNode: this.engine.sidebarNode$,
       sidebar: this.engine.sidebar$,
+      sidebarPanels: this.engine.sidebarPanels$,
+      sidebarMode: this.engine.sidebarMode$,
       context: this.engine.context$
     });
     this.engineStateSubscription = this.engine.state$.subscribe((state) => {

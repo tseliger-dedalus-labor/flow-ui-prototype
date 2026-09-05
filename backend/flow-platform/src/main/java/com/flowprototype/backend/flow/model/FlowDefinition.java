@@ -17,6 +17,7 @@ public class FlowDefinition {
     private Tool tool;
     private String entryNodeId;
     private FlowSidebar sidebar;
+    private SidebarMode sidebarMode = SidebarMode.SINGLE;
     private List<FlowNode> nodes = new ArrayList<>();
 
     /** Erstellt eine leere Flowdefinition für die JSON-Bindung. */
@@ -42,6 +43,10 @@ public class FlowDefinition {
     public FlowSidebar getSidebar() { return sidebar; }
     /** @param sidebar Optionale Standard-Seitenleiste für Knoten ohne eigene Konfiguration. */
     public void setSidebar(FlowSidebar sidebar) { this.sidebar = sidebar; }
+    /** @return Darstellungsmodus für die konfigurierten Sidebars. */
+    public SidebarMode getSidebarMode() { return sidebarMode; }
+    /** @param sidebarMode Darstellungsmodus für die konfigurierten Sidebars. */
+    public void setSidebarMode(SidebarMode sidebarMode) { this.sidebarMode = sidebarMode; }
     /** @return Alle Knoten des Flows, unabhängig von ihrer Layoutverschachtelung. */
     public List<FlowNode> getNodes() { return nodes; }
     /** @param nodes Alle Knoten des Flows, unabhängig von ihrer Layoutverschachtelung. */

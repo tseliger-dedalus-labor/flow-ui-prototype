@@ -34,6 +34,13 @@
         <label class="checkbox-label">
           <input
             type="checkbox"
+            [ngModel]="currentFlow.sidebarMode === 'COLLAPSE'"
+            (ngModelChange)="setSidebarMode(currentFlow, $event)" />
+          Alle Sidebars als aufklappbare Bereiche anzeigen
+        </label>
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
             [ngModel]="!!currentFlow.sidebar"
             (ngModelChange)="setSidebarEnabled(currentFlow, $event)" />
           Standard-Sidebar verwenden

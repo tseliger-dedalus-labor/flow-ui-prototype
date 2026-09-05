@@ -26,6 +26,13 @@ describe('FlowLayoutComponent', () => {
     children: [],
     transitions: []
   };
+  const patientSidebar: FlowNode = {
+    id: 'patient-sidebar',
+    componentId: 'patient-list-sidebar',
+    inputBindings: {},
+    children: [],
+    transitions: []
+  };
   const sidebar: FlowSidebar = {
     nodeId: 'wards',
     position: 'RIGHT',
@@ -64,5 +71,29 @@ describe('FlowLayoutComponent', () => {
     expect((layout.nativeElement as HTMLElement).style.getPropertyValue('--flow-sidebar-width')).toBe('320px');
     expect(aside.attributes['aria-label']).toBe('Stationen');
     expect(fixture.debugElement.queryAll(By.css('app-flow-renderer')).length).toBe(2);
+  });
+
+  it('renders all sidebar panels and expands the panel associated with the active node', () => {
+    component.node = patients;
+    component.sidebarMode = 'COLLAPSE';
+    component.sidebarPanels = [
+      { node: wards, sidebar },
+      {
+        node: patientSidebar,
+        sidebar: { nodeId: 'patient-sidebar', position: 'RIGHT', width: 320, ariaLabel: 'Patienten' }
+      }
+    ];
+    component.ngOnChanges();
+    fixture.detectChanges();
+
+    const toggles = fixture.debugElement.queryAll(By.css('.sidebar-panel-toggle'));
+    expect(toggles.map((toggle) => toggle.nativeElement.textContent.trim())).toEqual(['Stationen', 'Patienten']);
+    expect(toggles[0].attributes['aria-expanded']).toBe('true');
+
+    toggles[1].triggerEventHandler('click');
+    fixture.detectChanges();
+
+    expect(component.expandedSidebarNodeId).toBe('patient-sidebar');
+    expect(fixture.debugElement.query(By.css('#sidebar-panel-patient-sidebar'))).not.toBeNull();
   });
 });

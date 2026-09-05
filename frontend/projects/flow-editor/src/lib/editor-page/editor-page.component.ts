@@ -297,6 +297,11 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     this.validationTrigger.next();
   }
 
+  setSidebarMode(flow: FlowDefinition, collapse: boolean): void {
+    flow.sidebarMode = collapse ? 'COLLAPSE' : 'SINGLE';
+    this.validationTrigger.next();
+  }
+
   /**
    * Aktiviert oder deaktiviert die Sidebar-Konfiguration mit sinnvollen Standardwerten.
    */

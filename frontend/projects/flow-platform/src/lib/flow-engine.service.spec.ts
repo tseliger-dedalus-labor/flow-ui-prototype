@@ -189,6 +189,46 @@ describe('FlowEngineService', () => {
     expect(sidebarNodeId).toBe('wards');
   });
 
+  it('exposes every configured sidebar panel in collapse mode', () => {
+    const flow: FlowDefinition = {
+      id: 'f',
+      name: 'flow',
+      tool: 'WebclientTool',
+      entryNodeId: 'patients',
+      sidebarMode: 'COLLAPSE',
+      nodes: [
+        {
+          id: 'patients',
+          componentId: 'patient-list',
+          inputBindings: {},
+          children: [],
+          sidebar: { nodeId: 'wards-sidebar', position: 'LEFT', width: 280, ariaLabel: 'Stationen' },
+          transitions: []
+        },
+        {
+          id: 'detail',
+          componentId: 'patient-view',
+          inputBindings: {},
+          children: [],
+          sidebar: { nodeId: 'patients-sidebar', position: 'LEFT', width: 280, ariaLabel: 'Patienten' },
+          transitions: []
+        },
+        { id: 'wards-sidebar', componentId: 'ward-list', inputBindings: {}, children: [], transitions: [] },
+        { id: 'patients-sidebar', componentId: 'patient-list-sidebar', inputBindings: {}, children: [], transitions: [] }
+      ]
+    };
+
+    let panelIds: string[] = [];
+    let mode = '';
+    service.sidebarPanels$.subscribe((panels) => panelIds = panels.map((panel) => panel.node.id));
+    service.sidebarMode$.subscribe((value) => mode = value);
+
+    service.initialize(flow);
+
+    expect(mode).toBe('COLLAPSE');
+    expect(panelIds).toEqual(['wards-sidebar', 'patients-sidebar']);
+  });
+
   it('keeps the sidebar completely absent when neither flow nor node configures one', () => {
     const flow: FlowDefinition = {
       id: 'f',

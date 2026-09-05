@@ -103,6 +103,11 @@ export interface EmbeddedFlowContainer {
 export type SidebarPosition = 'LEFT' | 'RIGHT';
 
 /**
+ * Steuert, ob nur die aktive Sidebar oder alle Sidebars als umschaltbare Bereiche erscheinen.
+ */
+export type SidebarMode = 'SINGLE' | 'COLLAPSE';
+
+/**
  * Konfiguriert die sekundäre Sidebar-Ansicht eines Flows.
  */
 export interface FlowSidebar {
@@ -133,6 +138,8 @@ export interface FlowDefinition {
   entryNodeId: string;
   /** Rückwärtskompatible Standard-Sidebar für Knoten ohne eigene Konfiguration. */
   sidebar?: FlowSidebar;
+  /** Optionale Darstellung aller referenzierten Sidebars in einem Collapse-Container. */
+  sidebarMode?: SidebarMode;
   nodes: FlowNode[];
 }
 

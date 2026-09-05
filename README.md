@@ -39,6 +39,7 @@ Relationale Metadaten + CLOB/JSON:
   "id": "flow-normal",
   "name": "Standardfluss",
   "entryNodeId": "wards",
+  "sidebarMode": "COLLAPSE",
   "nodes": [
     {
       "id": "wards",
@@ -80,7 +81,7 @@ Relationale Metadaten + CLOB/JSON:
 }
 ```
 
-Jeder Knoten kann eine eigene `sidebar`-Konfiguration besitzen. Dadurch zeigt die Patientenliste beispielsweise die Stationsliste als Sidebar, während die Patientendetailansicht zur Patientenliste wechselt. Sidebar-Inputs werden gegen den Kontext des aktiven Hauptknotens validiert; ihre Outputs und Transitionen müssen die Pflicht-Inputs ihrer Ziele typkompatibel versorgen. Eine `sidebar` auf Flow-Ebene bleibt als Fallback für bestehende Definitionen erhalten. Position, Breite, Zielknoten und ARIA-Bezeichnung sind im Flow-Editor konfigurierbar.
+Jeder Knoten kann eine eigene `sidebar`-Konfiguration besitzen. Dadurch zeigt die Patientenliste beispielsweise die Stationsliste als Sidebar, während die Patientendetailansicht zur Patientenliste wechselt. Mit `sidebarMode: "COLLAPSE"` werden alle im Flow referenzierten Sidebars als umschaltbare Bereiche angezeigt; die zum aktiven Hauptknoten gehörende Sidebar wird automatisch geöffnet. Der Standardmodus `SINGLE` rendert weiterhin nur die aktive Sidebar. Sidebar-Inputs werden gegen den Kontext des aktiven Hauptknotens validiert; ihre Outputs und Transitionen müssen die Pflicht-Inputs ihrer Ziele typkompatibel versorgen. Eine `sidebar` auf Flow-Ebene bleibt als Fallback für bestehende Definitionen erhalten. Modus, Position, Breite, Zielknoten und ARIA-Bezeichnung sind im Flow-Editor konfigurierbar.
 
 ## Backend starten (`backend/`)
 

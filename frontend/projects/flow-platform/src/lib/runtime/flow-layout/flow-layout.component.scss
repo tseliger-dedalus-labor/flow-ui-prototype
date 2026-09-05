@@ -26,6 +26,35 @@
   overflow: auto;
 }
 
+.sidebar-collapse {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.sidebar-panel {
+  border: 1px solid #d8d8d8;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.sidebar-panel-toggle {
+  width: 100%;
+  padding: 0.75rem;
+  border: 0;
+  background: #eceef3;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar-panel-toggle[aria-expanded='true'] {
+  font-weight: 600;
+}
+
+.sidebar-panel-content {
+  padding: 0.75rem;
+}
+
 .flow-layout-right .flow-sidebar {
   order: 2;
   border-right: 0;

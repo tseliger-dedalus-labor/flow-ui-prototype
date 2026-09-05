@@ -1,6 +1,11 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { FlowDefinition, FlowNode, FlowSidebar } from './models';
+import { FlowDefinition, FlowNode, FlowSidebar, SidebarMode } from './models';
+
+export interface FlowSidebarPanel {
+  node: FlowNode;
+  sidebar: FlowSidebar;
+}
 
 export interface FlowEngineState {
   currentNodeId: string | null;
@@ -21,6 +26,8 @@ export class FlowEngineService {
   private currentNodeSubject = new BehaviorSubject<FlowNode | null>(null);
   private sidebarNodeSubject = new BehaviorSubject<FlowNode | null>(null);
   private sidebarSubject = new BehaviorSubject<FlowSidebar | null>(null);
+  private sidebarPanelsSubject = new BehaviorSubject<FlowSidebarPanel[]>([]);
+  private sidebarModeSubject = new BehaviorSubject<SidebarMode>('SINGLE');
   private contextSubject = new BehaviorSubject<Record<string, unknown>>({});
   private stateSubject = new BehaviorSubject<FlowEngineState | null>(null);
 
@@ -30,6 +37,10 @@ export class FlowEngineService {
   readonly sidebarNode$ = this.sidebarNodeSubject.asObservable();
   /** Beobachtet die Sidebar-Konfiguration des geladenen Flows. */
   readonly sidebar$ = this.sidebarSubject.asObservable();
+  /** Beobachtet alle im Flow referenzierten Sidebar-Knoten. */
+  readonly sidebarPanels$ = this.sidebarPanelsSubject.asObservable();
+  /** Beobachtet den konfigurierten Darstellungsmodus der Sidebar. */
+  readonly sidebarMode$ = this.sidebarModeSubject.asObservable();
   /** Beobachtet den zwischen Knoten weitergereichten Flow-Kontext. */
   readonly context$ = this.contextSubject.asObservable();
   /** Beobachtet den für die URL-Persistenz vorgesehenen Navigationszustand. */
@@ -41,6 +52,8 @@ export class FlowEngineService {
   initialize(definition: FlowDefinition, restoredState?: FlowEngineState): void {
     this.definition = definition;
     this.nodeMap = new Map(definition.nodes.map((node) => [node.id, node]));
+    this.sidebarPanelsSubject.next(this.collectSidebarPanels(definition));
+    this.sidebarModeSubject.next(definition.sidebarMode ?? 'SINGLE');
     const entry = this.nodeMap.get(definition.entryNodeId) ?? null;
     const currentNode = restoredState
       ? this.nodeMap.get(restoredState.currentNodeId ?? '') ?? entry
@@ -155,6 +168,22 @@ export class FlowEngineService {
     const sidebar = node?.sidebar ?? this.definition?.sidebar ?? null;
     this.sidebarSubject.next(sidebar);
     this.sidebarNodeSubject.next(sidebar ? this.nodeMap.get(sidebar.nodeId) ?? null : null);
+  }
+
+  private collectSidebarPanels(definition: FlowDefinition): FlowSidebarPanel[] {
+    const sidebars = new Map<string, FlowSidebar>();
+    for (const node of definition.nodes) {
+      if (node.sidebar && !sidebars.has(node.sidebar.nodeId)) {
+        sidebars.set(node.sidebar.nodeId, node.sidebar);
+      }
+    }
+    if (definition.sidebar && !sidebars.has(definition.sidebar.nodeId)) {
+      sidebars.set(definition.sidebar.nodeId, definition.sidebar);
+    }
+    return definition.nodes.flatMap((node) => {
+      const sidebar = sidebars.get(node.id);
+      return sidebar ? [{ node, sidebar }] : [];
+    });
   }
 
   private emitState(): void {

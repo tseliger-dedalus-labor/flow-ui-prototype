@@ -120,6 +120,24 @@ describe('EditorPageComponent', () => {
     expect(flow.sidebar).toBeUndefined();
   });
 
+  it('configures the flow-wide sidebar collapse mode', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    const flow: FlowDefinition = {
+      id: 'f',
+      name: 'flow',
+      tool: 'WebclientTool',
+      entryNodeId: 'wards',
+      nodes: []
+    };
+
+    component.setSidebarMode(flow, true);
+    expect(flow.sidebarMode).toBe('COLLAPSE');
+
+    component.setSidebarMode(flow, false);
+    expect(flow.sidebarMode).toBe('SINGLE');
+  });
+
   it('creates and removes a node-specific sidebar configuration', () => {
     const fixture = TestBed.createComponent(EditorPageComponent);
     const component = fixture.componentInstance;
