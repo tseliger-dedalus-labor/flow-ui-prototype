@@ -2,10 +2,34 @@
   <!-- Zweispaltiges Runtime-Layout mit optionaler Navigations- oder Kontext-Sidebar. -->
   <div
     class="flow-layout"
-    [class.flow-layout-right]="sidebar?.position === 'RIGHT'"
+    [class.flow-layout-right]="sidebarPosition === 'RIGHT'"
     [style.--flow-sidebar-width]="sidebarWidth">
     <aside class="flow-sidebar" [attr.aria-label]="sidebar?.ariaLabel || 'Flow-Navigation'">
-      <app-flow-renderer [node]="sidebarNode!" [context]="context" presenter="SIDEBAR" />
+      @if (sidebarMode === 'COLLAPSE') {
+        <div class="sidebar-collapse">
+          @for (panel of sidebarPanels; track panel.node.id) {
+            @if (panel.node.id !== node.id) {
+              <section class="sidebar-panel">
+                <button
+                  type="button"
+                  class="sidebar-panel-toggle"
+                  [attr.aria-expanded]="expandedSidebarNodeId === panel.node.id"
+                  [attr.aria-controls]="'sidebar-panel-' + panel.node.id"
+                  (click)="toggleSidebar(panel.node.id)">
+                  {{ panel.sidebar.ariaLabel || panel.node.id }}
+                </button>
+                @if (expandedSidebarNodeId === panel.node.id) {
+                  <div class="sidebar-panel-content" [id]="'sidebar-panel-' + panel.node.id">
+                    <app-flow-renderer [node]="panel.node" [context]="context" presenter="SIDEBAR" />
+                  </div>
+                }
+              </section>
+            }
+          }
+        </div>
+      } @else {
+        <app-flow-renderer [node]="sidebarNode!" [context]="context" presenter="SIDEBAR" />
+      }
     </aside>
     <div class="flow-content">
       <app-flow-renderer [node]="node" [context]="context" />
