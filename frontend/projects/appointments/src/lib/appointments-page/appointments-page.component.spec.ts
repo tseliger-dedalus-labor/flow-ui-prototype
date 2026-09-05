@@ -38,6 +38,8 @@ class FlowEngineServiceMock {
   currentNode$ = new BehaviorSubject(null);
   sidebarNode$ = new BehaviorSubject(null);
   sidebar$ = new BehaviorSubject(null);
+  sidebarPanels$ = new BehaviorSubject([]);
+  sidebarMode$ = new BehaviorSubject('SINGLE');
   context$ = new BehaviorSubject<Record<string, unknown>>({});
   state$ = new BehaviorSubject<FlowEngineState | null>(null);
   initializedFlowIds: string[] = [];
