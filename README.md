@@ -93,7 +93,18 @@ java -jar application/target/application-1.0.0.jar
 
 ### Module einzeln bauen
 
+```
+
+## Anwendung als WAR und Docker-Image bauen
+
+Das `Dockerfile` baut zuerst das Angular-Frontend, übernimmt dessen Produktiv-Artefakte in das Spring-Boot-Backend und erzeugt daraus ein ausführbares WAR.
+
 ```bash
+docker build -t flow-ui-prototype .
+docker run --rm -p 8080:8080 flow-ui-prototype
+```
+
+Die Anwendung ist anschließend unter `http://localhost:8080` erreichbar. Das erzeugte WAR liegt während des Image-Builds unter `application/target/application-1.0.0.war`.bash
 mvn test package
 mvn -pl flow-platform -am test package
 mvn -pl patient-workflow -am test package

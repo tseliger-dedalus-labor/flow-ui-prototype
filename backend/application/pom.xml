@@ -11,6 +11,7 @@
 
     <artifactId>application</artifactId>
     <version>1.0.0</version>
+    <packaging>war</packaging>
     <name>Flow UI composed backend</name>
 
     <dependencies>
