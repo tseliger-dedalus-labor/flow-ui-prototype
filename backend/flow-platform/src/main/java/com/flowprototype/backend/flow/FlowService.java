@@ -96,6 +96,9 @@ public class FlowService {
         if (definition.getId() == null || definition.getId().isBlank()) {
             definition.setId("flow-" + UUID.randomUUID());
         }
+        if (repository.existsById(definition.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Flow-ID ist bereits vergeben");
+        }
         ValidationResult result = validationService.validate(definition);
         if (!result.isValid()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Flow ungültig: " + result.getIssues().get(0).getMessage());

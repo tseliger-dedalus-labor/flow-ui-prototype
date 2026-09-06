@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { FlowApiService, FlowDefinition, FlowNode, ViewRouterService } from 'flow-platform';
 import { EditorPageComponent } from './editor-page.component';
 
@@ -9,9 +9,13 @@ class ApiServiceMock {
   flows: Array<{ id: string; name: string; tool: 'WebclientTool'; active: boolean }> = [];
   createdFlow?: FlowDefinition;
   updatedFlow?: FlowDefinition;
+  flowResponse?: Subject<FlowDefinition>;
   getRegistry() { return of([]); }
   getFlows() { return of(this.flows); }
   getFlow(id: string) {
+    if (this.flowResponse) {
+      return this.flowResponse;
+    }
     return of({
       id,
       name: id,
@@ -131,7 +135,15 @@ describe('EditorPageComponent', () => {
     const content = component.selectedNode!;
     component.addNode(true);
     const sidebar = component.selectedNode!;
-    content.children = [sidebar];
+    const nestedContainer: FlowNode = {
+      id: 'nested',
+      componentId: 'content',
+      inputBindings: {},
+      children: [structuredClone(sidebar)],
+      transitions: [{ onOutput: 'next', targetNodeId: sidebar.id, contextMapping: {} }],
+      sidebar: { nodeId: sidebar.id, position: 'LEFT', width: 280 }
+    };
+    content.children = [nestedContainer];
     content.transitions = [{ onOutput: 'next', targetNodeId: sidebar.id, contextMapping: {} }];
     content.sidebar = { nodeId: sidebar.id, position: 'LEFT', width: 280 };
     component.flow!.sidebar = { nodeId: sidebar.id, position: 'LEFT', width: 280 };
@@ -139,11 +151,38 @@ describe('EditorPageComponent', () => {
     component.removeSelectedNode();
 
     expect(component.flow!.nodes).toEqual([content]);
-    expect(content.children).toEqual([]);
+    expect(content.children).toEqual([jasmine.objectContaining({
+      id: 'nested',
+      children: [],
+      transitions: []
+    })]);
+    expect(nestedContainer.sidebar).toBeUndefined();
     expect(content.transitions).toEqual([]);
     expect(content.sidebar).toBeUndefined();
     expect(component.flow!.sidebar).toBeUndefined();
     expect(component.flow!.entryNodeId).toBe(content.id);
+  });
+
+  it('keeps a new draft when an earlier flow load completes late', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    const api = TestBed.inject(FlowApiService) as unknown as ApiServiceMock;
+    api.flowResponse = new Subject<FlowDefinition>();
+    component.selectedFlowId = 'existing';
+
+    component.loadFlow();
+    component.createNewFlow();
+    const draftId = component.flow!.id;
+    api.flowResponse.next({
+      id: 'existing',
+      name: 'Bestehend',
+      tool: 'WebclientTool',
+      entryNodeId: 'first',
+      nodes: [{ id: 'first', componentId: 'content', inputBindings: {}, children: [], transitions: [] }]
+    });
+
+    expect(component.isNewFlow).toBeTrue();
+    expect(component.flow!.id).toBe(draftId);
   });
 
   it('creates and removes sidebar configuration', () => {

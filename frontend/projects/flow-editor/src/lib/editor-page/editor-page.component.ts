@@ -44,6 +44,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
 
   private readonly validationTrigger = new Subject<void>();
   private readonly validationSubscription: Subscription;
+  private flowLoadRequest = 0;
 
   constructor(
     private readonly api: FlowApiService,
@@ -78,7 +79,11 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     if (!this.selectedFlowId) {
       return;
     }
+    const request = ++this.flowLoadRequest;
     this.api.getFlow(this.selectedFlowId).subscribe((flow) => {
+      if (request !== this.flowLoadRequest) {
+        return;
+      }
       this.flow = structuredClone(flow);
       this.isNewFlow = false;
       this.flow.nodes.forEach((node) => this.ensureInputBindings(node));
@@ -99,6 +104,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
    * Beginnt eine neue, zunächst leere Flow-Definition.
    */
   createNewFlow(): void {
+    this.flowLoadRequest++;
     this.flow = {
       id: `flow-${crypto.randomUUID()}`,
       name: 'Neuer Flow',
@@ -209,14 +215,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
       return;
     }
     const removedId = this.selectedNodeId;
-    this.flow.nodes = this.flow.nodes.filter((node) => node.id !== removedId);
-    for (const node of this.flow.nodes) {
-      node.children = (node.children ?? []).filter((child) => child.id !== removedId);
-      node.transitions = (node.transitions ?? []).filter((transition) => transition.targetNodeId !== removedId);
-      if (node.sidebar?.nodeId === removedId) {
-        delete node.sidebar;
-      }
-    }
+    this.flow.nodes = this.removeNodeReferences(this.flow.nodes, removedId);
     if (this.flow.sidebar?.nodeId === removedId) {
       delete this.flow.sidebar;
     }
@@ -226,6 +225,19 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     this.selectedNodeId = this.flow.nodes[0]?.id ?? '';
     this.validationTrigger.next();
     this.persistViewState();
+  }
+
+  private removeNodeReferences(nodes: FlowNode[], removedId: string): FlowNode[] {
+    return nodes
+      .filter((node) => node.id !== removedId)
+      .map((node) => {
+        node.children = this.removeNodeReferences(node.children ?? [], removedId);
+        node.transitions = (node.transitions ?? []).filter((transition) => transition.targetNodeId !== removedId);
+        if (node.sidebar?.nodeId === removedId) {
+          delete node.sidebar;
+        }
+        return node;
+      });
   }
 
   /**
