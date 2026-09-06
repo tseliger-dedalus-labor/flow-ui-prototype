@@ -7,6 +7,8 @@ import { EditorPageComponent } from './editor-page.component';
 class ApiServiceMock {
   failValidation = false;
   flows: Array<{ id: string; name: string; tool: 'WebclientTool'; active: boolean }> = [];
+  createdFlow?: FlowDefinition;
+  updatedFlow?: FlowDefinition;
   getRegistry() { return of([]); }
   getFlows() { return of(this.flows); }
   getFlow(id: string) {
@@ -21,7 +23,14 @@ class ApiServiceMock {
       ]
     });
   }
-  updateFlow(flow: unknown) { return of(flow); }
+  createFlow(flow: FlowDefinition) {
+    this.createdFlow = flow;
+    return of(flow);
+  }
+  updateFlow(flow: FlowDefinition) {
+    this.updatedFlow = flow;
+    return of(flow);
+  }
   validateFlow() {
     if (this.failValidation) {
       return throwError(() => new Error('validation failed'));
@@ -87,6 +96,54 @@ describe('EditorPageComponent', () => {
 
     // Doppelte und leere Einträge dürfen die Berechtigungsmenge nicht verfälschen.
     expect(node.requiredPermissions).toEqual(['APPOINTMENTS_READ', 'APPOINTMENTS_WRITE']);
+  });
+
+  it('creates and saves a new flow through the create endpoint', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    const api = TestBed.inject(FlowApiService) as unknown as ApiServiceMock;
+    component.registry = [
+      { id: 'ward-list-content', title: 'Stationsliste', presenter: 'CONTENT', container: false, inputs: [], outputs: [] }
+    ];
+
+    component.createNewFlow();
+    component.addNode();
+    component.flow!.name = 'Mein Flow';
+    component.save();
+
+    expect(api.createdFlow).toBeDefined();
+    expect(api.updatedFlow).toBeUndefined();
+    expect(component.isNewFlow).toBeFalse();
+    expect(component.selectedFlowId).toBe(component.flow!.id);
+    expect(component.flows).toContain(jasmine.objectContaining({ id: component.flow!.id, name: 'Mein Flow' }));
+  });
+
+  it('adds and removes nodes including references to the removed node', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    component.registry = [
+      { id: 'content', title: 'Inhalt', presenter: 'CONTENT', container: true, inputs: [], outputs: [] },
+      { id: 'sidebar', title: 'Sidebar', presenter: 'SIDEBAR', container: false, inputs: [], outputs: [] }
+    ];
+
+    component.createNewFlow();
+    component.addNode();
+    const content = component.selectedNode!;
+    component.addNode(true);
+    const sidebar = component.selectedNode!;
+    content.children = [sidebar];
+    content.transitions = [{ onOutput: 'next', targetNodeId: sidebar.id, contextMapping: {} }];
+    content.sidebar = { nodeId: sidebar.id, position: 'LEFT', width: 280 };
+    component.flow!.sidebar = { nodeId: sidebar.id, position: 'LEFT', width: 280 };
+
+    component.removeSelectedNode();
+
+    expect(component.flow!.nodes).toEqual([content]);
+    expect(content.children).toEqual([]);
+    expect(content.transitions).toEqual([]);
+    expect(content.sidebar).toBeUndefined();
+    expect(component.flow!.sidebar).toBeUndefined();
+    expect(component.flow!.entryNodeId).toBe(content.id);
   });
 
   it('creates and removes sidebar configuration', () => {
