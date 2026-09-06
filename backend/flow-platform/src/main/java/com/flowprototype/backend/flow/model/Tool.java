@@ -5,6 +5,7 @@ package com.flowprototype.backend.flow.model;
  */
 public enum Tool {
     AppointmentTool("appointments"),
+    Reportcenter("laboratory-portal"),
     WebclientTool("patient-workflow");
 
     private final String module;

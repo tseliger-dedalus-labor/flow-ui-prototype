@@ -250,6 +250,32 @@
           }
         }
       }
+    },
+    "laboratory-portal": {
+      "projectType": "library",
+      "root": "projects/laboratory-portal",
+      "sourceRoot": "projects/laboratory-portal/src",
+      "prefix": "laboratory",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/laboratory-portal/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/laboratory-portal/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/laboratory-portal/tsconfig.spec.json"
+          }
+        }
+      }
     }
   },
   "schematics": {
