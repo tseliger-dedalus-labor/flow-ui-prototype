@@ -121,6 +121,7 @@ npm start
 ```
 
 Falls `node_modules` noch nicht vorhanden ist, können die Abhängigkeiten mit `npm install` installiert werden.
+Der Entwicklungsserver verwendet dabei `http://localhost:8080/api`; dafür muss das Backend lokal laufen. `npm run build` erzeugt dagegen den Produktions-Build mit der relativen API-URL `/api`, passend für das gemeinsame Docker- und Render-Deployment.
 
 ### Build
 
