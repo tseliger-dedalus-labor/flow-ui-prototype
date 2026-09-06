@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "npm run build:modules && ng serve",
-    "build": "npm run build:modules && ng build frontend",
+    "start": "npm run build:modules && ng serve --configuration development",
+    "build": "npm run build:modules && ng build frontend --configuration production",
     "build:modules": "npm run generate:components && ng build ui-framework && ng build flow-platform && ng build patient-workflow && ng build appointments && ng build flow-editor",
     "build:ui-framework": "ng build ui-framework",
     "build:flow-platform": "npm run build:ui-framework && ng build flow-platform",
