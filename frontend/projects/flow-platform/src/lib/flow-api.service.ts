@@ -44,6 +44,13 @@ export class FlowApiService {
   }
 
   /**
+   * Persistiert einen neu im Editor angelegten Flow.
+   */
+  createFlow(flow: FlowDefinition): Observable<FlowDefinition> {
+    return this.http.post<FlowDefinition>(`${this.baseUrl}/flows`, flow);
+  }
+
+  /**
    * Persistiert einen im Editor bearbeiteten Flow unverändert an die Backend-API.
    */
   updateFlow(flow: FlowDefinition): Observable<FlowDefinition> {

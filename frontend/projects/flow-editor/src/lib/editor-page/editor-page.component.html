@@ -1,9 +1,14 @@
 <section>
   <h2>Flow-Editor</h2>
 
+  <button type="button" (click)="createNewFlow()">Neuen Flow erstellen</button>
+
   <label>
     Flow auswählen
     <select [(ngModel)]="selectedFlowId" (ngModelChange)="loadFlow()">
+      @if (isNewFlow) {
+        <option value="" disabled>Neuer Flow (noch nicht gespeichert)</option>
+      }
       @for (flow of flows; track flow) {
         <option [value]="flow.id">{{ flow.name }} ({{ flow.id }})</option>
       }
@@ -15,7 +20,7 @@
       <!-- Globale Flow-Eigenschaften und Sidebar-Konfiguration. -->
       <section class="card">
         <h3>Flow</h3>
-        <label>ID <input [(ngModel)]="currentFlow.id" (ngModelChange)="triggerValidation()" /></label>
+        <label>ID <input [(ngModel)]="currentFlow.id" [disabled]="!isNewFlow" (ngModelChange)="triggerValidation()" /></label>
         <label>Name <input [(ngModel)]="currentFlow.name" (ngModelChange)="triggerValidation()" /></label>
         <label>Tool
           <select [(ngModel)]="currentFlow.tool" (ngModelChange)="triggerValidation()">
@@ -73,6 +78,11 @@
             }
           </select>
         </label>
+        <div class="button-row">
+          <button type="button" (click)="addNode()">Inhaltsknoten hinzufügen</button>
+          <button type="button" (click)="addNode(true)">Sidebar-Knoten hinzufügen</button>
+          <button type="button" [disabled]="!selectedNode" (click)="removeSelectedNode()">Ausgewählten Knoten entfernen</button>
+        </div>
       </section>
       @if (selectedNode; as node) {
         <!-- Knotenspezifische Konfiguration, Bindings und Transitionen. -->

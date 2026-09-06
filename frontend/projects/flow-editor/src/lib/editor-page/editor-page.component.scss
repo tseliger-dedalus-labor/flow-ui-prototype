@@ -39,5 +39,10 @@ textarea {
   padding: .5rem;
   margin-bottom: .5rem;
 }
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
 .ok { color: #2f7a30; }
 .error-list { color: #a32727; }

@@ -40,9 +40,11 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   issues: ValidationIssue[] = [];
   status = '';
   validationPerformed = false;
+  isNewFlow = false;
 
   private readonly validationTrigger = new Subject<void>();
   private readonly validationSubscription: Subscription;
+  private flowLoadRequest = 0;
 
   constructor(
     private readonly api: FlowApiService,
@@ -77,8 +79,13 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     if (!this.selectedFlowId) {
       return;
     }
+    const request = ++this.flowLoadRequest;
     this.api.getFlow(this.selectedFlowId).subscribe((flow) => {
+      if (request !== this.flowLoadRequest) {
+        return;
+      }
       this.flow = structuredClone(flow);
+      this.isNewFlow = false;
       this.flow.nodes.forEach((node) => this.ensureInputBindings(node));
       this.selectedNodeId = preferredNodeId
         && this.flow.nodes.some((node) => node.id === preferredNodeId)
@@ -91,6 +98,27 @@ export class EditorPageComponent implements OnInit, OnDestroy {
       this.validationTrigger.next();
       this.persistViewState();
     });
+  }
+
+  /**
+   * Beginnt eine neue, zunächst leere Flow-Definition.
+   */
+  createNewFlow(): void {
+    this.flowLoadRequest++;
+    this.flow = {
+      id: `flow-${crypto.randomUUID()}`,
+      name: 'Neuer Flow',
+      tool: 'WebclientTool',
+      entryNodeId: '',
+      nodes: []
+    };
+    this.isNewFlow = true;
+    this.selectedFlowId = '';
+    this.selectedNodeId = '';
+    this.issues = [];
+    this.status = '';
+    this.validationPerformed = false;
+    this.validationTrigger.next();
   }
 
   /**
@@ -138,9 +166,78 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   }
 
   private isSidebarNode(node: FlowNode): boolean {
-    return this.flow?.sidebar?.nodeId === node.id
+    return this.descriptor(node.componentId)?.presenter === 'SIDEBAR'
+      || this.flow?.sidebar?.nodeId === node.id
       || this.flow?.nodes.some((candidate) => candidate.sidebar?.nodeId === node.id)
       || false;
+  }
+
+  /**
+   * Fügt einen neuen Inhalts- oder Sidebar-Knoten mit einer eindeutigen ID hinzu.
+   */
+  addNode(sidebar = false): void {
+    if (!this.flow) {
+      return;
+    }
+    const presenter = sidebar ? 'SIDEBAR' : 'CONTENT';
+    const descriptor = this.registry.find((candidate) => candidate.presenter === presenter);
+    if (!descriptor) {
+      this.status = `Keine ${presenter}-Komponente verfügbar.`;
+      return;
+    }
+    const baseId = sidebar ? 'sidebar' : 'node';
+    let suffix = this.flow.nodes.length + 1;
+    while (this.flow.nodes.some((node) => node.id === `${baseId}-${suffix}`)) {
+      suffix++;
+    }
+    const node: FlowNode = {
+      id: `${baseId}-${suffix}`,
+      componentId: descriptor.id,
+      inputBindings: {},
+      children: [],
+      transitions: []
+    };
+    this.flow.nodes.push(node);
+    this.ensureInputBindings(node);
+    if (!sidebar && !this.flow.entryNodeId) {
+      this.flow.entryNodeId = node.id;
+    }
+    this.selectedNodeId = node.id;
+    this.status = '';
+    this.persistViewState();
+  }
+
+  /**
+   * Entfernt einen Knoten und alle Verweise auf ihn aus dem Flow.
+   */
+  removeSelectedNode(): void {
+    if (!this.flow || !this.selectedNodeId) {
+      return;
+    }
+    const removedId = this.selectedNodeId;
+    this.flow.nodes = this.removeNodeReferences(this.flow.nodes, removedId);
+    if (this.flow.sidebar?.nodeId === removedId) {
+      delete this.flow.sidebar;
+    }
+    if (this.flow.entryNodeId === removedId) {
+      this.flow.entryNodeId = this.contentNodes()[0]?.id ?? '';
+    }
+    this.selectedNodeId = this.flow.nodes[0]?.id ?? '';
+    this.validationTrigger.next();
+    this.persistViewState();
+  }
+
+  private removeNodeReferences(nodes: FlowNode[], removedId: string): FlowNode[] {
+    return nodes
+      .filter((node) => node.id !== removedId)
+      .map((node) => {
+        node.children = this.removeNodeReferences(node.children ?? [], removedId);
+        node.transitions = (node.transitions ?? []).filter((transition) => transition.targetNodeId !== removedId);
+        if (node.sidebar?.nodeId === removedId) {
+          delete node.sidebar;
+        }
+        return node;
+      });
   }
 
   /**
@@ -252,9 +349,18 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     if (!this.flow) {
       return;
     }
-    this.api.updateFlow(this.flow).subscribe({
+    const request = this.isNewFlow ? this.api.createFlow(this.flow) : this.api.updateFlow(this.flow);
+    request.subscribe({
       next: (saved) => {
         this.flow = saved;
+        this.isNewFlow = false;
+        this.selectedFlowId = saved.id;
+        const existingSummary = this.flows.find((flow) => flow.id === saved.id);
+        if (existingSummary) {
+          existingSummary.name = saved.name;
+        } else {
+          this.flows.push({ id: saved.id, name: saved.name });
+        }
         this.flow.nodes.forEach((node) => this.ensureInputBindings(node));
         const preferredNodeId = this.selectedNodeId;
         const fallbackNodeId = this.flow.nodes[0]?.id ?? '';
