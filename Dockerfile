@@ -15,6 +15,7 @@ WORKDIR /workspace/backend
 COPY backend/ ./
 COPY --from=frontend-build /workspace/frontend/projects/patient-workflow/src/patient-workflow.components.json /workspace/frontend/projects/patient-workflow/src/patient-workflow.components.json
 COPY --from=frontend-build /workspace/frontend/projects/appointments/src/appointments.components.json /workspace/frontend/projects/appointments/src/appointments.components.json
+COPY --from=frontend-build /workspace/frontend/projects/laboratory-portal/src/laboratory-portal.components.json /workspace/frontend/projects/laboratory-portal/src/laboratory-portal.components.json
 COPY --from=frontend-build /workspace/frontend/dist/frontend/browser/ application/src/main/resources/static/
 RUN mvn --batch-mode --no-transfer-progress -pl application -am package
 
