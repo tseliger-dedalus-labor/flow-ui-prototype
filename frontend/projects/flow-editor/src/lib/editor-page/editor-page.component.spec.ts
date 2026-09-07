@@ -307,8 +307,102 @@ describe('EditorPageComponent', () => {
     }]);
     fixture.detectChanges();
 
-    expect(panel.inputBindings['patientId']).toEqual({ source: 'STATIC', staticValue: '' });
+    expect(panel.inputBindings['patientId']).toEqual({ source: 'CONTEXT', contextKey: 'patientId' });
     expect(fixture.nativeElement.textContent).toContain('patientId');
+  });
+
+  it('shows and edits descriptor bindings of Tab and Stack children on the container', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    const child: FlowNode = {
+      id: 'details',
+      componentId: 'details-panel',
+      inputBindings: {},
+      children: [],
+      transitions: []
+    };
+    const container: FlowNode = {
+      id: 'tabs',
+      componentId: 'tab-panel',
+      inputBindings: {},
+      children: [child],
+      transitions: []
+    };
+    component.registry = [
+      { id: 'tab-panel', title: 'Tab-Panel', presenter: 'CONTENT', container: true, inputs: [], outputs: [] },
+      {
+        id: 'details-panel',
+        title: 'Details',
+        presenter: 'CONTENT',
+        container: false,
+        inputs: [
+          { name: 'patientId', semanticType: 'PATIENT_ID', required: true, allowedValues: [] },
+          { name: 'mode', semanticType: 'MODE', required: true, allowedValues: ['normal', 'findings'] }
+        ],
+        outputs: []
+      }
+    ];
+    component.flow = {
+      id: 'flow',
+      name: 'Test',
+      tool: 'WebclientTool',
+      entryNodeId: container.id,
+      nodes: [container, child]
+    };
+    component.ensureInputBindings(child);
+    component.selectedNodeId = container.id;
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Bindings der Kindknoten');
+    expect(fixture.nativeElement.textContent).toContain('patientId');
+    expect(child.inputBindings).toEqual({
+      patientId: { source: 'CONTEXT', contextKey: 'patientId' },
+      mode: { source: 'STATIC', staticValue: 'normal' }
+    });
+  });
+
+  it('uses the globally editable node for a serialized container child', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    const api = TestBed.inject(FlowApiService) as unknown as ApiServiceMock;
+    api.flows = [{ id: 'flow', name: 'Flow', tool: 'WebclientTool', active: true }];
+    api.registryResponse = new Subject<ComponentDescriptor[]>();
+    api.flowResponse = new Subject<FlowDefinition>();
+
+    fixture.detectChanges();
+    api.flowResponse.next({
+      id: 'flow',
+      name: 'Flow',
+      tool: 'WebclientTool',
+      entryNodeId: 'tabs',
+      nodes: [
+        {
+          id: 'tabs',
+          componentId: 'tab-panel',
+          inputBindings: {},
+          children: [{ id: 'details', componentId: 'details-panel', inputBindings: {}, children: [], transitions: [] }],
+          transitions: []
+        },
+        { id: 'details', componentId: 'details-panel', inputBindings: {}, children: [], transitions: [] }
+      ]
+    });
+    api.registryResponse.next([
+      { id: 'tab-panel', title: 'Tab-Panel', presenter: 'CONTENT', container: true, inputs: [], outputs: [] },
+      {
+        id: 'details-panel',
+        title: 'Details',
+        presenter: 'CONTENT',
+        container: false,
+        inputs: [{ name: 'patientId', semanticType: 'PATIENT_ID', required: true, allowedValues: [] }],
+        outputs: []
+      }
+    ]);
+
+    const [container, child] = component.flow!.nodes;
+    expect(container.children[0]).toBe(child);
+    expect(container.children[0].inputBindings['patientId'])
+      .toEqual({ source: 'CONTEXT', contextKey: 'patientId' });
   });
 
   it('creates and removes sidebar configuration', () => {

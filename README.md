@@ -191,9 +191,9 @@ Die generierten Manifeste bleiben versionierte Paket-Assets. Das veröffentlicht
 1. Flow auswählen
 2. Knoten auswählen
 3. Komponente wählen
-4. Input-Bindings (STATIC/CONTEXT) setzen
-5. Transitionen und Context-Mappings bearbeiten
-6. Kindknoten für Container zusammenstellen
+4. Vom Component Descriptor vorbelegte Input-Bindings prüfen oder anpassen
+5. Vorbelegte Output-Definitionen, Transitionen und Context-Mappings bearbeiten
+6. Kindknoten für Container zusammenstellen; deren Bindings sind direkt am Tab- oder Stack-Container bearbeitbar
 7. Optionalen Sidebar-Knoten, Position und Breite konfigurieren
 8. Live-Validierung prüfen
 9. Speichern via Backend
