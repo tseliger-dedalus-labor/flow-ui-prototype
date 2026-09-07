@@ -9,6 +9,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,5 +91,42 @@ class FlowSeedDataTest {
                 .singleElement()
                 .extracting("componentId")
                 .isEqualTo("orders-panel"));
+    }
+
+    @Test
+    void migratesAnExistingDefaultFlowThatReferencesOrderView() {
+        FlowRepository repository = mock(FlowRepository.class);
+        FlowMapper mapper = mock(FlowMapper.class);
+        FlowEntity existing = new FlowEntity();
+        existing.setId("flow-reportcenter");
+        existing.setActive(true);
+        FlowDefinition legacy = new FlowDefinition();
+        legacy.setId("flow-reportcenter");
+        var report = new com.flowprototype.backend.flow.model.FlowNode();
+        report.setId("report");
+        report.setComponentId("order-view");
+        legacy.setNodes(List.of(report));
+        when(repository.count()).thenReturn(4L);
+        when(repository.existsById(any())).thenReturn(true);
+        when(repository.findById("flow-reportcenter")).thenReturn(Optional.of(existing));
+        when(mapper.toDefinition(existing)).thenReturn(legacy);
+        when(mapper.toEntity(any(), anyBoolean())).thenAnswer(invocation -> {
+            FlowDefinition definition = invocation.getArgument(0);
+            FlowEntity entity = new FlowEntity();
+            entity.setId(definition.getId());
+            entity.setActive(invocation.getArgument(1));
+            return entity;
+        });
+
+        new FlowSeedData(repository, mapper).run();
+
+        ArgumentCaptor<Iterable<FlowEntity>> savedFlows = ArgumentCaptor.forClass(Iterable.class);
+        verify(repository).saveAll(savedFlows.capture());
+        assertThat(StreamSupport.stream(savedFlows.getValue().spliterator(), false))
+            .singleElement()
+            .satisfies(flow -> {
+                assertThat(flow.getId()).isEqualTo("flow-reportcenter");
+                assertThat(flow.isActive()).isTrue();
+            });
     }
 }

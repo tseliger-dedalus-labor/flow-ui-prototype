@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Legt beim Start Beispiel-Flows an, falls die Datenbank noch leer ist.
@@ -248,13 +250,37 @@ public class FlowSeedData implements CommandLineRunner {
         reportcenterFlow.setNodes(List.of(reportcenter, report));
 
         // Persistiert die Beispielflows im produktiven Format, also mit relationalen Metadaten und JSON-Definition.
-        FlowEntity first = mapper.toEntity(normalFlow, emptyRepository);
-        FlowEntity second = mapper.toEntity(ordersFlow, false);
-        FlowEntity third = mapper.toEntity(appointmentsFlow, false);
-        FlowEntity fourth = mapper.toEntity(reportcenterFlow, false);
-        repository.saveAll(List.of(first, second, third, fourth).stream()
-            .filter(flow -> !repository.existsById(flow.getId()))
+        repository.saveAll(Stream.of(
+                seedEntity(normalFlow, emptyRepository),
+                seedEntity(ordersFlow, false),
+                seedEntity(appointmentsFlow, false),
+                seedEntity(reportcenterFlow, false)
+            )
+            .flatMap(Optional::stream)
             .toList());
+    }
+
+    /**
+     * Ergänzt fehlende Standardflows und ersetzt nur bekannte, durch die Komponentenänderung veraltete Varianten.
+     */
+    private Optional<FlowEntity> seedEntity(FlowDefinition definition, boolean activeByDefault) {
+        if (!repository.existsById(definition.getId())) {
+            return Optional.of(mapper.toEntity(definition, activeByDefault));
+        }
+        return repository.findById(definition.getId())
+            .filter(entity -> requiresCaseRecordMigration(mapper.toDefinition(entity)))
+            .map(entity -> mapper.toEntity(definition, entity.isActive()));
+    }
+
+    private boolean requiresCaseRecordMigration(FlowDefinition definition) {
+        return switch (definition.getId()) {
+            case "flow-normal", "flow-orders" -> definition.getNodes().stream()
+                .filter(node -> "patient-view".equals(node.getComponentId()))
+                .anyMatch(node -> node.getChildren() != null && !node.getChildren().isEmpty());
+            case "flow-reportcenter" -> definition.getNodes().stream()
+                .anyMatch(node -> "order-view".equals(node.getComponentId()));
+            default -> false;
+        };
     }
 
     /**
