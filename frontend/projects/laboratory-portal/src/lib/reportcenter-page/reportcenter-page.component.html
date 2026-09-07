@@ -1,0 +1,33 @@
+<section>
+  <h2>Reportcenter</h2>
+  @if (flows.length > 1) {
+    <div class="flow-selection">
+      <label>
+        Flow auswählen
+        <select [(ngModel)]="selectedFlowId">
+          @for (flow of flows; track flow.id) {
+            <option [value]="flow.id">{{ flow.name }}</option>
+          }
+        </select>
+      </label>
+      <button type="button" (click)="startFlow()">Flow starten</button>
+    </div>
+  }
+  @if (error) {
+    <p class="error">{{ error }}</p>
+  }
+  @if (flowStarted) {
+    <button type="button" (click)="back()" [disabled]="!engine.canGoBack()">Zurück</button>
+    @if (vm$ | async; as vm) {
+      @if (vm.node) {
+        <app-flow-layout
+          [node]="vm.node"
+          [sidebarNode]="vm.sidebarNode"
+          [sidebar]="vm.sidebar"
+          [sidebarPanels]="vm.sidebarPanels"
+          [sidebarMode]="vm.sidebarMode"
+          [context]="vm.context" />
+      }
+    }
+  }
+</section>

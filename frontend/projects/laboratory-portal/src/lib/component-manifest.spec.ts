@@ -12,7 +12,10 @@ describe('laboratory portal component manifest', () => {
     expect(reportcenter.displayType).toBe(IxtDisplayType.DISPTYPE_REPORTCENTER_VIEW);
     expect(reportcenter.inputs).toEqual([]);
     expect(reportcenter.outputs).toEqual([
-      { name: 'recordSelected', payload: { RecordID: 'RECORD_ID' } }
+      {
+        name: 'recordSelected',
+        payload: { RecordID: 'RECORD_ID', CaseID: 'CASE_ID', PatientID: 'PATIENT_ID' }
+      }
     ]);
   });
 });

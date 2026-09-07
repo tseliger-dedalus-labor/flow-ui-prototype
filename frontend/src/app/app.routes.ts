@@ -21,6 +21,10 @@ export const routes: Routes = [
         loadChildren: () => import('appointments').then((module) => module.APPOINTMENTS_ROUTES)
       },
       {
+        path: 'reportcenter',
+        loadChildren: () => import('laboratory-portal').then((module) => module.REPORTCENTER_ROUTES)
+      },
+      {
         path: 'editor',
         // Der Editor wird separat geladen, damit Produktionspfade keine Authoring-Abhängigkeiten mitziehen.
         loadChildren: () => import('flow-editor').then((module) => module.EDITOR_ROUTES)

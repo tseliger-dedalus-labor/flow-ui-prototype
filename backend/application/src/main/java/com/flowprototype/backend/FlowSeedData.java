@@ -212,11 +212,51 @@ public class FlowSeedData implements CommandLineRunner {
         appointmentWardsSidebar.setComponentId("ward-list-sidebar");
         appointmentWardsSidebar.setTransitions(List.of(toAppointments));
         appointmentsFlow.setNodes(List.of(appointmentWards, appointments, appointmentWardsSidebar));
+
+        FlowDefinition reportcenterFlow = new FlowDefinition();
+        reportcenterFlow.setId("flow-reportcenter");
+        reportcenterFlow.setName("Reportcenter");
+        reportcenterFlow.setTool(Tool.ReportcenterTool);
+        reportcenterFlow.setEntryNodeId("reportcenter");
+
+        FlowNode reportcenter = new FlowNode();
+        reportcenter.setId("reportcenter");
+        reportcenter.setComponentId("reportcenter");
+        FlowTransition toReport = new FlowTransition();
+        toReport.setOnOutput("recordSelected");
+        toReport.setTargetNodeId("report");
+        toReport.setContextMapping(Map.of(
+            "RecordId", "$event.RecordID",
+            "caseId", "$event.CaseID",
+            "patientId", "$event.PatientID"
+        ));
+        reportcenter.setTransitions(List.of(toReport));
+
+        FlowNode report = new FlowNode();
+        report.setId("report");
+        report.setComponentId("order-view");
+        InputBinding reportRecord = new InputBinding();
+        reportRecord.setSource(BindingSource.CONTEXT);
+        reportRecord.setContextKey("RecordId");
+        InputBinding reportCase = new InputBinding();
+        reportCase.setSource(BindingSource.CONTEXT);
+        reportCase.setContextKey("caseId");
+        InputBinding reportPatient = new InputBinding();
+        reportPatient.setSource(BindingSource.CONTEXT);
+        reportPatient.setContextKey("patientId");
+        report.setInputBindings(Map.of(
+            "RecordId", reportRecord,
+            "caseId", reportCase,
+            "patientId", reportPatient
+        ));
+        reportcenterFlow.setNodes(List.of(reportcenter, report));
+
         // Persistiert die Beispielflows im produktiven Format, also mit relationalen Metadaten und JSON-Definition.
         FlowEntity first = mapper.toEntity(normalFlow, true);
         FlowEntity second = mapper.toEntity(ordersFlow, false);
         FlowEntity third = mapper.toEntity(appointmentsFlow, false);
-        repository.saveAll(List.of(first, second, third));
+        FlowEntity fourth = mapper.toEntity(reportcenterFlow, false);
+        repository.saveAll(List.of(first, second, third, fourth));
     }
 
     /**

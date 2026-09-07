@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Liefert reproduzierbare Beispieldaten für den Patienten-Workflow.
@@ -155,6 +156,20 @@ public class PatientDataService {
     }
 
     /**
+     * Liefert alle Beispielaufträge mit ihrem Patienten- und Fallkontext.
+     *
+     * @return Vollständige, nach RecordID sortierte Liste für das Reportcenter.
+     */
+    public List<Map<String, String>> records() {
+        return PATIENTS_BY_WARD.values().stream()
+            .flatMap(List::stream)
+            .flatMap(patient -> patient.cases().stream()
+                .flatMap(patientCase -> records(patient, patientCase)))
+            .sorted((left, right) -> left.get("RecordID").compareTo(right.get("RecordID")))
+            .toList();
+    }
+
+    /**
      * Liefert Beispieltransfusionen zu einem Patienten.
      *
      * @param patientId Technische Patienten-ID.
@@ -225,6 +240,18 @@ public class PatientDataService {
             "status", status,
             "createdAt", createdAt
         );
+    }
+
+    private Stream<Map<String, String>> records(PatientSummary patient, PatientCase patientCase) {
+        return orders(patient.id(), patientCase.id()).stream().map(order -> Map.of(
+            "RecordID", order.get("RecordId"),
+            "CaseID", patientCase.id(),
+            "PatientID", patient.id(),
+            "patientName", patient.name(),
+            "text", order.get("text"),
+            "status", order.get("status"),
+            "createdAt", order.get("createdAt")
+        ));
     }
 
     /**
