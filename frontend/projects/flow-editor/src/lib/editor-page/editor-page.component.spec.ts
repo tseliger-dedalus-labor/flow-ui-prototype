@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
-import { FlowApiService, FlowDefinition, FlowNode, ViewRouterService } from 'flow-platform';
+import { ComponentDescriptor, FlowApiService, FlowDefinition, FlowNode, ViewRouterService } from 'flow-platform';
 import { EditorPageComponent } from './editor-page.component';
 
 /** API-Doppel mit kontrolliertem Validierungsverhalten für die Editor-Interaktion. */
@@ -10,7 +10,8 @@ class ApiServiceMock {
   createdFlow?: FlowDefinition;
   updatedFlow?: FlowDefinition;
   flowResponse?: Subject<FlowDefinition>;
-  getRegistry() { return of([]); }
+  registryResponse?: Subject<ComponentDescriptor[]>;
+  getRegistry() { return this.registryResponse ?? of([]); }
   getFlows() { return of(this.flows); }
   getFlow(id: string) {
     if (this.flowResponse) {
@@ -283,6 +284,31 @@ describe('EditorPageComponent', () => {
 
     expect(component.isNewFlow).toBeTrue();
     expect(component.flow!.id).toBe(draftId);
+  });
+
+  it('shows panel input bindings when the registry loads after the flow', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const api = TestBed.inject(FlowApiService) as unknown as ApiServiceMock;
+    api.flows = [{ id: 'flow', name: 'Flow', tool: 'WebclientTool', active: true }];
+    api.registryResponse = new Subject<ComponentDescriptor[]>();
+
+    fixture.detectChanges();
+
+    const panel = fixture.componentInstance.selectedNode!;
+    expect(panel.inputBindings['patientId']).toBeUndefined();
+
+    api.registryResponse.next([{
+      id: 'ward-list',
+      title: 'Panel',
+      presenter: 'CONTENT',
+      container: false,
+      inputs: [{ name: 'patientId', semanticType: 'PATIENT_ID', required: true, allowedValues: [] }],
+      outputs: []
+    }]);
+    fixture.detectChanges();
+
+    expect(panel.inputBindings['patientId']).toEqual({ source: 'STATIC', staticValue: '' });
+    expect(fixture.nativeElement.textContent).toContain('patientId');
   });
 
   it('creates and removes sidebar configuration', () => {
