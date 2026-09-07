@@ -16,7 +16,7 @@
     "check:components": "node tools/generate-components.mjs --check",
     "watch": "npm run build:modules && ng build frontend --watch --configuration development",
     "pretest": "npm run check:components",
-    "test": "npm run build:modules && ng test frontend --watch=false && ng test ui-framework --watch=false && ng test flow-platform --watch=false && ng test patient-workflow --watch=false && ng test appointments --watch=false && ng test laboratory-portal --watch=false && ng test flow-editor --watch=false"
+    "test": "npm run build:modules && ng test frontend --watch=false --browsers=ChromeHeadless && ng test ui-framework --watch=false --browsers=ChromeHeadless && ng test flow-platform --watch=false --browsers=ChromeHeadless && ng test patient-workflow --watch=false --browsers=ChromeHeadless && ng test appointments --watch=false --browsers=ChromeHeadless && ng test laboratory-portal --watch=false --browsers=ChromeHeadless && ng test flow-editor --watch=false --browsers=ChromeHeadless"
   },
   "private": true,
   "dependencies": {
