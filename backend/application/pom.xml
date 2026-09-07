@@ -32,6 +32,11 @@
         </dependency>
         <dependency>
             <groupId>com.flowprototype</groupId>
+            <artifactId>laboratory-portal</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.flowprototype</groupId>
             <artifactId>flow-editor</artifactId>
             <version>1.0.0</version>
         </dependency>

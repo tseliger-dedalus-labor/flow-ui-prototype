@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 2,
+  "module": "laboratory-portal",
+  "moduleVersion": "1.0.0",
+  "components": [
+    {
+      "id": "reportcenter",
+      "title": "Reportcenter",
+      "displayType": "DISPTYPE_REPORTCENTER_VIEW",
+      "presenter": "CONTENT",
+      "container": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "recordSelected",
+          "payload": {
+            "RecordID": "RECORD_ID"
+          }
+        }
+      ]
+    }
+  ]
+}

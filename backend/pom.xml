@@ -23,6 +23,7 @@
         <module>flow-platform</module>
         <module>patient-workflow</module>
         <module>appointments</module>
+        <module>laboratory-portal</module>
         <module>flow-editor</module>
         <module>application</module>
     </modules>

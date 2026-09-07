@@ -1,0 +1,18 @@
+{
+  "name": "laboratory-portal",
+  "version": "1.0.0",
+  "flowComponents": "./laboratory-portal.components.json",
+  "flowComponentRoots": [
+    "./src/lib/widgets"
+  ],
+  "peerDependencies": {
+    "@angular/common": "^21.2.0",
+    "@angular/core": "^21.2.0",
+    "flow-platform": "^1.0.0",
+    "ui-framework": "^1.0.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false
+}

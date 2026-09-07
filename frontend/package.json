@@ -5,17 +5,18 @@
     "ng": "ng",
     "start": "npm run build:modules && ng serve --configuration development",
     "build": "npm run build:modules && ng build frontend --configuration production",
-    "build:modules": "npm run generate:components && ng build ui-framework && ng build flow-platform && ng build patient-workflow && ng build appointments && ng build flow-editor",
+    "build:modules": "npm run generate:components && ng build ui-framework && ng build flow-platform && ng build patient-workflow && ng build appointments && ng build laboratory-portal && ng build flow-editor",
     "build:ui-framework": "ng build ui-framework",
     "build:flow-platform": "npm run build:ui-framework && ng build flow-platform",
     "build:patient-workflow": "npm run generate:components && npm run build:flow-platform && ng build patient-workflow",
     "build:appointments": "npm run build:patient-workflow && ng build appointments",
+    "build:laboratory-portal": "npm run build:flow-platform && ng build laboratory-portal",
     "build:flow-editor": "npm run build:flow-platform && ng build flow-editor",
     "generate:components": "node tools/generate-components.mjs",
     "check:components": "node tools/generate-components.mjs --check",
     "watch": "npm run build:modules && ng build frontend --watch --configuration development",
     "pretest": "npm run check:components",
-    "test": "npm run build:modules && ng test frontend --watch=false && ng test ui-framework --watch=false && ng test flow-platform --watch=false && ng test patient-workflow --watch=false && ng test appointments --watch=false && ng test flow-editor --watch=false"
+    "test": "npm run build:modules && ng test frontend --watch=false && ng test ui-framework --watch=false && ng test flow-platform --watch=false && ng test patient-workflow --watch=false && ng test appointments --watch=false && ng test laboratory-portal --watch=false && ng test flow-editor --watch=false"
   },
   "private": true,
   "dependencies": {
@@ -38,12 +39,14 @@
     "@angular/compiler-cli": "^21.2.22",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.2.0",
+    "jsdom": "^28.0.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "ng-packagr": "^21.2.7",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "vitest": "^4.0.8"
   }
 }

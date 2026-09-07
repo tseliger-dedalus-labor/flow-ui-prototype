@@ -30,7 +30,7 @@ const EDITOR_SCOPE = 'flow-editor';
     styleUrl: './editor-page.component.scss'
 })
 export class EditorPageComponent implements OnInit, OnDestroy {
-  readonly tools: Tool[] = ['WebclientTool', 'AppointmentTool'];
+  readonly tools: Tool[] = ['WebclientTool', 'AppointmentTool', 'ReportcenterTool'];
   readonly toolModules = TOOL_MODULES;
   flows: Array<{ id: string; name: string }> = [];
   registry: ComponentDescriptor[] = [];
