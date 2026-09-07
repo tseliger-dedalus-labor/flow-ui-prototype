@@ -6,7 +6,11 @@ import {
   ComponentDescriptor,
   FlowApiService,
   FlowDefinition,
+  FlowTransition,
   FlowNode,
+  InputBinding,
+  InputDescriptor,
+  OutputDescriptor,
   TOOL_MODULES,
   Tool,
   ValidationIssue,
@@ -185,13 +189,8 @@ export class EditorPageComponent implements OnInit, OnDestroy {
       this.status = `Keine ${presenter}-Komponente verfügbar.`;
       return;
     }
-    const baseId = sidebar ? 'sidebar' : 'node';
-    let suffix = this.flow.nodes.length + 1;
-    while (this.flow.nodes.some((node) => node.id === `${baseId}-${suffix}`)) {
-      suffix++;
-    }
     const node: FlowNode = {
-      id: `${baseId}-${suffix}`,
+      id: this.uniqueNodeId(descriptor.id),
       componentId: descriptor.id,
       inputBindings: {},
       children: [],
@@ -202,8 +201,35 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     if (!sidebar && !this.flow.entryNodeId) {
       this.flow.entryNodeId = node.id;
     }
+    if (!sidebar) {
+      this.connectPreviousNode(node);
+    }
     this.selectedNodeId = node.id;
     this.status = '';
+    this.persistViewState();
+  }
+
+  /**
+   * Synchronisiert Komponente, sprechende Knoten-ID und alle Referenzen auf den Knoten.
+   */
+  changeNodeComponent(node: FlowNode): void {
+    if (!this.flow) {
+      return;
+    }
+    const previousId = node.id;
+    const nextId = this.uniqueNodeId(node.componentId, node);
+    this.ensureInputBindings(node);
+    if (previousId !== nextId) {
+      this.renameNodeReferences(this.flow.nodes, previousId, nextId);
+      if (this.flow.entryNodeId === previousId) {
+        this.flow.entryNodeId = nextId;
+      }
+      if (this.flow.sidebar?.nodeId === previousId) {
+        this.flow.sidebar.nodeId = nextId;
+      }
+      this.selectedNodeId = nextId;
+    }
+    this.applyIncomingOutputBindings(node);
     this.persistViewState();
   }
 
@@ -252,7 +278,10 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     const nextBindings: Record<string, { source: 'STATIC' | 'CONTEXT'; staticValue?: unknown; contextKey?: string }> = {};
     // Nicht mehr vorhandene Inputs werden bewusst verworfen, damit die Flow-Definition dem Descriptor entspricht.
     for (const input of descriptor.inputs) {
-      nextBindings[input.name] = existing[input.name] ?? { source: 'STATIC', staticValue: '' };
+      nextBindings[input.name] = existing[input.name] ?? {
+        source: 'STATIC',
+        staticValue: input.allowedValues[0] ?? ''
+      };
     }
     node.inputBindings = nextBindings;
     this.validationTrigger.next();
@@ -297,7 +326,58 @@ export class EditorPageComponent implements OnInit, OnDestroy {
    */
   addTransition(node: FlowNode): void {
     node.transitions ??= [];
-    node.transitions.push({ onOutput: '', targetNodeId: '', contextMapping: {} });
+    const output = this.descriptor(node.componentId)?.outputs
+      .find((candidate) => !node.transitions.some((transition) => transition.onOutput === candidate.name));
+    const target = output ? this.compatibleTargets(node, output.name).find((candidate) => candidate !== node) : undefined;
+    const transition = {
+      onOutput: output?.name ?? '',
+      targetNodeId: target?.id ?? '',
+      contextMapping: {}
+    };
+    node.transitions.push(transition);
+    this.prefillTransition(node, transition);
+    this.validationTrigger.next();
+  }
+
+  removeTransition(node: FlowNode, index: number): void {
+    node.transitions.splice(index, 1);
+    this.validationTrigger.next();
+  }
+
+  /**
+   * Übernimmt kompatible Felder des gewählten Outputs in Context-Mapping und Ziel-Inputs.
+   */
+  prefillTransition(source: FlowNode, transition: FlowTransition): void {
+    if (!this.flow || !transition.onOutput || !transition.targetNodeId) {
+      this.validationTrigger.next();
+      return;
+    }
+    const output = this.descriptor(source.componentId)?.outputs
+      .find((candidate) => candidate.name === transition.onOutput);
+    const target = this.flow.nodes.find((candidate) => candidate.id === transition.targetNodeId);
+    const targetDescriptor = target && this.descriptor(target.componentId);
+    if (!output || !target || !targetDescriptor) {
+      this.validationTrigger.next();
+      return;
+    }
+
+    transition.contextMapping ??= {};
+    for (const input of targetDescriptor.inputs) {
+      const outputKey = this.matchingOutputKey(input, output);
+      if (!outputKey) {
+        continue;
+      }
+      const binding = target.inputBindings?.[input.name];
+      if (this.isEmptyBinding(binding)) {
+        target.inputBindings[input.name] = { source: 'CONTEXT', contextKey: input.name };
+      }
+      const contextKey = target.inputBindings[input.name]?.source === 'CONTEXT'
+        ? target.inputBindings[input.name].contextKey
+        : undefined;
+      if (contextKey && !transition.contextMapping[contextKey]) {
+        transition.contextMapping[contextKey] = `$event.${outputKey}`;
+      }
+    }
     this.validationTrigger.next();
   }
 
@@ -472,6 +552,98 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     }
     transition.contextMapping = next;
     this.validationTrigger.next();
+  }
+
+  private uniqueNodeId(componentId: string, currentNode?: FlowNode): string {
+    const baseId = componentId.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'node';
+    if (!this.flow?.nodes.some((node) => node !== currentNode && node.id === baseId)) {
+      return baseId;
+    }
+    let suffix = 2;
+    while (this.flow.nodes.some((node) => node !== currentNode && node.id === `${baseId}-${suffix}`)) {
+      suffix++;
+    }
+    return `${baseId}-${suffix}`;
+  }
+
+  private renameNodeReferences(nodes: FlowNode[], previousId: string, nextId: string): void {
+    for (const node of nodes) {
+      if (node.id === previousId) {
+        node.id = nextId;
+      }
+      for (const transition of node.transitions ?? []) {
+        if (transition.targetNodeId === previousId) {
+          transition.targetNodeId = nextId;
+        }
+      }
+      if (node.sidebar?.nodeId === previousId) {
+        node.sidebar.nodeId = nextId;
+      }
+      this.renameNodeReferences(node.children ?? [], previousId, nextId);
+    }
+  }
+
+  private connectPreviousNode(target: FlowNode): void {
+    const contentNodes = this.contentNodes();
+    const targetIndex = contentNodes.indexOf(target);
+    const source = targetIndex > 0 ? contentNodes[targetIndex - 1] : undefined;
+    const targetDescriptor = this.descriptor(target.componentId);
+    if (!source || !targetDescriptor) {
+      return;
+    }
+    const outputs = this.descriptor(source.componentId)?.outputs
+      .filter((output) => !source.transitions.some((transition) => transition.onOutput === output.name)) ?? [];
+    const output = outputs
+      .map((candidate) => ({
+        candidate,
+        matches: targetDescriptor.inputs.filter((input) => this.matchingOutputKey(input, candidate)).length
+      }))
+      .sort((left, right) => right.matches - left.matches)[0];
+    if (!output || output.matches === 0) {
+      return;
+    }
+    const transition: FlowTransition = {
+      onOutput: output.candidate.name,
+      targetNodeId: target.id,
+      contextMapping: {}
+    };
+    source.transitions.push(transition);
+    this.prefillTransition(source, transition);
+  }
+
+  private applyIncomingOutputBindings(target: FlowNode): void {
+    if (!this.flow) {
+      return;
+    }
+    for (const source of this.flow.nodes) {
+      for (const transition of source.transitions ?? []) {
+        if (transition.targetNodeId === target.id) {
+          this.prefillTransition(source, transition);
+        }
+      }
+    }
+  }
+
+  private matchingOutputKey(input: InputDescriptor, output: OutputDescriptor): string | undefined {
+    const normalizedInputName = input.name.toLowerCase();
+    const entries = Object.entries(output.payload);
+    const namedMatch = entries.find(([name, type]) =>
+      name.toLowerCase() === normalizedInputName && this.isCompatibleType(type, input));
+    if (namedMatch) {
+      return namedMatch[0];
+    }
+    const typeMatches = entries.filter(([, type]) => this.isCompatibleType(type, input));
+    return typeMatches.length === 1 ? typeMatches[0][0] : undefined;
+  }
+
+  private isCompatibleType(type: string, input: InputDescriptor): boolean {
+    return type === input.semanticType || input.semanticType === 'STRING';
+  }
+
+  private isEmptyBinding(binding?: InputBinding): boolean {
+    return !binding
+      || (binding.source === 'STATIC' && (binding.staticValue === '' || binding.staticValue == null))
+      || (binding.source === 'CONTEXT' && !binding.contextKey);
   }
 
   /**

@@ -1,10 +1,15 @@
-<section>
-  <h2>Flow-Editor</h2>
+<section class="editor-shell">
+  <header class="editor-header">
+    <div>
+      <span class="eyebrow">Flow-Konfiguration</span>
+      <h2>Flow-Editor</h2>
+      <p>Abläufe aus Presentern zusammenstellen, verbinden und direkt prüfen.</p>
+    </div>
+    <button class="primary" type="button" (click)="createNewFlow()">Neuen Flow erstellen</button>
+  </header>
 
-  <button type="button" (click)="createNewFlow()">Neuen Flow erstellen</button>
-
-  <label>
-    Flow auswählen
+  <label class="flow-picker">
+    Bestehenden Flow auswählen
     <select [(ngModel)]="selectedFlowId" (ngModelChange)="loadFlow()">
       @if (isNewFlow) {
         <option value="" disabled>Neuer Flow (noch nicht gespeichert)</option>
@@ -18,8 +23,14 @@
   @if (flow; as currentFlow) {
     <div class="editor-grid">
       <!-- Globale Flow-Eigenschaften und Sidebar-Konfiguration. -->
-      <section class="card">
-        <h3>Flow</h3>
+      <section class="card flow-card">
+        <div class="card-heading">
+          <div>
+            <span class="eyebrow">1 · Grundlagen</span>
+            <h3>Flow</h3>
+          </div>
+          <span class="count">{{ currentFlow.nodes.length }} Knoten</span>
+        </div>
         <label>ID <input [(ngModel)]="currentFlow.id" [disabled]="!isNewFlow" (ngModelChange)="triggerValidation()" /></label>
         <label>Name <input [(ngModel)]="currentFlow.name" (ngModelChange)="triggerValidation()" /></label>
         <label>Tool
@@ -71,6 +82,7 @@
             <input [(ngModel)]="sidebar.ariaLabel" (ngModelChange)="triggerValidation()" />
           </label>
         }
+        <hr />
         <label>Knoten bearbeiten
           <select [ngModel]="selectedNodeId" (ngModelChange)="selectNode($event)">
             @for (node of currentFlow.nodes; track node) {
@@ -79,17 +91,23 @@
           </select>
         </label>
         <div class="button-row">
-          <button type="button" (click)="addNode()">Inhaltsknoten hinzufügen</button>
-          <button type="button" (click)="addNode(true)">Sidebar-Knoten hinzufügen</button>
-          <button type="button" [disabled]="!selectedNode" (click)="removeSelectedNode()">Ausgewählten Knoten entfernen</button>
+          <button class="primary" type="button" (click)="addNode()">+ Inhalt</button>
+          <button type="button" (click)="addNode(true)">+ Sidebar</button>
+          <button class="danger" type="button" [disabled]="!selectedNode" (click)="removeSelectedNode()">Knoten entfernen</button>
         </div>
       </section>
       @if (selectedNode; as node) {
         <!-- Knotenspezifische Konfiguration, Bindings und Transitionen. -->
-        <section class="card">
-          <h3>Knoten {{ node.id }}</h3>
-          <label>Komponente
-            <select [(ngModel)]="node.componentId" (ngModelChange)="ensureInputBindings(node)">
+        <section class="card node-card">
+          <div class="card-heading">
+            <div>
+              <span class="eyebrow">2 · Presenter</span>
+              <h3>{{ descriptor(node.componentId)?.title ?? node.id }}</h3>
+            </div>
+            <code class="node-id">{{ node.id }}</code>
+          </div>
+          <label>Presenter
+            <select [(ngModel)]="node.componentId" (ngModelChange)="changeNodeComponent(node)">
               @for (descriptor of descriptorsFor(node); track descriptor) {
                 <option [value]="descriptor.id">
                   {{ descriptor.id }}{{ descriptor.displayType ? ' (' + descriptor.displayType + ')' : '' }}
@@ -105,13 +123,16 @@
           </label>
           @if (descriptor(node.componentId); as desc) {
             <div>
-              <h4>Input-Bindings</h4>
+              <h4>Input-Parameter</h4>
               @for (input of desc.inputs; track input) {
                 <div class="binding">
-                  <strong>{{ input.name }}</strong>
+                  <div class="binding-title">
+                    <strong>{{ input.name }}</strong>
+                    <span>{{ input.semanticType }}{{ input.required ? ' · Pflichtfeld' : '' }}</span>
+                  </div>
                   <select [(ngModel)]="node.inputBindings[input.name].source" (ngModelChange)="triggerValidation()">
-                    <option value="STATIC">STATIC</option>
-                    <option value="CONTEXT">CONTEXT</option>
+                    <option value="STATIC">Statischer Wert</option>
+                    <option value="CONTEXT">Aus Flow-Kontext</option>
                   </select>
                   @if (node.inputBindings[input.name].source === 'STATIC') {
                     <input [(ngModel)]="node.inputBindings[input.name].staticValue" (ngModelChange)="triggerValidation()" placeholder="statischer Wert" />
@@ -121,12 +142,17 @@
                   }
                 </div>
               }
-              <h4>Transitionen</h4>
-              <button type="button" (click)="addTransition(node)">Transition hinzufügen</button>
+              <div class="section-heading">
+                <div>
+                  <h4>Transitionen</h4>
+                  <p>Kompatible Outputs werden automatisch auf die Inputs des Ziels gemappt.</p>
+                </div>
+                <button type="button" (click)="addTransition(node)">+ Transition</button>
+              </div>
               @for (transition of node.transitions; track transition; let i = $index) {
                 <div class="transition">
                   <label>Output
-                    <select [(ngModel)]="transition.onOutput" (ngModelChange)="triggerValidation()">
+                    <select [(ngModel)]="transition.onOutput" (ngModelChange)="prefillTransition(node, transition)">
                       <option value="">-</option>
                       @for (output of desc.outputs; track output) {
                         <option [value]="output.name">{{ output.name }}</option>
@@ -134,7 +160,7 @@
                     </select>
                   </label>
                   <label>Ziel
-                    <select [(ngModel)]="transition.targetNodeId" (ngModelChange)="triggerValidation()">
+                    <select [(ngModel)]="transition.targetNodeId" (ngModelChange)="prefillTransition(node, transition)">
                       <option value="">-</option>
                       @for (target of contentNodes(); track target) {
                         <option [value]="target.id">{{ target.id }}</option>
@@ -155,6 +181,7 @@
                   <textarea
                     [ngModel]="mappingAsText(transition.contextMapping)"
                   (ngModelChange)="updateMappingFromText(transition, $event)"></textarea>
+                  <button class="danger compact" type="button" (click)="removeTransition(node, i)">Transition entfernen</button>
                 </div>
               }
             </div>
@@ -191,13 +218,31 @@
           <h4>Kindknoten (IDs, Komma-getrennt)</h4>
           <input [ngModel]="childIds(node)" (ngModelChange)="setChildren(node, $event)" />
         </section>
+      } @else {
+        <section class="card empty-state">
+          <span class="empty-icon">＋</span>
+          <h3>Ersten Presenter hinzufügen</h3>
+          <p>Beginne mit einem Inhalts- oder Sidebar-Knoten. Die Knoten-ID entsteht automatisch aus dem Presenter.</p>
+        </section>
       }
       <!-- Rückmeldung aus der serverseitigen Validierung und Persistenz. -->
-      <section class="card">
-        <h3>Validierung</h3>
-        <button type="button" (click)="validate()">Jetzt validieren</button>
-        <button type="button" (click)="save()">Speichern</button>
-        <p>{{ status }}</p>
+      <section class="card validation-card">
+        <div class="card-heading">
+          <div>
+            <span class="eyebrow">3 · Abschluss</span>
+            <h3>Validierung</h3>
+          </div>
+          @if (validationPerformed) {
+            <span class="validation-dot" [class.invalid]="issues.length > 0"></span>
+          }
+        </div>
+        <div class="button-row">
+          <button type="button" (click)="validate()">Jetzt validieren</button>
+          <button class="primary" type="button" (click)="save()">Flow speichern</button>
+        </div>
+        @if (status) {
+          <p class="status">{{ status }}</p>
+        }
         @if (validationPerformed && issues.length === 0) {
           <p class="ok">Keine Validierungsfehler.</p>
         }

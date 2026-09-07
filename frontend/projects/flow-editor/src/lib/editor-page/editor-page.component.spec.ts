@@ -163,6 +163,106 @@ describe('EditorPageComponent', () => {
     expect(component.flow!.entryNodeId).toBe(content.id);
   });
 
+  it('derives unique node IDs from the selected presenter and updates references when it changes', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    component.registry = [
+      { id: 'ward-list-content', title: 'Stationen', presenter: 'CONTENT', container: false, inputs: [], outputs: [] },
+      { id: 'patient-list-content', title: 'Patienten', presenter: 'CONTENT', container: false, inputs: [], outputs: [] }
+    ];
+
+    component.createNewFlow();
+    component.addNode();
+    const first = component.selectedNode!;
+    component.addNode();
+    const second = component.selectedNode!;
+    first.transitions.push({ onOutput: 'selected', targetNodeId: second.id, contextMapping: {} });
+    component.flow!.sidebar = { nodeId: second.id, position: 'LEFT', width: 280 };
+
+    expect(first.id).toBe('ward-list-content');
+    expect(second.id).toBe('ward-list-content-2');
+
+    second.componentId = 'patient-list-content';
+    component.changeNodeComponent(second);
+
+    expect(second.id).toBe('patient-list-content');
+    expect(component.selectedNodeId).toBe('patient-list-content');
+    expect(first.transitions[0].targetNodeId).toBe('patient-list-content');
+    expect(component.flow!.sidebar.nodeId).toBe('patient-list-content');
+  });
+
+  it('connects a new presenter and prefills compatible inputs from the previous output', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    const sourceDescriptor = {
+      id: 'ward-list-content', title: 'Stationen', presenter: 'CONTENT' as const, container: false, inputs: [],
+      outputs: [{ name: 'wardSelected', payload: { WardID: 'WARD_ID' as const } }]
+    };
+    const targetDescriptor = {
+      id: 'patient-list-content', title: 'Patienten', presenter: 'CONTENT' as const, container: false,
+      inputs: [
+        { name: 'wardId', semanticType: 'WARD_ID' as const, required: true, allowedValues: [] },
+        { name: 'mode', semanticType: 'MODE' as const, required: true, allowedValues: ['normal', 'findings'] }
+      ],
+      outputs: []
+    };
+    component.registry = [sourceDescriptor, targetDescriptor];
+
+    component.createNewFlow();
+    component.addNode();
+    const source = component.selectedNode!;
+    component.registry = [targetDescriptor, sourceDescriptor];
+    component.addNode();
+    const target = component.selectedNode!;
+
+    expect(target.id).toBe('patient-list-content');
+    expect(target.inputBindings['wardId']).toEqual({ source: 'CONTEXT', contextKey: 'wardId' });
+    expect(target.inputBindings['mode']).toEqual({ source: 'STATIC', staticValue: 'normal' });
+    expect(source.transitions).toEqual([{
+      onOutput: 'wardSelected',
+      targetNodeId: 'patient-list-content',
+      contextMapping: { wardId: '$event.WardID' }
+    }]);
+  });
+
+  it('does not overwrite an explicitly configured input while prefilling a transition', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    component.registry = [
+      {
+        id: 'source', title: 'Quelle', presenter: 'CONTENT', container: false, inputs: [],
+        outputs: [{ name: 'selected', payload: { patientId: 'PATIENT_ID' } }]
+      },
+      {
+        id: 'target', title: 'Ziel', presenter: 'CONTENT', container: false,
+        inputs: [{ name: 'patientId', semanticType: 'PATIENT_ID', required: true, allowedValues: [] }],
+        outputs: []
+      }
+    ];
+    const source: FlowNode = { id: 'source', componentId: 'source', inputBindings: {}, children: [], transitions: [] };
+    const target: FlowNode = {
+      id: 'target',
+      componentId: 'target',
+      inputBindings: { patientId: { source: 'STATIC', staticValue: 'patient-42' } },
+      children: [],
+      transitions: []
+    };
+    const transition = { onOutput: 'selected', targetNodeId: 'target', contextMapping: {} };
+    source.transitions.push(transition);
+    component.flow = {
+      id: 'flow',
+      name: 'Test',
+      tool: 'WebclientTool',
+      entryNodeId: source.id,
+      nodes: [source, target]
+    };
+
+    component.prefillTransition(source, transition);
+
+    expect(target.inputBindings['patientId']).toEqual({ source: 'STATIC', staticValue: 'patient-42' });
+    expect(transition.contextMapping).toEqual({});
+  });
+
   it('keeps a new draft when an earlier flow load completes late', () => {
     const fixture = TestBed.createComponent(EditorPageComponent);
     const component = fixture.componentInstance;
