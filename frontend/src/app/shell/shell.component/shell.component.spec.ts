@@ -15,12 +15,22 @@ describe('ShellComponent', () => {
     }).compileComponents();
   });
 
-  it('offers both feature modules in its toolbar', () => {
+  it('offers all feature modules in its toolbar', () => {
     const fixture = TestBed.createComponent(ShellComponent);
     fixture.detectChanges();
 
     const links = Array.from(fixture.nativeElement.querySelectorAll('nav a')) as HTMLAnchorElement[];
-    expect(links.map((link) => link.textContent?.trim())).toEqual(['Webclient', 'Stationstermine', 'Editor']);
-    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/runtime', '/appointments', '/editor']);
+    expect(links.map((link) => link.textContent?.trim())).toEqual([
+      'Webclient',
+      'Stationstermine',
+      'Reportcenter',
+      'Editor'
+    ]);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/runtime',
+      '/appointments',
+      '/reportcenter',
+      '/editor'
+    ]);
   });
 });
