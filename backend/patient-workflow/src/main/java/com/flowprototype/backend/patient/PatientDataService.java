@@ -112,17 +112,27 @@ public class PatientDataService {
     }
 
     /**
-     * Liefert Beispielbefunde zu einem Patienten.
+     * Liefert Beispielbefunde zu einem Patientenfall.
      *
      * @param patientId Technische Patienten-ID.
+     * @param caseId Technische Fall-ID.
      * @return Befundliste.
      */
-    public List<Map<String, String>> findings(String patientId) {
+    public List<Map<String, String>> findings(String patientId, String caseId) {
         return List.of(
-            Map.of("id", patientId + "-f-1", "text", "Blutbild vom 02.09.2026: Werte im erwarteten Bereich"),
-            Map.of("id", patientId + "-f-2", "text", "Radiologie vom 03.09.2026: Verlaufskontrolle ohne neuen Befund"),
-            Map.of("id", patientId + "-f-3", "text", "Ärztliche Visite vom 04.09.2026: klinischer Zustand stabil")
+            finding(patientId, caseId, "001", "Blutbild: Werte im erwarteten Bereich", "2026-09-02"),
+            finding(patientId, caseId, "002", "Radiologie: Verlaufskontrolle ohne neuen Befund", "2026-09-03"),
+            finding(patientId, caseId, "003", "Ärztliche Visite: klinischer Zustand stabil", "2026-09-04")
         );
+    }
+
+    /**
+     * Liefert einen einzelnen Befund innerhalb eines Patientenfalls.
+     */
+    public Optional<Map<String, String>> finding(String patientId, String caseId, String recordId) {
+        return findings(patientId, caseId).stream()
+            .filter(finding -> recordId.equals(finding.get("RecordId")))
+            .findFirst();
     }
 
     /**
@@ -238,6 +248,20 @@ public class PatientDataService {
             "RecordId", "ORD-" + patientId + "-" + caseId + "-" + sequence,
             "text", text,
             "status", status,
+            "createdAt", createdAt
+        );
+    }
+
+    private static Map<String, String> finding(
+        String patientId,
+        String caseId,
+        String sequence,
+        String text,
+        String createdAt
+    ) {
+        return Map.of(
+            "RecordId", "FND-" + patientId + "-" + caseId + "-" + sequence,
+            "text", text,
             "createdAt", createdAt
         );
     }

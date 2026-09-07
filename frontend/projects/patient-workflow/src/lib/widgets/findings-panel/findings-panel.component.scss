@@ -4,3 +4,22 @@
   border-radius: .25rem;
   background: #fff;
 }
+
+dl {
+  margin-bottom: 0;
+}
+
+dl div {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: .75rem;
+  margin-top: .5rem;
+}
+
+dt {
+  font-weight: 600;
+}
+
+dd {
+  margin: 0;
+}

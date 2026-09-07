@@ -63,14 +63,34 @@ public class PatientDataController {
     }
 
     /**
-     * Liefert Befunde eines Patienten.
+     * Liefert Befunde eines Patientenfalls.
      *
-     * @param id Technische Patienten-ID.
+     * @param patientId Technische Patienten-ID.
+     * @param caseId Technische Fall-ID.
      * @return Befundliste für den Beispielbereich.
      */
-    @GetMapping("/patients/{id}/findings")
-    public List<Map<String, String>> findings(@PathVariable String id) {
-        return patientData.findings(id);
+    @GetMapping("/patients/{patientId}/cases/{caseId}/findings")
+    public List<Map<String, String>> findings(
+        @PathVariable String patientId,
+        @PathVariable String caseId
+    ) {
+        return patientData.findings(patientId, caseId);
+    }
+
+    /**
+     * Liefert einen Befund anhand seiner RecordId.
+     */
+    @GetMapping("/patients/{patientId}/cases/{caseId}/findings/{recordId}")
+    public Map<String, String> finding(
+        @PathVariable String patientId,
+        @PathVariable String caseId,
+        @PathVariable String recordId
+    ) {
+        return patientData.finding(patientId, caseId, recordId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Befund mit RecordId '" + recordId + "' wurde nicht gefunden."
+            ));
     }
 
     /**

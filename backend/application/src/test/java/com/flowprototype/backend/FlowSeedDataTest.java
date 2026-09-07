@@ -7,6 +7,8 @@ import com.flowprototype.backend.persistence.FlowRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,5 +40,55 @@ class FlowSeedDataTest {
         assertThat(StreamSupport.stream(savedFlows.getValue().spliterator(), false))
             .extracting(FlowEntity::getId)
             .containsExactly("flow-reportcenter");
+    }
+
+    @Test
+    void defaultFlowsNavigateFromCaseRecordsToTheirDetailPanels() {
+        FlowRepository repository = mock(FlowRepository.class);
+        FlowMapper mapper = mock(FlowMapper.class);
+        List<FlowDefinition> definitions = new ArrayList<>();
+        when(repository.count()).thenReturn(0L);
+        when(repository.existsById(any())).thenReturn(false);
+        when(mapper.toEntity(any(), anyBoolean())).thenAnswer(invocation -> {
+            FlowDefinition definition = invocation.getArgument(0);
+            definitions.add(definition);
+            FlowEntity entity = new FlowEntity();
+            entity.setId(definition.getId());
+            return entity;
+        });
+
+        new FlowSeedData(repository, mapper).run();
+
+        assertThat(definitions).flatExtracting(FlowDefinition::getNodes)
+            .extracting(node -> node.getComponentId())
+            .doesNotContain("order-view");
+        assertThat(definitions).filteredOn(definition -> definition.getId().equals("flow-normal"))
+            .singleElement()
+            .satisfies(definition -> {
+                var patientView = definition.getNodes().stream()
+                    .filter(node -> node.getComponentId().equals("patient-view"))
+                    .findFirst()
+                    .orElseThrow();
+                assertThat(patientView.getTransitions()).extracting("onOutput", "targetNodeId")
+                    .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("orderSelected", "order"),
+                        org.assertj.core.groups.Tuple.tuple("findingSelected", "finding")
+                    );
+                assertThat(definition.getNodes()).filteredOn(node -> node.getId().equals("order"))
+                    .singleElement()
+                    .extracting("componentId")
+                    .isEqualTo("orders-panel");
+                assertThat(definition.getNodes()).filteredOn(node -> node.getId().equals("finding"))
+                    .singleElement()
+                    .extracting("componentId")
+                    .isEqualTo("findings-panel");
+            });
+        assertThat(definitions).filteredOn(definition -> definition.getId().equals("flow-reportcenter"))
+            .singleElement()
+            .satisfies(definition -> assertThat(definition.getNodes())
+                .filteredOn(node -> node.getId().equals("report"))
+                .singleElement()
+                .extracting("componentId")
+                .isEqualTo("orders-panel"));
     }
 }

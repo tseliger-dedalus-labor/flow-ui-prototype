@@ -213,7 +213,8 @@ Die generierten Manifeste bleiben versionierte Paket-Assets. Das veröffentlicht
 - `GET /api/wards`
 - `GET /api/wards/{id}/patients`
 - `GET /api/patients/{id}`
-- `GET /api/patients/{id}/findings`
+- `GET /api/patients/{patientId}/cases/{caseId}/findings`
+- `GET /api/patients/{patientId}/cases/{caseId}/findings/{recordId}`
 - `GET /api/patients/{id}/orders`
 - `GET /api/patients/{id}/transfusions`
 

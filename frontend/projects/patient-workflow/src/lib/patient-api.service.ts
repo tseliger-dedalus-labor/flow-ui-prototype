@@ -23,6 +23,13 @@ export interface PatientOrder {
   createdAt: string;
 }
 
+/** Befunddaten eines Patientenfalls. */
+export interface PatientFinding {
+  RecordId: string;
+  text: string;
+  createdAt: string;
+}
+
 /**
  * Kapselt alle lesenden Patient-Workflow-Endpunkte des Backends.
  */
@@ -67,10 +74,21 @@ export class PatientApiService {
   }
 
   /**
-   * Lädt die Befunde eines Patienten.
+   * Lädt die Befunde eines Patientenfalls.
    */
-  getFindings(patientId: string): Observable<Array<{ id: string; text: string }>> {
-    return this.http.get<Array<{ id: string; text: string }>>(`${this.baseUrl}/patients/${patientId}/findings`);
+  getFindings(patientId: string, caseId: string): Observable<PatientFinding[]> {
+    return this.http.get<PatientFinding[]>(
+      `${this.baseUrl}/patients/${patientId}/cases/${caseId}/findings`
+    );
+  }
+
+  /**
+   * Lädt einen einzelnen Befund über seine RecordId.
+   */
+  getFinding(patientId: string, caseId: string, RecordId: string): Observable<PatientFinding> {
+    return this.http.get<PatientFinding>(
+      `${this.baseUrl}/patients/${patientId}/cases/${caseId}/findings/${RecordId}`
+    );
   }
 
   /**

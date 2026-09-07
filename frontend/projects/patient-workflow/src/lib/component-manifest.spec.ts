@@ -12,7 +12,7 @@ describe('patient workflow component manifest', () => {
     expect(patientWorkflowComponentManifest.schemaVersion).toBe(2);
     expect(patientWorkflowComponentManifest.module).toBe('patient-workflow');
     expect(patientWorkflowComponentManifest.moduleVersion).toBe('1.0.0');
-    expect(patientWorkflowComponentManifest.components.length).toBe(12);
+    expect(patientWorkflowComponentManifest.components.length).toBe(11);
     // Die Manifest-Liste ist die verbindliche Quelle für die registrierten Komponenten.
     expect(patientWorkflowComponentManifest.components)
       .toEqual(FLOW_COMPONENTS.map((definition) => definition.descriptor));
@@ -22,6 +22,8 @@ describe('patient workflow component manifest', () => {
       .toEqual({ patientId: 'PATIENT_ID', caseId: 'CASE_ID' });
     expect(patientWorkflowComponent('patient-view').inputs.map((input) => input.name))
       .toEqual(['patientId', 'caseId']);
+    expect(patientWorkflowComponent('patient-view').outputs.map((output) => output.name))
+      .toEqual(['orderSelected', 'findingSelected']);
     // Die Display-Typ-Zuordnung muss mit den UI-Kacheln des Patienten-Workflows übereinstimmen.
     expect(patientWorkflowComponent('patient-list-content').displayType)
       .toBe(IxtDisplayType.DISPTYPE_WEC_PAT_LIST);
@@ -32,7 +34,9 @@ describe('patient workflow component manifest', () => {
     expect(patientWorkflowComponent('patient-view').displayType)
       .toBe(IxtDisplayType.DISPTYPE_WEC_INDEX);
     expect(patientWorkflowComponent('tab-panel').container).toBeTrue();
-    expect(patientWorkflowComponent('order-view').inputs.map((input) => input.name))
+    expect(patientWorkflowComponent('orders-panel').inputs.map((input) => input.name))
+      .toEqual(['patientId', 'caseId', 'RecordId']);
+    expect(patientWorkflowComponent('findings-panel').inputs.map((input) => input.name))
       .toEqual(['patientId', 'caseId', 'RecordId']);
   });
 

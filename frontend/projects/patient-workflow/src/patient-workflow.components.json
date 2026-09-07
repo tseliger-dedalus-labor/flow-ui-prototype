@@ -107,7 +107,7 @@
       "title": "Patientenansicht",
       "displayType": "DISPTYPE_WEC_INDEX",
       "presenter": "CONTENT",
-      "container": true,
+      "container": false,
       "inputs": [
         {
           "name": "patientId",
@@ -122,7 +122,20 @@
           "allowedValues": []
         }
       ],
-      "outputs": []
+      "outputs": [
+        {
+          "name": "orderSelected",
+          "payload": {
+            "RecordId": "RECORD_ID"
+          }
+        },
+        {
+          "name": "findingSelected",
+          "payload": {
+            "RecordId": "RECORD_ID"
+          }
+        }
+      ]
     },
     {
       "id": "stack-layout",
@@ -164,24 +177,8 @@
     },
     {
       "id": "findings-panel",
-      "title": "Befunde",
+      "title": "Befund",
       "displayType": "DISPTYPE_REPORT",
-      "presenter": "CONTENT",
-      "container": false,
-      "inputs": [
-        {
-          "name": "patientId",
-          "semanticType": "PATIENT_ID",
-          "required": true,
-          "allowedValues": []
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "id": "orders-panel",
-      "title": "Aufträge",
-      "displayType": "DISPTYPE_FORM",
       "presenter": "CONTENT",
       "container": false,
       "inputs": [
@@ -196,20 +193,20 @@
           "semanticType": "CASE_ID",
           "required": true,
           "allowedValues": []
+        },
+        {
+          "name": "RecordId",
+          "semanticType": "RECORD_ID",
+          "required": true,
+          "allowedValues": []
         }
       ],
-      "outputs": [
-        {
-          "name": "orderSelected",
-          "payload": {
-            "RecordId": "RECORD_ID"
-          }
-        }
-      ]
+      "outputs": []
     },
     {
-      "id": "order-view",
+      "id": "orders-panel",
       "title": "Auftrag",
+      "displayType": "DISPTYPE_FORM",
       "presenter": "CONTENT",
       "container": false,
       "inputs": [

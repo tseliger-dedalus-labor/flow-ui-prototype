@@ -33,6 +33,17 @@ class PatientDataServiceTest {
     }
 
     @Test
+    void identifiesCaseFindingsByRecordId() {
+        var findings = service.findings("p-100", "F-2026-1001");
+        var recordId = findings.getFirst().get("RecordId");
+
+        assertThat(recordId).startsWith("FND-p-100-F-2026-1001-");
+        assertThat(service.finding("p-100", "F-2026-1001", recordId).orElseThrow())
+            .containsEntry("RecordId", recordId)
+            .containsKeys("text", "createdAt");
+    }
+
+    @Test
     void returnsAllRecordsWithNavigationContext() {
         var records = service.records();
 

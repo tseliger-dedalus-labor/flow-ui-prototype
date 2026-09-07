@@ -91,6 +91,9 @@ public class FlowSeedData implements CommandLineRunner {
         caseBinding.setContextKey("caseId");
         patientView.setInputBindings(Map.of("patientId", patientBinding, "caseId", caseBinding));
         patientView.setSidebar(sidebar("patientsSidebar", "Patientenauswahl"));
+        FlowTransition toOrder = recordTransition("orderSelected", "order");
+        FlowTransition toFinding = recordTransition("findingSelected", "finding");
+        patientView.setTransitions(List.of(toOrder, toFinding));
 
         FlowNode wardsSidebar = new FlowNode();
         wardsSidebar.setId("wardsSidebar");
@@ -103,19 +106,13 @@ public class FlowSeedData implements CommandLineRunner {
         patientsSidebar.setInputBindings(Map.of("wardId", wardBinding, "mode", modeBinding));
         patientsSidebar.setTransitions(List.of(toPatient));
 
-        FlowNode stack = new FlowNode();
-        stack.setId("patientStack");
-        stack.setComponentId("stack-layout");
+        FlowNode order = recordPanel("order", "orders-panel");
+        order.setSidebar(sidebar("patientsSidebar", "Patientenauswahl"));
+        FlowNode finding = recordPanel("finding", "findings-panel");
+        finding.setSidebar(sidebar("patientsSidebar", "Patientenauswahl"));
 
-        FlowNode demographics = casePanel("demographics", "demographics-panel");
-        FlowNode findings = panel("findings", "findings-panel");
-        stack.setChildren(List.of(demographics, findings));
-        patientView.setChildren(List.of(stack));
-
-        // Die Knoten bleiben absichtlich sowohl hier als flache Liste als auch über Kindknotenverweise referenzierbar,
-        // weil Validierung, Persistenz und Editor jeden Knoten global per ID adressieren.
         normalFlow.setNodes(List.of(
-            wards, patients, patientView, stack, demographics, findings, wardsSidebar, patientsSidebar
+            wards, patients, patientView, order, finding, wardsSidebar, patientsSidebar
         ));
 
         // Alternative Sicht für denselben Navigationspfad mit anderem fachlichen Fokus im Patientendetail.
@@ -157,6 +154,10 @@ public class FlowSeedData implements CommandLineRunner {
         InputBinding case2 = new InputBinding(); case2.setSource(BindingSource.CONTEXT); case2.setContextKey("caseId");
         patientView2.setInputBindings(Map.of("patientId", pid2, "caseId", case2));
         patientView2.setSidebar(sidebar("patients2Sidebar", "Patientenauswahl"));
+        patientView2.setTransitions(List.of(
+            recordTransition("orderSelected", "order2"),
+            recordTransition("findingSelected", "finding2")
+        ));
 
         FlowNode wards2Sidebar = new FlowNode();
         wards2Sidebar.setId("wards2Sidebar");
@@ -169,16 +170,13 @@ public class FlowSeedData implements CommandLineRunner {
         patients2Sidebar.setInputBindings(Map.of("wardId", ward2, "mode", mode2));
         patients2Sidebar.setTransitions(List.of(toPatient2));
 
-        FlowNode layout2 = new FlowNode();
-        layout2.setId("layout2");
-        layout2.setComponentId("tab-panel");
-        FlowNode orders = casePanel("orders", "orders-panel");
-        FlowNode transfusions = panel("transfusions", "transfusions-panel");
-        layout2.setChildren(List.of(orders, transfusions));
-        patientView2.setChildren(List.of(layout2));
+        FlowNode order2 = recordPanel("order2", "orders-panel");
+        order2.setSidebar(sidebar("patients2Sidebar", "Patientenauswahl"));
+        FlowNode finding2 = recordPanel("finding2", "findings-panel");
+        finding2.setSidebar(sidebar("patients2Sidebar", "Patientenauswahl"));
 
         ordersFlow.setNodes(List.of(
-            wards2, patients2, patientView2, layout2, orders, transfusions, wards2Sidebar, patients2Sidebar
+            wards2, patients2, patientView2, order2, finding2, wards2Sidebar, patients2Sidebar
         ));
 
         FlowDefinition appointmentsFlow = new FlowDefinition();
@@ -232,7 +230,7 @@ public class FlowSeedData implements CommandLineRunner {
 
         FlowNode report = new FlowNode();
         report.setId("report");
-        report.setComponentId("order-view");
+        report.setComponentId("orders-panel");
         InputBinding reportRecord = new InputBinding();
         reportRecord.setSource(BindingSource.CONTEXT);
         reportRecord.setContextKey("RecordId");
@@ -296,6 +294,33 @@ public class FlowSeedData implements CommandLineRunner {
         patientCase.setContextKey("caseId");
         node.setInputBindings(Map.of("patientId", patient, "caseId", patientCase));
         return node;
+    }
+
+    /**
+     * Baut einen fallbezogenen Detailknoten für einen ausgewählten Record.
+     */
+    private FlowNode recordPanel(String id, String componentId) {
+        FlowNode node = casePanel(id, componentId);
+        InputBinding record = new InputBinding();
+        record.setSource(BindingSource.CONTEXT);
+        record.setContextKey("RecordId");
+        node.setInputBindings(Map.of(
+            "patientId", node.getInputBindings().get("patientId"),
+            "caseId", node.getInputBindings().get("caseId"),
+            "RecordId", record
+        ));
+        return node;
+    }
+
+    /**
+     * Erzeugt eine Navigation von einem Eintrag der Patientenansicht zu dessen Detailpanel.
+     */
+    private FlowTransition recordTransition(String output, String targetNodeId) {
+        FlowTransition transition = new FlowTransition();
+        transition.setOnOutput(output);
+        transition.setTargetNodeId(targetNodeId);
+        transition.setContextMapping(Map.of("RecordId", "$event.RecordId"));
+        return transition;
     }
 
     /**

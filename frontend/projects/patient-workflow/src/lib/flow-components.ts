@@ -1,7 +1,6 @@
 import { defineFlowComponent, IxtDisplayType } from 'flow-platform';
 import { DemographicsPanelComponent } from './widgets/demographics-panel/demographics-panel.component';
 import { FindingsPanelComponent } from './widgets/findings-panel/findings-panel.component';
-import { OrderComponent } from './widgets/order/order.component';
 import { OrdersPanelComponent } from './widgets/orders-panel/orders-panel.component';
 import { PatientListSidebarComponent } from './widgets/patient-list/patient-list.component';
 import { PatientListContentComponent } from './widgets/patient-list-content/patient-list-content.component';
@@ -120,7 +119,7 @@ export const FLOW_COMPONENTS = [
     title: 'Patientenansicht',
     displayType: IxtDisplayType.DISPTYPE_WEC_INDEX,
     presenter: 'CONTENT',
-    container: true,
+    container: false,
     inputs: [
       {
         name: 'patientId',
@@ -135,7 +134,20 @@ export const FLOW_COMPONENTS = [
         allowedValues: []
       }
     ],
-    outputs: []
+    outputs: [
+      {
+        name: 'orderSelected',
+        payload: {
+          RecordId: 'RECORD_ID'
+        }
+      },
+      {
+        name: 'findingSelected',
+        payload: {
+          RecordId: 'RECORD_ID'
+        }
+      }
+    ]
   }),
   defineFlowComponent(StackLayoutComponent, {
     id: 'stack-layout',
@@ -177,24 +189,8 @@ export const FLOW_COMPONENTS = [
   }),
   defineFlowComponent(FindingsPanelComponent, {
     id: 'findings-panel',
-    title: 'Befunde',
+    title: 'Befund',
     displayType: IxtDisplayType.DISPTYPE_REPORT,
-    presenter: 'CONTENT',
-    container: false,
-    inputs: [
-      {
-        name: 'patientId',
-        semanticType: 'PATIENT_ID',
-        required: true,
-        allowedValues: []
-      }
-    ],
-    outputs: []
-  }),
-  defineFlowComponent(OrdersPanelComponent, {
-    id: 'orders-panel',
-    title: 'Aufträge',
-    displayType: IxtDisplayType.DISPTYPE_FORM,
     presenter: 'CONTENT',
     container: false,
     inputs: [
@@ -209,20 +205,20 @@ export const FLOW_COMPONENTS = [
         semanticType: 'CASE_ID',
         required: true,
         allowedValues: []
+      },
+      {
+        name: 'RecordId',
+        semanticType: 'RECORD_ID',
+        required: true,
+        allowedValues: []
       }
     ],
-    outputs: [
-      {
-        name: 'orderSelected',
-        payload: {
-          RecordId: 'RECORD_ID'
-        }
-      }
-    ]
+    outputs: []
   }),
-  defineFlowComponent(OrderComponent, {
-    id: 'order-view',
+  defineFlowComponent(OrdersPanelComponent, {
+    id: 'orders-panel',
     title: 'Auftrag',
+    displayType: IxtDisplayType.DISPTYPE_FORM,
     presenter: 'CONTENT',
     container: false,
     inputs: [
