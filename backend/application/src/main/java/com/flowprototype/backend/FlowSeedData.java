@@ -41,10 +41,8 @@ public class FlowSeedData implements CommandLineRunner {
      */
     @Override
     public void run(String... args) {
-        // Saatdaten werden nur einmal angelegt, damit lokale Änderungen an Flows erhalten bleiben.
-        if (repository.count() > 0) {
-            return;
-        }
+        // Vorhandene Flows bleiben unverändert; fehlende Standardflows werden bei Upgrades ergänzt.
+        boolean emptyRepository = repository.count() == 0;
 
         // Standardfluss: Die Sidebar wechselt von der Stations- zur Patientenliste.
         FlowDefinition normalFlow = new FlowDefinition();
@@ -252,11 +250,13 @@ public class FlowSeedData implements CommandLineRunner {
         reportcenterFlow.setNodes(List.of(reportcenter, report));
 
         // Persistiert die Beispielflows im produktiven Format, also mit relationalen Metadaten und JSON-Definition.
-        FlowEntity first = mapper.toEntity(normalFlow, true);
+        FlowEntity first = mapper.toEntity(normalFlow, emptyRepository);
         FlowEntity second = mapper.toEntity(ordersFlow, false);
         FlowEntity third = mapper.toEntity(appointmentsFlow, false);
         FlowEntity fourth = mapper.toEntity(reportcenterFlow, false);
-        repository.saveAll(List.of(first, second, third, fourth));
+        repository.saveAll(List.of(first, second, third, fourth).stream()
+            .filter(flow -> !repository.existsById(flow.getId()))
+            .toList());
     }
 
     /**
