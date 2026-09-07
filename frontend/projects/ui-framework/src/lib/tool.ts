@@ -1,4 +1,4 @@
 /**
  * Identifiziert das fachliche Tool, dem ein Presenter zugeordnet ist.
  */
-export type Tool = 'AppointmentTool' | 'Reportcenter' | 'WebclientTool';
+export type Tool = 'AppointmentTool' | 'ReportcenterTool' | 'WebclientTool';

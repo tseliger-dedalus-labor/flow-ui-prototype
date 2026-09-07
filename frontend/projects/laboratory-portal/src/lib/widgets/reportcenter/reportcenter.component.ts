@@ -10,6 +10,6 @@ export class ReportcenterComponent extends AContentPresenter {
   @Output() readonly recordSelected = new EventEmitter<{ RecordID: string }>();
 
   constructor() {
-    super('Reportcenter');
+    super('ReportcenterTool');
   }
 }

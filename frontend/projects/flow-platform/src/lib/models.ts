@@ -125,7 +125,7 @@ export interface FlowSidebar {
  */
 export const TOOL_MODULES: Record<Tool, string> = {
   AppointmentTool: 'appointments',
-  Reportcenter: 'laboratory-portal',
+  ReportcenterTool: 'laboratory-portal',
   WebclientTool: 'patient-workflow'
 };
 
