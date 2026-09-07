@@ -110,6 +110,16 @@ public class PatientDataController {
     }
 
     /**
+     * Liefert alle Mock-Records einschließlich ihres Navigationskontexts.
+     *
+     * @return Vollständige Recordliste für das Reportcenter.
+     */
+    @GetMapping("/records")
+    public List<Map<String, String>> records() {
+        return patientData.records();
+    }
+
+    /**
      * Liefert Transfusionen eines Patienten.
      *
      * @param id Technische Patienten-ID.

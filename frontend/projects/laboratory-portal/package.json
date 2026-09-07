@@ -9,6 +9,7 @@
     "@angular/common": "^21.2.0",
     "@angular/core": "^21.2.0",
     "flow-platform": "^1.0.0",
+    "patient-workflow": "^1.0.0",
     "ui-framework": "^1.0.0"
   },
   "dependencies": {
