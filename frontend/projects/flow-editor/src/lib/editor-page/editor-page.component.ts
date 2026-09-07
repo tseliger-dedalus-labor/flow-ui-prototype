@@ -63,7 +63,10 @@ export class EditorPageComponent implements OnInit, OnDestroy {
    */
   ngOnInit(): void {
     const restoredState = this.readRestoredState();
-    this.api.getRegistry().subscribe((registry) => this.registry = registry);
+    this.api.getRegistry().subscribe((registry) => {
+      this.registry = registry;
+      this.flow?.nodes.forEach((node) => this.ensureInputBindings(node));
+    });
     this.api.getFlows().subscribe((flows) => {
       this.flows = flows.map((flow) => ({ id: flow.id, name: flow.name }));
       if (this.flows.length > 0) {
