@@ -284,11 +284,15 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     const nextBindings: Record<string, { source: 'STATIC' | 'CONTEXT'; staticValue?: unknown; contextKey?: string }> = {};
     // Nicht mehr vorhandene Inputs werden bewusst verworfen, damit die Flow-Definition dem Descriptor entspricht.
     for (const input of descriptor.inputs) {
-      nextBindings[input.name] = existing[input.name] ?? {
+      const existingBinding = existing[input.name];
+      const descriptorDefault = {
         ...(input.allowedValues.length > 0
           ? { source: 'STATIC' as const, staticValue: input.allowedValues[0] }
           : { source: 'CONTEXT' as const, contextKey: input.name })
       };
+      nextBindings[input.name] = existingBinding && !this.isEmptyBinding(existingBinding)
+        ? existingBinding
+        : descriptorDefault;
     }
     node.inputBindings = nextBindings;
     this.validationTrigger.next();
@@ -623,16 +627,6 @@ export class EditorPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    /**
-     * Verknüpft serialisierte Kindknoten wieder mit ihren global bearbeitbaren Knoten und ergänzt Descriptor-Bindings.
-     */
-    private prepareNodes(flow: FlowDefinition): void {
-      const nodesById = new Map(flow.nodes.map((node) => [node.id, node]));
-      for (const node of flow.nodes) {
-        node.children = (node.children ?? []).map((child) => nodesById.get(child.id) ?? child);
-      }
-      flow.nodes.forEach((node) => this.ensureInputBindings(node));
-    }
     for (const source of this.flow.nodes) {
       for (const transition of source.transitions ?? []) {
         if (transition.targetNodeId === target.id) {
@@ -640,6 +634,17 @@ export class EditorPageComponent implements OnInit, OnDestroy {
         }
       }
     }
+  }
+
+  /**
+   * Verknüpft serialisierte Kindknoten wieder mit ihren global bearbeitbaren Knoten und ergänzt Descriptor-Bindings.
+   */
+  private prepareNodes(flow: FlowDefinition): void {
+    const nodesById = new Map(flow.nodes.map((node) => [node.id, node]));
+    for (const node of flow.nodes) {
+      node.children = (node.children ?? []).map((child) => nodesById.get(child.id) ?? child);
+    }
+    flow.nodes.forEach((node) => this.ensureInputBindings(node));
   }
 
   private matchingOutputKey(input: InputDescriptor, output: OutputDescriptor): string | undefined {

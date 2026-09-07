@@ -311,13 +311,14 @@ describe('EditorPageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('patientId');
   });
 
-  it('shows and edits descriptor bindings of Tab and Stack children on the container', () => {
+  it('shows and edits descriptor bindings of container children', () => {
     const fixture = TestBed.createComponent(EditorPageComponent);
     const component = fixture.componentInstance;
+    fixture.detectChanges();
     const child: FlowNode = {
       id: 'details',
       componentId: 'details-panel',
-      inputBindings: {},
+      inputBindings: { patientId: { source: 'STATIC', staticValue: '' } },
       children: [],
       transitions: []
     };
