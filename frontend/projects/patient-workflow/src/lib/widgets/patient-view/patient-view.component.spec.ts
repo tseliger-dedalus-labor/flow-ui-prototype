@@ -34,10 +34,8 @@ describe('PatientViewComponent', () => {
 
   it('lists all case orders and findings and emits their RecordIds', () => {
     const fixture = TestBed.createComponent(PatientViewComponent);
-    const orderSelected = jasmine.createSpy('orderSelected');
-    const findingSelected = jasmine.createSpy('findingSelected');
-    fixture.componentInstance.orderSelected.subscribe(orderSelected);
-    fixture.componentInstance.findingSelected.subscribe(findingSelected);
+    const recordSelected = jasmine.createSpy('recordSelected');
+    fixture.componentInstance.recordSelected.subscribe(recordSelected);
     fixture.componentRef.setInput('patientId', 'p-1');
     fixture.componentRef.setInput('caseId', 'C-1');
 
@@ -53,7 +51,13 @@ describe('PatientViewComponent', () => {
       PrtType.PRTTYPE_ORDER,
       PrtType.PRTTYPE_REPORT
     ]);
-    expect(orderSelected).toHaveBeenCalledOnceWith({ RecordId: 'O-1' });
-    expect(findingSelected).toHaveBeenCalledOnceWith({ RecordId: 'F-1' });
+    expect(recordSelected).toHaveBeenCalledWith({
+      RecordId: 'O-1',
+      prtType: PrtType.PRTTYPE_ORDER
+    });
+    expect(recordSelected).toHaveBeenCalledWith({
+      RecordId: 'F-1',
+      prtType: PrtType.PRTTYPE_REPORT
+    });
   });
 });

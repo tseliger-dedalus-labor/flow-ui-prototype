@@ -93,9 +93,7 @@ public class FlowSeedData implements CommandLineRunner {
         caseBinding.setContextKey("caseId");
         patientView.setInputBindings(Map.of("patientId", patientBinding, "caseId", caseBinding));
         patientView.setSidebar(sidebar("patientsSidebar", "Patientenauswahl"));
-        FlowTransition toOrder = recordTransition("orderSelected", "order");
-        FlowTransition toFinding = recordTransition("findingSelected", "finding");
-        patientView.setTransitions(List.of(toOrder, toFinding));
+        patientView.setTransitions(List.of(recordTypeTransition("order")));
 
         FlowNode wardsSidebar = new FlowNode();
         wardsSidebar.setId("wardsSidebar");
@@ -156,10 +154,7 @@ public class FlowSeedData implements CommandLineRunner {
         InputBinding case2 = new InputBinding(); case2.setSource(BindingSource.CONTEXT); case2.setContextKey("caseId");
         patientView2.setInputBindings(Map.of("patientId", pid2, "caseId", case2));
         patientView2.setSidebar(sidebar("patients2Sidebar", "Patientenauswahl"));
-        patientView2.setTransitions(List.of(
-            recordTransition("orderSelected", "order2"),
-            recordTransition("findingSelected", "finding2")
-        ));
+        patientView2.setTransitions(List.of(recordTypeTransition("order2")));
 
         FlowNode wards2Sidebar = new FlowNode();
         wards2Sidebar.setId("wards2Sidebar");
@@ -274,7 +269,13 @@ public class FlowSeedData implements CommandLineRunner {
         return switch (definition.getId()) {
             case "flow-normal", "flow-orders" -> definition.getNodes().stream()
                 .filter(node -> "patient-view".equals(node.getComponentId()))
-                .anyMatch(node -> node.getChildren() != null && !node.getChildren().isEmpty());
+                .anyMatch(node ->
+                    node.getChildren() != null && !node.getChildren().isEmpty()
+                        || node.getTransitions().stream().allMatch(transition ->
+                            transition.getPrtTypeDisplayTypes() == null
+                                || transition.getPrtTypeDisplayTypes().isEmpty()
+                        )
+                );
             case "flow-reportcenter" -> definition.getNodes().stream()
                 .anyMatch(node -> "order-view".equals(node.getComponentId()))
                 || definition.getNodes().stream()
@@ -344,11 +345,15 @@ public class FlowSeedData implements CommandLineRunner {
     /**
      * Erzeugt eine Navigation von einem Eintrag der Patientenansicht zu dessen Detailpanel.
      */
-    private FlowTransition recordTransition(String output, String targetNodeId) {
+    private FlowTransition recordTypeTransition(String targetNodeId) {
         FlowTransition transition = new FlowTransition();
-        transition.setOnOutput(output);
+        transition.setOnOutput("recordSelected");
         transition.setTargetNodeId(targetNodeId);
         transition.setContextMapping(Map.of("RecordId", "$event.RecordId"));
+        transition.setPrtTypeDisplayTypes(Map.of(
+            PrtType.PRTTYPE_ORDER, IxtDisplayType.DISPTYPE_FORM,
+            PrtType.PRTTYPE_REPORT, IxtDisplayType.DISPTYPE_REPORT
+        ));
         return transition;
     }
 

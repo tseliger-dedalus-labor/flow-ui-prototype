@@ -44,7 +44,7 @@ class PatientComponentDescriptorProviderTest {
                 assertThat(descriptor.getInputs())
                     .anySatisfy(input -> assertThat(input.getSemanticType()).isEqualTo(SemanticType.CASE_ID));
                 assertThat(descriptor.getOutputs()).extracting("name")
-                    .containsExactly("orderSelected", "findingSelected");
+                    .containsExactly("recordSelected");
             });
         assertThat(descriptors).filteredOn(descriptor -> descriptor.getId().equals("transfusions-panel"))
             .singleElement()

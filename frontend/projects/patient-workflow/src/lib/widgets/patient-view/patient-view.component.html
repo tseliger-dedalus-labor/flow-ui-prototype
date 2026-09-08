@@ -6,7 +6,7 @@
   <ul>
     @for (order of orders; track order.RecordId) {
       <li>
-        <button type="button" (click)="orderSelected.emit({ RecordId: order.RecordId })">
+        <button type="button" (click)="openRecord(order.RecordId, prtType.PRTTYPE_ORDER)">
           <strong>{{ order.text }}</strong>
           <span>{{ order.status }} · {{ order.createdAt }}</span>
         </button>
@@ -21,7 +21,7 @@
   <ul>
     @for (finding of findings; track finding.RecordId) {
       <li>
-        <button type="button" (click)="findingSelected.emit({ RecordId: finding.RecordId })">
+        <button type="button" (click)="openRecord(finding.RecordId, prtType.PRTTYPE_REPORT)">
           <strong>{{ finding.text }}</strong>
           <span>{{ finding.createdAt }}</span>
         </button>

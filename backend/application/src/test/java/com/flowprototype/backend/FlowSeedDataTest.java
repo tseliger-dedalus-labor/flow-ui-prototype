@@ -72,11 +72,14 @@ class FlowSeedDataTest {
                     .filter(node -> node.getComponentId().equals("patient-view"))
                     .findFirst()
                     .orElseThrow();
-                assertThat(patientView.getTransitions()).extracting("onOutput", "targetNodeId")
-                    .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("orderSelected", "order"),
-                        org.assertj.core.groups.Tuple.tuple("findingSelected", "finding")
-                    );
+                assertThat(patientView.getTransitions()).singleElement().satisfies(transition -> {
+                    assertThat(transition.getOnOutput()).isEqualTo("recordSelected");
+                    assertThat(transition.getTargetNodeId()).isEqualTo("order");
+                    assertThat(transition.getPrtTypeDisplayTypes()).containsExactlyInAnyOrderEntriesOf(java.util.Map.of(
+                        PrtType.PRTTYPE_ORDER, IxtDisplayType.DISPTYPE_FORM,
+                        PrtType.PRTTYPE_REPORT, IxtDisplayType.DISPTYPE_REPORT
+                    ));
+                });
                 assertThat(definition.getNodes()).filteredOn(node -> node.getId().equals("order"))
                     .singleElement()
                     .extracting("componentId")
@@ -85,6 +88,21 @@ class FlowSeedDataTest {
                     .singleElement()
                     .extracting("componentId")
                     .isEqualTo("findings-panel");
+            });
+        assertThat(definitions).filteredOn(definition -> definition.getId().equals("flow-orders"))
+            .singleElement()
+            .satisfies(definition -> {
+                var transition = definition.getNodes().stream()
+                    .filter(node -> node.getComponentId().equals("patient-view"))
+                    .findFirst()
+                    .orElseThrow()
+                    .getTransitions()
+                    .getFirst();
+                assertThat(transition.getOnOutput()).isEqualTo("recordSelected");
+                assertThat(transition.getPrtTypeDisplayTypes()).containsExactlyInAnyOrderEntriesOf(java.util.Map.of(
+                    PrtType.PRTTYPE_ORDER, IxtDisplayType.DISPTYPE_FORM,
+                    PrtType.PRTTYPE_REPORT, IxtDisplayType.DISPTYPE_REPORT
+                ));
             });
         assertThat(definitions).filteredOn(definition -> definition.getId().equals("flow-reportcenter"))
             .singleElement()

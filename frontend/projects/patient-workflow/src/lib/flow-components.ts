@@ -136,15 +136,10 @@ export const FLOW_COMPONENTS = [
     ],
     outputs: [
       {
-        name: 'orderSelected',
+        name: 'recordSelected',
         payload: {
-          RecordId: 'RECORD_ID'
-        }
-      },
-      {
-        name: 'findingSelected',
-        payload: {
-          RecordId: 'RECORD_ID'
+          RecordId: 'RECORD_ID',
+          prtType: 'PRT_TYPE'
         }
       }
     ]

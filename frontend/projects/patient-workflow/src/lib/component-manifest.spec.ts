@@ -22,8 +22,10 @@ describe('patient workflow component manifest', () => {
       .toEqual({ patientId: 'PATIENT_ID', caseId: 'CASE_ID' });
     expect(patientWorkflowComponent('patient-view').inputs.map((input) => input.name))
       .toEqual(['patientId', 'caseId']);
-    expect(patientWorkflowComponent('patient-view').outputs.map((output) => output.name))
-      .toEqual(['orderSelected', 'findingSelected']);
+    expect(patientWorkflowComponent('patient-view').outputs).toEqual([{
+      name: 'recordSelected',
+      payload: { RecordId: 'RECORD_ID', prtType: 'PRT_TYPE' }
+    }]);
     // Die Display-Typ-Zuordnung muss mit den UI-Kacheln des Patienten-Workflows übereinstimmen.
     expect(patientWorkflowComponent('patient-list-content').displayType)
       .toBe(IxtDisplayType.DISPTYPE_WEC_PAT_LIST);

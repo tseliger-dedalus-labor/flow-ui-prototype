@@ -14,10 +14,10 @@ import { PatientApiService, PatientFinding, PatientOrder } from '../../patient-a
   styleUrl: './patient-view.component.scss'
 })
 export class PatientViewComponent extends AContentPresenter implements OnChanges, OnDestroy {
+  readonly prtType = PrtType;
   @Input({ required: true }) patientId = '';
   @Input({ required: true }) caseId = '';
-  @Output() readonly orderSelected = new EventEmitter<{ RecordId: string }>();
-  @Output() readonly findingSelected = new EventEmitter<{ RecordId: string }>();
+  @Output() readonly recordSelected = new EventEmitter<{ RecordId: string; prtType: PrtType }>();
 
   orders: PatientOrder[] = [];
   findings: PatientFinding[] = [];
@@ -25,6 +25,10 @@ export class PatientViewComponent extends AContentPresenter implements OnChanges
 
   constructor(private readonly api: PatientApiService) {
     super('WebclientTool');
+  }
+
+  openRecord(RecordId: string, prtType: PrtType): void {
+    this.recordSelected.emit({ RecordId, prtType });
   }
 
   ngOnChanges(): void {
