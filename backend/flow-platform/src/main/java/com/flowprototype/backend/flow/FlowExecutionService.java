@@ -20,12 +20,18 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.time.Duration;
+import java.time.Instant;
 
 /**
  * Führt Flow-Navigation und Kontextänderungen ausschließlich auf dem Server aus.
  */
 @Service
 public class FlowExecutionService {
+    private static final Duration EXECUTION_TTL = Duration.ofHours(24);
+    private static final int MAX_EXECUTIONS = 10_000;
+    private static final int MAX_HISTORY_ENTRIES = 100;
+
     private final FlowService flowService;
     private final ComponentRegistryService componentRegistry;
     private final FlowTransitionResolverRegistry resolverRegistry;
@@ -42,6 +48,12 @@ public class FlowExecutionService {
     }
 
     public FlowExecutionView start(String flowId) {
+        removeExpiredExecutions();
+        if (executions.size() >= MAX_EXECUTIONS) {
+            executions.values().stream()
+                .min(java.util.Comparator.comparing(candidate -> candidate.lastAccess))
+                .ifPresent(candidate -> executions.remove(candidate.id, candidate));
+        }
         FlowDefinition definition = flowService.get(flowId);
         if (node(definition, definition.getEntryNodeId()) == null) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Einstiegsknoten nicht gefunden");
@@ -103,6 +115,9 @@ public class FlowExecutionService {
                 execution.currentNodeId,
                 Collections.unmodifiableMap(new LinkedHashMap<>(execution.context))
             ));
+            if (execution.history.size() > MAX_HISTORY_ENTRIES) {
+                execution.history.removeLast();
+            }
             execution.currentNodeId = target.getId();
             execution.context = nextContext;
             execution.version++;
@@ -216,10 +231,19 @@ public class FlowExecutionService {
 
     private Execution execution(String id) {
         Execution execution = executions.get(id);
-        if (execution == null) {
+        if (execution == null || execution.lastAccess.plus(EXECUTION_TTL).isBefore(Instant.now())) {
+            if (execution != null) {
+                executions.remove(id, execution);
+            }
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Flow-Ausführung nicht gefunden");
         }
+        execution.lastAccess = Instant.now();
         return execution;
+    }
+
+    private void removeExpiredExecutions() {
+        Instant cutoff = Instant.now().minus(EXECUTION_TTL);
+        executions.entrySet().removeIf(entry -> entry.getValue().lastAccess.isBefore(cutoff));
     }
 
     private void assertVersion(Execution execution, long expectedVersion) {
@@ -239,6 +263,7 @@ public class FlowExecutionService {
         private long version;
         private String currentNodeId;
         private Map<String, Object> context = new HashMap<>();
+        private volatile Instant lastAccess = Instant.now();
 
         private Execution(String id, FlowDefinition definition) {
             this.id = id;
