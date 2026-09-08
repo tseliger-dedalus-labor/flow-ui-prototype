@@ -102,7 +102,9 @@ class FlowExecutionServiceTest {
     @Test
     void rejectsTamperedAndOutdatedLinks() {
         FlowExecutionView started = service.start("flow");
-        String tampered = started.resumeToken().substring(0, started.resumeToken().length() - 1) + "A";
+        char last = started.resumeToken().charAt(started.resumeToken().length() - 1);
+        String tampered = started.resumeToken().substring(0, started.resumeToken().length() - 1)
+            + (last == 'A' ? "B" : "A");
 
         assertThatThrownBy(() -> service.resume(tampered))
             .isInstanceOf(ResponseStatusException.class)
@@ -129,6 +131,7 @@ class FlowExecutionServiceTest {
 
         assertThat(state.path()).isEqualTo("/reportcenter");
         assertThat(state.viewScopes()).containsKey("reportcenter-selection");
+        assertThat(link.token()).doesNotContain("FND-1", "FND-2");
     }
 
     private FlowDefinition flow() {

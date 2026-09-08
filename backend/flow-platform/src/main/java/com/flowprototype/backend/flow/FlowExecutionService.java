@@ -88,6 +88,7 @@ public class FlowExecutionService {
         execution.currentNodeId = state.currentNodeId();
         execution.context = mutableCopy(state.context());
         execution.version = state.executionVersion();
+        execution.viewScopes = immutableCopy(state.viewScopes());
         if (state.history() != null) {
             state.history().stream()
                 .limit(MAX_HISTORY_ENTRIES)
@@ -208,7 +209,8 @@ public class FlowExecutionService {
                 execution.currentNodeId,
                 Collections.unmodifiableMap(new LinkedHashMap<>(execution.context)),
                 Map.copyOf(inputs),
-                !execution.history.isEmpty()
+                !execution.history.isEmpty(),
+                execution.viewScopes
             );
         }
     }
@@ -349,6 +351,7 @@ public class FlowExecutionService {
         private long version;
         private String currentNodeId;
         private Map<String, Object> context = new HashMap<>();
+        private Map<String, Object> viewScopes = Map.of();
         private volatile Instant lastAccess = Instant.now();
 
         private Execution(String id, FlowDefinition definition) {

@@ -119,9 +119,14 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
     this.error = '';
     this.loading = true;
     this.engine.restore(resumeToken).subscribe({
-      next: () => {
+      next: (view) => {
+        this.viewRouter.applyVerifiedScopes(view.viewScopes);
         this.flowStarted = true;
         this.loading = false;
+        const state = this.engine.snapshot();
+        if (state) {
+          this.persistState(state);
+        }
       },
       error: () => {
         this.error = 'Der Ansichtslink ist ungültig, veraltet oder nicht zugänglich.';

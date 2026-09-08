@@ -264,7 +264,10 @@ public class FlowSeedData implements CommandLineRunner {
         }
         return repository.findById(definition.getId())
             .filter(entity -> requiresCaseRecordMigration(mapper.toDefinition(entity)))
-            .map(entity -> mapper.toEntity(definition, entity.isActive()));
+            .map(entity -> {
+                definition.setVersion(entity.getVersion());
+                return mapper.toEntity(definition, entity.isActive());
+            });
     }
 
     private boolean requiresCaseRecordMigration(FlowDefinition definition) {

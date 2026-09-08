@@ -39,7 +39,8 @@ describe('FlowEngineService', () => {
       resolvedInputsByNode: currentNodeId === 'detail'
         ? { detail: { patientId: 'p-1' } }
         : {},
-      canGoBack
+      canGoBack,
+      viewScopes: {}
     };
   }
 

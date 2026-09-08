@@ -25,7 +25,6 @@ interface PortableFlowState {
   schemaVersion: number;
   flowId: string;
   path: string;
-  viewScopes: Record<string, unknown>;
 }
 
 interface RuntimeLinkState {
@@ -35,8 +34,8 @@ interface RuntimeLinkState {
 }
 
 /**
- * Speichert modulübergreifende UI-Zustände versioniert und kompakt Base64URL-kodiert in der aktuellen URL.
- * Zustände sind an den aktuellen Routenpfad gebunden; ältere JSON-Links bleiben lesbar.
+ * Speichert modulübergreifende UI-Zustände versioniert in der aktuellen URL.
+ * Runtime-Zustände werden serverseitig verschlüsselt und signiert; ältere JSON-Links bleiben lesbar.
  */
 @Injectable({ providedIn: 'root' })
 export class ViewRouterService implements OnDestroy {
@@ -96,6 +95,17 @@ export class ViewRouterService implements OnDestroy {
     void this.updateUrl().catch(() => undefined);
   }
 
+  /**
+   * Übernimmt komponentenspezifische Zustände erst nach erfolgreicher serverseitiger Token-Prüfung.
+   */
+  applyVerifiedScopes(viewScopes: Record<string, unknown>): void {
+    const runtime = this.scopes['tool-runtime'];
+    this.scopes = {
+      ...viewScopes,
+      ...(runtime ? { 'tool-runtime': runtime } : {})
+    };
+  }
+
   ngOnDestroy(): void {
     this.routerSubscription?.unsubscribe();
   }
@@ -110,6 +120,7 @@ export class ViewRouterService implements OnDestroy {
     if (!this.router) {
       return;
     }
+    this.updateSequence++;
     const activeRuntime = this.scopes['tool-runtime'];
     this.path = this.routePath(url);
     this.scopes = {};
@@ -126,7 +137,6 @@ export class ViewRouterService implements OnDestroy {
             ? activeRuntime.executionId
             : undefined;
           this.scopes = {
-            ...parsed.viewScopes,
             'tool-runtime': {
               flowId: parsed.flowId,
               resumeToken: serialized,
@@ -235,8 +245,7 @@ export class ViewRouterService implements OnDestroy {
     if (!isRecord(parsed)
       || parsed['schemaVersion'] !== 1
       || typeof parsed['flowId'] !== 'string'
-      || typeof parsed['path'] !== 'string'
-      || !isRecord(parsed['viewScopes'])) {
+      || typeof parsed['path'] !== 'string') {
       throw new Error('Ungültiger portabler Ansichtslink');
     }
     return parsed as unknown as PortableFlowState;

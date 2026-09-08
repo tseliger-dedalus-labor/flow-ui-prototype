@@ -159,8 +159,8 @@ Das Terminplanungsmodul verwendet beispielhaft `APPOINTMENTS_READ`; die Berechti
 ### Speicherbare Ansichtslinks
 
 Der zentrale `ViewRouterService` speichert die aktuelle Ansicht im Query-Parameter `view` der jeweiligen Modulroute.
-Runtime-Links enthalten einen versionierten `FlowResumeState`, der kompakt Base64URL-kodiert und serverseitig mit
-HMAC-SHA-256 signiert wird. Beim Öffnen prüft das Backend Signatur, Schema und Flow-Revision und erzeugt daraus eine
+Runtime-Links enthalten einen versionierten `FlowResumeState`, der serverseitig mit AES-GCM verschlüsselt und zusätzlich
+mit HMAC-SHA-256 signiert wird. Beim Öffnen prüft das Backend Signatur, Schema und Flow-Revision und erzeugt daraus eine
 neue, unabhängige Ausführung. Damit bleiben Links nach Ablauf einer Ausführung und nach einem Serverneustart verwendbar.
 
 Gespeichert werden:
@@ -175,8 +175,8 @@ Lazy-Load-Modul zunächst seine Daten und stellt anschließend den signierten UR
 manipulierte oder nach einer Flow-Änderung veraltete Links erzeugen eine sichtbare Fehlermeldung. Ein bewusst neu
 gestarteter Flow verwirft alte dynamische Tab-Zustände.
 
-Der Query-Parameter ist signiert, aber nicht verschlüsselt. Zustandsbereiche dürfen deshalb ausschließlich stabile
-fachliche Referenzen und Darstellungsparameter enthalten, niemals Zugangsdaten oder fachliche Dokumentinhalte.
+Der Query-Parameter ist verschlüsselt und signiert. Zustandsbereiche dürfen trotzdem ausschließlich stabile fachliche
+Referenzen und Darstellungsparameter enthalten, niemals Zugangsdaten oder fachliche Dokumentinhalte.
 Weitere Module können JSON-serialisierbare Zustandsbereiche über `ViewRouterService.read(...)` und
 `ViewRouterService.write(...)` ergänzen; diese Bereiche werden in dieselbe Signatur aufgenommen.
 

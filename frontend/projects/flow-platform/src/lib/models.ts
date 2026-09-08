@@ -171,6 +171,7 @@ export interface FlowExecutionView {
   context: Record<string, unknown>;
   resolvedInputsByNode: Record<string, Record<string, unknown>>;
   canGoBack: boolean;
+  viewScopes: Record<string, unknown>;
 }
 
 /**

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Portabler, signierter Zustand, aus dem eine neue Flow-Ausführung aufgebaut werden kann.
+ * Portabler, verschlüsselter und signierter Zustand, aus dem eine neue Flow-Ausführung aufgebaut werden kann.
  */
 public record FlowResumeState(
     int schemaVersion,

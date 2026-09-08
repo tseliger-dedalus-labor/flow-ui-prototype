@@ -87,12 +87,11 @@ describe('ViewRouterService', () => {
     const payload = {
       schemaVersion: 1,
       flowId: 'flow-normal',
-      path: '/runtime',
-      viewScopes: { component: { selectedId: 'record-1' } }
+      path: '/runtime'
     };
     const encoded = btoa(JSON.stringify(payload)).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
     const api = jasmine.createSpyObj<FlowApiService>('api', ['createFlowLink']);
-    api.createFlowLink.and.returnValue(of({ token: `${encoded}.signature` }));
+    api.createFlowLink.and.returnValue(of({ token: `${encoded}.encrypted.signature` }));
     const service = new ViewRouterService(router as unknown as Router, api);
 
     await service.write('tool-runtime', {
@@ -109,10 +108,32 @@ describe('ViewRouterService', () => {
     );
     expect(api.createFlowLink).toHaveBeenCalledTimes(2);
     const restored = new ViewRouterService(router as unknown as Router, null);
+    restored.applyVerifiedScopes({ component: { selectedId: 'record-1' } });
     expect(restored.read('tool-runtime')).toEqual({
       flowId: 'flow-normal',
-      resumeToken: `${encoded}.signature`
+      resumeToken: `${encoded}.encrypted.signature`
     });
     expect(restored.read('component')).toEqual({ selectedId: 'record-1' });
+  });
+
+  it('does not apply a delayed signed state after navigating to another route', async () => {
+    const router = new RouterMock();
+    const response = new Subject<{ token: string }>();
+    const api = jasmine.createSpyObj<FlowApiService>('api', ['createFlowLink']);
+    api.createFlowLink.and.returnValue(response);
+    const service = new ViewRouterService(router as unknown as Router, api);
+    const pending = service.write('tool-runtime', {
+      flowId: 'flow-normal',
+      executionId: 'run-1',
+      resumeToken: 'base.signature'
+    });
+
+    router.url = '/reportcenter';
+    router.events.next(new NavigationEnd(2, router.url, router.url));
+    response.next({ token: 'stale.encrypted.signature' });
+    response.complete();
+    await pending;
+
+    expect(router.url).toBe('/reportcenter');
   });
 });

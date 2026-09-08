@@ -57,6 +57,7 @@ class ViewRouterServiceMock {
   read() { return this.state; }
   write(_scope: string, state: unknown) { this.writes.push(state); }
   clearByPrefix(prefix: string) { this.clearedPrefixes.push(prefix); }
+  applyVerifiedScopes() {}
 }
 
 /**

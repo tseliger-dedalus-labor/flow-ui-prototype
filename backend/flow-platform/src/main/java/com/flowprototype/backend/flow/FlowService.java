@@ -127,7 +127,6 @@ public class FlowService {
         }
         // Der fachliche Aktivstatus wird aus dem bestehenden Datensatz übernommen und nicht implizit durch Nutzlasten des Editors geändert.
         FlowEntity updated = mapper.toEntity(definition, existing.isActive());
-        repository.save(updated);
-        return mapper.toDefinition(updated);
+        return mapper.toDefinition(repository.save(updated));
     }
 }
