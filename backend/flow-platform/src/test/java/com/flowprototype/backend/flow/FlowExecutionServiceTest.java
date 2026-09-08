@@ -4,6 +4,7 @@ import com.flowprototype.backend.flow.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -15,16 +16,20 @@ import static org.mockito.Mockito.when;
 
 class FlowExecutionServiceTest {
     private FlowExecutionService service;
+    private FlowService flowService;
+    private ComponentRegistryService components;
+    private FlowTransitionResolverRegistry resolvers;
+    private FlowResumeTokenService tokens;
 
     @BeforeEach
     void setup() {
-        FlowService flowService = mock(FlowService.class);
+        flowService = mock(FlowService.class);
         FlowDefinition flow = flow();
         when(flowService.get("flow")).thenReturn(flow);
 
         ComponentDescriptor order = descriptor("orders-panel", IxtDisplayType.DISPTYPE_FORM);
         ComponentDescriptor finding = descriptor("findings-panel", IxtDisplayType.DISPTYPE_REPORT);
-        ComponentRegistryService components = new ComponentRegistryService(List.of(() -> List.of(order, finding)));
+        components = new ComponentRegistryService(List.of(() -> List.of(order, finding)));
         FlowTransitionResolver resolver = new FlowTransitionResolver() {
             public String id() { return "record"; }
             public Map<String, SemanticType> inputTypes() { return Map.of("RecordID", SemanticType.RECORD_ID); }
@@ -35,11 +40,12 @@ class FlowExecutionServiceTest {
                 return Map.of("RecordId", output.get("RecordID"), "prtType", PrtType.PRTTYPE_REPORT.name());
             }
         };
-        service = new FlowExecutionService(
-            flowService,
-            components,
-            new FlowTransitionResolverRegistry(List.of(resolver))
+        resolvers = new FlowTransitionResolverRegistry(List.of(resolver));
+        tokens = new FlowResumeTokenService(
+            new ObjectMapper(),
+            "test-only-resume-link-secret-with-at-least-32-characters"
         );
+        service = new FlowExecutionService(flowService, components, resolvers, tokens);
     }
 
     @Test
@@ -75,6 +81,54 @@ class FlowExecutionServiceTest {
         )))
             .isInstanceOf(ResponseStatusException.class)
             .hasMessageContaining("409 CONFLICT");
+    }
+
+    @Test
+    void resumesSignedStateWithoutOriginalExecutionMemory() {
+        FlowExecutionView started = service.start("flow");
+        FlowExecutionView transitioned = service.transition(started.executionId(), new FlowOutputRequest(
+            started.version(), "records", "recordSelected", Map.of("RecordID", "FND-1")
+        ));
+        FlowExecutionService restartedService = new FlowExecutionService(flowService, components, resolvers, tokens);
+
+        FlowExecutionView resumed = restartedService.resume(transitioned.resumeToken());
+
+        assertThat(resumed.executionId()).isNotEqualTo(transitioned.executionId());
+        assertThat(resumed.currentNodeId()).isEqualTo("finding");
+        assertThat(resumed.context()).containsEntry("RecordId", "FND-1");
+        assertThat(resumed.canGoBack()).isTrue();
+    }
+
+    @Test
+    void rejectsTamperedAndOutdatedLinks() {
+        FlowExecutionView started = service.start("flow");
+        String tampered = started.resumeToken().substring(0, started.resumeToken().length() - 1) + "A";
+
+        assertThatThrownBy(() -> service.resume(tampered))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("400 BAD_REQUEST");
+
+        FlowDefinition updated = flow();
+        updated.setVersion(1);
+        when(flowService.get("flow")).thenReturn(updated);
+
+        assertThatThrownBy(() -> service.resume(started.resumeToken()))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("410 GONE");
+    }
+
+    @Test
+    void signsComponentViewScopesIntoPortableLink() {
+        FlowExecutionView started = service.start("flow");
+
+        FlowLinkView link = service.createLink(started.executionId(), new FlowLinkRequest(
+            "/reportcenter",
+            Map.of("reportcenter-selection", Map.of("recordIds", List.of("FND-1", "FND-2")))
+        ));
+        FlowResumeState state = tokens.verify(link.token());
+
+        assertThat(state.path()).isEqualTo("/reportcenter");
+        assertThat(state.viewScopes()).containsKey("reportcenter-selection");
     }
 
     private FlowDefinition flow() {

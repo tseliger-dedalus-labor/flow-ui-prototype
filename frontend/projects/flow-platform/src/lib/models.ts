@@ -139,6 +139,7 @@ export const TOOL_MODULES: Record<Tool, string> = {
  */
 export interface FlowDefinition {
   id: string;
+  version?: number;
   name: string;
   tool: Tool;
   entryNodeId: string;
@@ -162,6 +163,7 @@ export interface FlowSummary {
 /** Renderbare Sicht einer serverseitig verwalteten Flow-Ausführung. */
 export interface FlowExecutionView {
   executionId: string;
+  resumeToken: string;
   flowId: string;
   version: number;
   definition: FlowDefinition;

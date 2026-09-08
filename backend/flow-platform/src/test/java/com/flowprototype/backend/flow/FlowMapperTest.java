@@ -21,6 +21,7 @@ class FlowMapperTest {
     void preservesSidebarModeWhenMappingToAndFromPersistence() {
         FlowDefinition definition = new FlowDefinition();
         definition.setId("flow");
+        definition.setVersion(7);
         definition.setName("Test");
         definition.setTool(Tool.WebclientTool);
         definition.setEntryNodeId("start");
@@ -41,6 +42,7 @@ class FlowMapperTest {
         FlowDefinition restored = mapper.toDefinition(mapper.toEntity(definition, false));
 
         assertThat(restored.getSidebarMode()).isEqualTo(SidebarMode.COLLAPSE);
+        assertThat(restored.getVersion()).isEqualTo(7);
         assertThat(restored.getNodes().getFirst().getTransitions().getFirst().getPrtTypeDisplayTypes())
             .containsEntry(PrtType.PRTTYPE_ORDER, IxtDisplayType.DISPTYPE_FORM);
     }

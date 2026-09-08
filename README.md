@@ -103,8 +103,15 @@ Das `Dockerfile` baut zuerst das Angular-Frontend, übernimmt dessen Produktiv-A
 
 ```bash
 docker build -t flow-ui-prototype .
-docker run --rm -p 8080:8080 flow-ui-prototype
+docker run --rm -p 8080:8080 \
+  -e FLOW_RESUME_LINK_SECRET='mindestens-32-zufaellige-zeichen' \
+  flow-ui-prototype
 ```
+
+`FLOW_RESUME_LINK_SECRET` muss in allen Instanzen identisch und mindestens 32 Zeichen lang sein.
+Die Anwendung verwendet ihn ausschließlich zur HMAC-Signatur portabler Ansichtslinks; ohne
+diese Konfiguration funktionieren Flows weiterhin, aber portable Links können weder erzeugt
+noch geöffnet werden.
 
 Die Anwendung ist anschließend unter `http://localhost:8080` erreichbar. Das erzeugte WAR liegt während des Image-Builds unter `application/target/application-1.0.0.war`.bash
 mvn test package
@@ -151,24 +158,32 @@ Das Terminplanungsmodul verwendet beispielhaft `APPOINTMENTS_READ`; die Berechti
 
 ### Speicherbare Ansichtslinks
 
-Der zentrale `ViewRouterService` speichert die aktuelle Ansicht kompakt Base64URL-kodiert im Query-Parameter `view`
-der jeweiligen Modulroute. Das Format ist versioniert und an den Routenpfad gebunden. Bereits erzeugte Links mit dem
-früheren JSON-Format bleiben lesbar und werden bei der nächsten Zustandsänderung in das kompakte Format überführt.
+Der zentrale `ViewRouterService` speichert die aktuelle Ansicht im Query-Parameter `view` der jeweiligen Modulroute.
+Runtime-Links enthalten einen versionierten `FlowResumeState`, der kompakt Base64URL-kodiert und serverseitig mit
+HMAC-SHA-256 signiert wird. Beim Öffnen prüft das Backend Signatur, Schema und Flow-Revision und erzeugt daraus eine
+neue, unabhängige Ausführung. Damit bleiben Links nach Ablauf einer Ausführung und nach einem Serverneustart verwendbar.
 
 Gespeichert werden:
 
-- Runtime-Routen: ausgewählter Flow und die opaque ID der serverseitigen Ausführung
+- Runtime-Routen: Flow-Revision, aktueller Knoten, fachliche Schlüssel im Kontext und Rücksprunghistorie
 - Tab-Container: aktiver Tab sowie alle dynamisch geöffneten Tabs, getrennt nach Flow-Container-ID
+- Reportcenter: die zur gemeinsamen Validierung ausgewählten Record-IDs
 - Editor: ausgewählter Flow und ausgewählter Knoten
 
 Dadurch kann die aktuelle URL als Lesezeichen oder Link gespeichert werden. Beim erneuten Öffnen lädt das jeweilige
-Lazy-Load-Modul zunächst seine Daten und stellt anschließend den gültigen URL-Zustand wieder her. Nicht mehr vorhandene
-Flows oder Knoten werden auf die reguläre Startansicht zurückgeführt. Ein bewusst neu gestarteter Flow verwirft alte
-dynamische Tab-Zustände.
+Lazy-Load-Modul zunächst seine Daten und stellt anschließend den signierten URL-Zustand wieder her. Ungültige,
+manipulierte oder nach einer Flow-Änderung veraltete Links erzeugen eine sichtbare Fehlermeldung. Ein bewusst neu
+gestarteter Flow verwirft alte dynamische Tab-Zustände.
 
-Der Query-Parameter ist kodiert, aber nicht verschlüsselt. Zustandsbereiche dürfen deshalb keine Zugangsdaten oder
-anderen Geheimnisse enthalten. Fachlicher Flow-Kontext und Rücksprunghistorie verbleiben auf dem Server. Weitere Module können validierte, JSON-serialisierbare Zustandsbereiche
-über `ViewRouterService.read(...)` und `ViewRouterService.write(...)` ergänzen.
+Der Query-Parameter ist signiert, aber nicht verschlüsselt. Zustandsbereiche dürfen deshalb ausschließlich stabile
+fachliche Referenzen und Darstellungsparameter enthalten, niemals Zugangsdaten oder fachliche Dokumentinhalte.
+Weitere Module können JSON-serialisierbare Zustandsbereiche über `ViewRouterService.read(...)` und
+`ViewRouterService.write(...)` ergänzen; diese Bereiche werden in dieselbe Signatur aufgenommen.
+
+Die Signatur verhindert Manipulation, ersetzt aber keine Autorisierung. Alle beim Wiederaufbau geladenen Fachdaten
+müssen wie reguläre API-Aufrufe gegen den angemeldeten Empfänger geprüft werden. Im Prototyp sind Berechtigungen
+weiterhin nur clientseitig gemockt; ein Produktivsystem muss die bestehende Authentifizierung an den Backend-Endpunkten
+durchsetzen.
 
 ### Komponenten-Metadaten
 

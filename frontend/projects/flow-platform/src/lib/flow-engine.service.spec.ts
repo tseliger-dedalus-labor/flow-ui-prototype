@@ -30,6 +30,7 @@ describe('FlowEngineService', () => {
   function view(currentNodeId: string, version: number, canGoBack = false): FlowExecutionView {
     return {
       executionId: 'run-1',
+      resumeToken: 'resume-1.signature',
       flowId: flow.id,
       version,
       definition: flow,
@@ -43,7 +44,7 @@ describe('FlowEngineService', () => {
   }
 
   it('uses the server response as the authoritative transition state', () => {
-    const api = jasmine.createSpyObj<FlowApiService>('api', ['startExecution', 'transition', 'back', 'getExecution']);
+    const api = jasmine.createSpyObj<FlowApiService>('api', ['startExecution', 'transition', 'back', 'resumeExecution']);
     api.startExecution.and.returnValue(of(view('start', 0)));
     api.transition.and.returnValue(of(view('detail', 1, true)));
     const service = new FlowEngineService(api);
@@ -63,20 +64,24 @@ describe('FlowEngineService', () => {
   });
 
   it('restores an execution by opaque identifier and keeps only identity in routed state', () => {
-    const api = jasmine.createSpyObj<FlowApiService>('api', ['startExecution', 'transition', 'back', 'getExecution']);
-    api.getExecution.and.returnValue(of(view('detail', 3, true)));
+    const api = jasmine.createSpyObj<FlowApiService>('api', ['startExecution', 'transition', 'back', 'resumeExecution']);
+    api.resumeExecution.and.returnValue(of(view('detail', 3, true)));
     const service = new FlowEngineService(api);
 
     service.restore('run-1').subscribe();
 
-    expect(service.snapshot()).toEqual({ flowId: 'flow', executionId: 'run-1' });
+    expect(service.snapshot()).toEqual({
+      flowId: 'flow',
+      executionId: 'run-1',
+      resumeToken: 'resume-1.signature'
+    });
     expect(FlowEngineService.isState(service.snapshot())).toBeTrue();
     expect(FlowEngineService.isState({ flowId: 'flow', context: {} })).toBeFalse();
   });
 
   it('delegates back navigation with optimistic versioning', () => {
-    const api = jasmine.createSpyObj<FlowApiService>('api', ['startExecution', 'transition', 'back', 'getExecution']);
-    api.getExecution.and.returnValue(of(view('detail', 3, true)));
+    const api = jasmine.createSpyObj<FlowApiService>('api', ['startExecution', 'transition', 'back', 'resumeExecution']);
+    api.resumeExecution.and.returnValue(of(view('detail', 3, true)));
     api.back.and.returnValue(of(view('start', 4)));
     const service = new FlowEngineService(api);
     service.restore('run-1').subscribe();

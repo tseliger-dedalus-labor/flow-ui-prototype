@@ -39,6 +39,7 @@ public class FlowMapper {
             // ID und Anzeigename bleiben relational gespiegelt, damit sie ohne JSON-Parsen verfügbar sind.
             definition.setId(entity.getId());
             definition.setName(entity.getName());
+            definition.setVersion(entity.getVersion());
             return definition;
         } catch (JacksonException e) {
             throw new IllegalStateException("Flow-Definition konnte nicht gelesen werden", e);
@@ -57,6 +58,7 @@ public class FlowMapper {
         entity.setId(definition.getId());
         entity.setName(definition.getName());
         entity.setActive(active);
+        entity.setVersion(definition.getVersion());
         try {
             FlowDefinition payload = new FlowDefinition();
             // Relationale Metadaten werden absichtlich nicht doppelt in der JSON-Nutzlast gespeichert.

@@ -1,9 +1,10 @@
-import { DefaultUrlSerializer, Router } from '@angular/router';
-import { Subject } from 'rxjs';
+import { DefaultUrlSerializer, NavigationEnd, Router } from '@angular/router';
+import { of, Subject } from 'rxjs';
+import { FlowApiService } from '../flow-api.service';
 import { ViewRouterService } from './view-router.service';
 
 class RouterMock {
-  readonly events = new Subject<never>();
+  readonly events = new Subject<NavigationEnd>();
   readonly serializer = new DefaultUrlSerializer();
   url = '/runtime';
 
@@ -13,6 +14,7 @@ class RouterMock {
 
   navigateByUrl(tree: ReturnType<DefaultUrlSerializer['parse']>): Promise<boolean> {
     this.url = this.serializer.serialize(tree);
+    this.events.next(new NavigationEnd(1, this.url, this.url));
     return Promise.resolve(true);
   }
 }
@@ -20,19 +22,19 @@ class RouterMock {
 describe('ViewRouterService', () => {
   it('combines independent module states in one restorable URL', () => {
     const router = new RouterMock();
-    const service = new ViewRouterService(router as unknown as Router);
+    const service = new ViewRouterService(router as unknown as Router, null);
 
     service.write('tool-runtime', { flowId: 'flow-normal' });
     service.write('flow-tabs:patient-tabs', { activeKey: 'order:F-1:R-1' });
 
-    const restored = new ViewRouterService(router as unknown as Router);
+    const restored = new ViewRouterService(router as unknown as Router, null);
     expect(restored.read('tool-runtime')).toEqual({ flowId: 'flow-normal' });
     expect(restored.read('flow-tabs:patient-tabs')).toEqual({ activeKey: 'order:F-1:R-1' });
   });
 
   it('uses a shorter Base64URL representation than URI-encoded JSON', () => {
     const router = new RouterMock();
-    const service = new ViewRouterService(router as unknown as Router);
+    const service = new ViewRouterService(router as unknown as Router, null);
     const scopes = {
       'tool-runtime': {
         flowId: 'flow-normal',
@@ -64,19 +66,53 @@ describe('ViewRouterService', () => {
     };
     router.url = `/runtime?view=${encodeURIComponent(JSON.stringify(legacyState))}`;
 
-    const service = new ViewRouterService(router as unknown as Router);
+    const service = new ViewRouterService(router as unknown as Router, null);
 
     expect(service.read('tool-runtime')).toEqual({ flowId: 'flow-normal' });
   });
 
   it('does not restore state from another module route', () => {
     const router = new RouterMock();
-    const service = new ViewRouterService(router as unknown as Router);
+    const service = new ViewRouterService(router as unknown as Router, null);
     service.write('tool-runtime', { flowId: 'flow-normal' });
 
     router.url = router.url.replace('/runtime', '/appointments');
-    const restored = new ViewRouterService(router as unknown as Router);
+    const restored = new ViewRouterService(router as unknown as Router, null);
 
     expect(restored.read('tool-runtime')).toBeUndefined();
+  });
+
+  it('stores runtime and component state in one signed portable token', async () => {
+    const router = new RouterMock();
+    const payload = {
+      schemaVersion: 1,
+      flowId: 'flow-normal',
+      path: '/runtime',
+      viewScopes: { component: { selectedId: 'record-1' } }
+    };
+    const encoded = btoa(JSON.stringify(payload)).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+    const api = jasmine.createSpyObj<FlowApiService>('api', ['createFlowLink']);
+    api.createFlowLink.and.returnValue(of({ token: `${encoded}.signature` }));
+    const service = new ViewRouterService(router as unknown as Router, api);
+
+    await service.write('tool-runtime', {
+      flowId: 'flow-normal',
+      executionId: 'run-1',
+      resumeToken: 'base.signature'
+    });
+    await service.write('component', { selectedId: 'record-1' });
+
+    expect(api.createFlowLink).toHaveBeenCalledWith(
+      'run-1',
+      '/runtime',
+      { component: { selectedId: 'record-1' } }
+    );
+    expect(api.createFlowLink).toHaveBeenCalledTimes(2);
+    const restored = new ViewRouterService(router as unknown as Router, null);
+    expect(restored.read('tool-runtime')).toEqual({
+      flowId: 'flow-normal',
+      resumeToken: `${encoded}.signature`
+    });
+    expect(restored.read('component')).toEqual({ selectedId: 'record-1' });
   });
 });

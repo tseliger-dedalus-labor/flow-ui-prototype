@@ -35,7 +35,7 @@ class FlowEngineServiceMock {
 
   start(flowId: string) {
     this.initializedFlowIds.push(flowId);
-    this.state$.next({ flowId, executionId: `run-${flowId}` });
+    this.state$.next({ flowId, executionId: `run-${flowId}`, resumeToken: `resume-${flowId}` });
     return of({});
   }
   snapshot() { return this.state$.value; }

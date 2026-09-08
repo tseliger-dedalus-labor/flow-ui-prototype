@@ -13,6 +13,7 @@ import java.util.List;
  */
 public class FlowDefinition {
     private String id;
+    private long version;
     private String name;
     private Tool tool;
     private String entryNodeId;
@@ -27,6 +28,10 @@ public class FlowDefinition {
     public String getId() { return id; }
     /** @param id Persistente oder editorseitig vergebene Flow-ID. */
     public void setId(String id) { this.id = id; }
+    /** @return Persistente Revision dieser Flowdefinition. */
+    public long getVersion() { return version; }
+    /** @param version Persistente Revision dieser Flowdefinition. */
+    public void setVersion(long version) { this.version = version; }
     /** @return Anzeigename des Flows. */
     public String getName() { return name; }
     /** @param name Anzeigename des Flows. */

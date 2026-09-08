@@ -36,12 +36,12 @@ class FlowEngineServiceMock {
   restoredExecutionIds: string[] = [];
   start(flowId: string) {
     this.startedFlowIds.push(flowId);
-    this.state$.next({ flowId, executionId: `run-${flowId}` });
+    this.state$.next({ flowId, executionId: `run-${flowId}`, resumeToken: `resume-${flowId}` });
     return of({});
   }
-  restore(executionId: string) {
-    this.restoredExecutionIds.push(executionId);
-    this.state$.next({ flowId: 'flow-orders', executionId });
+  restore(resumeToken: string) {
+    this.restoredExecutionIds.push(resumeToken);
+    this.state$.next({ flowId: 'flow-orders', executionId: 'new-run', resumeToken });
     return of({});
   }
   snapshot() { return this.state$.value; }
@@ -128,7 +128,8 @@ describe('RuntimePageComponent', () => {
     const viewRouter = TestBed.inject(ViewRouterService) as unknown as ViewRouterServiceMock;
     const restoredEngine: FlowEngineState = {
       flowId: 'flow-orders',
-      executionId: 'run-orders'
+      executionId: 'run-orders',
+      resumeToken: 'resume-orders.signature'
     };
     api.failList = false;
     api.flows = [
@@ -139,7 +140,7 @@ describe('RuntimePageComponent', () => {
 
     fixture.detectChanges();
 
-    expect(engine.restoredExecutionIds).toEqual(['run-orders']);
+    expect(engine.restoredExecutionIds).toEqual(['resume-orders.signature']);
     expect(viewRouter.clearedPrefixes).toEqual([]);
   });
 });

@@ -35,16 +35,19 @@ public class FlowExecutionService {
     private final FlowService flowService;
     private final ComponentRegistryService componentRegistry;
     private final FlowTransitionResolverRegistry resolverRegistry;
+    private final FlowResumeTokenService resumeTokens;
     private final Map<String, Execution> executions = new ConcurrentHashMap<>();
 
     public FlowExecutionService(
         FlowService flowService,
         ComponentRegistryService componentRegistry,
-        FlowTransitionResolverRegistry resolverRegistry
+        FlowTransitionResolverRegistry resolverRegistry,
+        FlowResumeTokenService resumeTokens
     ) {
         this.flowService = flowService;
         this.componentRegistry = componentRegistry;
         this.resolverRegistry = resolverRegistry;
+        this.resumeTokens = resumeTokens;
     }
 
     public FlowExecutionView start(String flowId) {
@@ -65,6 +68,56 @@ public class FlowExecutionService {
 
     public FlowExecutionView get(String executionId) {
         return view(execution(executionId));
+    }
+
+    /**
+     * Erzeugt aus einem signierten Link eine neue, unabhängige Ausführung.
+     */
+    public FlowExecutionView resume(String token) {
+        removeExpiredExecutions();
+        ensureCapacity();
+        FlowResumeState state = resumeTokens.verify(token);
+        FlowDefinition definition = flowService.get(state.flowId());
+        if (definition.getVersion() != state.flowVersion()) {
+            throw new ResponseStatusException(HttpStatus.GONE, "Der Flow wurde seit Erstellung des Ansichtslinks geändert");
+        }
+        if (node(definition, state.currentNodeId()) == null) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Zielknoten des Ansichtslinks nicht gefunden");
+        }
+        Execution execution = new Execution(UUID.randomUUID().toString(), definition);
+        execution.currentNodeId = state.currentNodeId();
+        execution.context = mutableCopy(state.context());
+        execution.version = state.executionVersion();
+        if (state.history() != null) {
+            state.history().stream()
+                .limit(MAX_HISTORY_ENTRIES)
+                .forEach(snapshot -> {
+                    if (node(definition, snapshot.nodeId()) == null) {
+                        throw new ResponseStatusException(
+                            HttpStatus.UNPROCESSABLE_ENTITY,
+                            "Historischer Knoten des Ansichtslinks nicht gefunden"
+                        );
+                    }
+                    execution.history.addLast(new Snapshot(snapshot.nodeId(), immutableCopy(snapshot.context())));
+                });
+        }
+        executions.put(execution.id, execution);
+        return view(execution);
+    }
+
+    /**
+     * Bindet komponentenspezifischen View-Zustand in den signierten Zustand einer Ausführung ein.
+     */
+    public FlowLinkView createLink(String executionId, FlowLinkRequest request) {
+        Execution execution = execution(executionId);
+        synchronized (execution) {
+            Map<String, Object> scopes = request.viewScopes() == null ? Map.of() : immutableCopy(request.viewScopes());
+            String path = request.path() == null ? "" : request.path();
+            if (!path.startsWith("/") || path.length() > 2_048) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ungültiger Pfad für Ansichtslink");
+            }
+            return new FlowLinkView(resumeTokens.sign(resumeState(execution, path, scopes)));
+        }
     }
 
     public FlowExecutionView transition(String executionId, FlowOutputRequest request) {
@@ -148,6 +201,7 @@ public class FlowExecutionService {
             }
             return new FlowExecutionView(
                 execution.id,
+                resumeTokens.signIfConfigured(resumeState(execution, "", Map.of())),
                 execution.definition.getId(),
                 execution.version,
                 execution.definition,
@@ -157,6 +211,30 @@ public class FlowExecutionService {
                 !execution.history.isEmpty()
             );
         }
+    }
+
+    private FlowResumeState resumeState(Execution execution, String path, Map<String, Object> viewScopes) {
+        return new FlowResumeState(
+            FlowResumeState.CURRENT_SCHEMA_VERSION,
+            execution.definition.getId(),
+            execution.definition.getVersion(),
+            execution.currentNodeId,
+            immutableCopy(execution.context),
+            execution.history.stream()
+                .map(snapshot -> new FlowResumeSnapshot(snapshot.nodeId, immutableCopy(snapshot.context)))
+                .toList(),
+            execution.version,
+            path,
+            viewScopes
+        );
+    }
+
+    private Map<String, Object> mutableCopy(Map<String, Object> value) {
+        return value == null ? new HashMap<>() : new HashMap<>(value);
+    }
+
+    private Map<String, Object> immutableCopy(Map<String, Object> value) {
+        return value == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(value));
     }
 
     private Map<String, Object> resolveInputs(FlowNode node, Map<String, Object> context) {
@@ -244,6 +322,14 @@ public class FlowExecutionService {
     private void removeExpiredExecutions() {
         Instant cutoff = Instant.now().minus(EXECUTION_TTL);
         executions.entrySet().removeIf(entry -> entry.getValue().lastAccess.isBefore(cutoff));
+    }
+
+    private void ensureCapacity() {
+        if (executions.size() >= MAX_EXECUTIONS) {
+            executions.values().stream()
+                .min(java.util.Comparator.comparing(candidate -> candidate.lastAccess))
+                .ifPresent(candidate -> executions.remove(candidate.id, candidate));
+        }
     }
 
     private void assertVersion(Execution execution, long expectedVersion) {

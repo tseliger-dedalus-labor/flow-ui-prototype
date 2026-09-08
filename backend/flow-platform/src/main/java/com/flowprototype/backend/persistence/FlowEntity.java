@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 /**
  * Persistierte Repräsentation eines Flows.
@@ -26,6 +27,9 @@ public class FlowEntity {
     @Column(nullable = false)
     private boolean active;
 
+    @Version
+    private long version;
+
     @Lob
     @Column(nullable = false)
     private String definitionJson;
@@ -42,6 +46,10 @@ public class FlowEntity {
     public boolean isActive() { return active; }
     /** @param active Neuer Aktivstatus des Flows. */
     public void setActive(boolean active) { this.active = active; }
+    /** @return Optimistische Revision der Flowdefinition. */
+    public long getVersion() { return version; }
+    /** @param version Optimistische Revision der Flowdefinition. */
+    public void setVersion(long version) { this.version = version; }
     /** @return Als JSON serialisierte Flowbeschreibung. */
     public String getDefinitionJson() { return definitionJson; }
     /** @param definitionJson Als JSON serialisierte Flowbeschreibung. */

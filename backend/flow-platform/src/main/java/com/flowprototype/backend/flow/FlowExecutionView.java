@@ -9,6 +9,7 @@ import java.util.Map;
  */
 public record FlowExecutionView(
     String executionId,
+    String resumeToken,
     String flowId,
     long version,
     FlowDefinition definition,

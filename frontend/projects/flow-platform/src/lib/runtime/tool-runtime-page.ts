@@ -69,7 +69,7 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
           this.error = 'Für dieses Tool ist kein Flow verfügbar.';
           this.loading = false;
         } else if (restoredFlowExists) {
-          this.restoreFlow(restoredState!.executionId);
+          this.restoreFlow(restoredState!.resumeToken);
         } else if (flows.length === 1) {
           this.startFlow();
         } else {
@@ -115,15 +115,18 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
     });
   }
 
-  private restoreFlow(executionId: string): void {
+  private restoreFlow(resumeToken: string): void {
     this.error = '';
     this.loading = true;
-    this.engine.restore(executionId).subscribe({
+    this.engine.restore(resumeToken).subscribe({
       next: () => {
         this.flowStarted = true;
         this.loading = false;
       },
-      error: () => this.loadFlow()
+      error: () => {
+        this.error = 'Der Ansichtslink ist ungültig, veraltet oder nicht zugänglich.';
+        this.loading = false;
+      }
     });
   }
 
@@ -147,6 +150,8 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
   }
 
   private persistState(engine: FlowEngineState): void {
-    this.viewRouter.write(TOOL_RUNTIME_SCOPE, engine);
+    void Promise.resolve(this.viewRouter.write(TOOL_RUNTIME_SCOPE, engine)).catch(() => {
+      this.error = 'Der portable Ansichtslink konnte nicht aktualisiert werden.';
+    });
   }
 }
