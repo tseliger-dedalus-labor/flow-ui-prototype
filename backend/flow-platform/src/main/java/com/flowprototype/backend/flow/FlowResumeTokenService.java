@@ -150,7 +150,11 @@ public class FlowResumeTokenService {
 
     private byte[] decode(String value) {
         try {
-            return Base64.getUrlDecoder().decode(value);
+            byte[] decoded = Base64.getUrlDecoder().decode(value);
+            if (!encode(decoded).equals(value)) {
+                throw invalidLink();
+            }
+            return decoded;
         } catch (IllegalArgumentException e) {
             throw invalidLink();
         }
