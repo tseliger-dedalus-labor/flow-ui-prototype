@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
-import { FLOW_UI_API_BASE_URL } from 'flow-platform';
+import { FLOW_UI_API_BASE_URL, PrtType } from 'flow-platform';
 import { Observable } from 'rxjs';
 
 /** Fall eines Patienten, der gemeinsam mit dem Patienten ausgewählt wird. */
@@ -28,6 +28,18 @@ export interface PatientFinding {
   RecordId: string;
   text: string;
   createdAt: string;
+}
+
+/** Typisierter Record mit seinem Patienten- und optionalen Fallkontext. */
+export interface PatientRecord {
+  RecordID: string;
+  CaseID: string;
+  PatientID: string;
+  patientName: string;
+  text: string;
+  status: string;
+  createdAt: string;
+  prtType: PrtType;
 }
 
 /**
@@ -110,9 +122,13 @@ export class PatientApiService {
   }
 
   /**
-   * Lädt die Transfusionshistorie eines Patienten.
+   * Lädt alle Records oder schränkt sie auf die angegebenen Typen ein.
    */
-  getTransfusions(patientId: string): Observable<Array<{ id: string; text: string }>> {
-    return this.http.get<Array<{ id: string; text: string }>>(`${this.baseUrl}/patients/${patientId}/transfusions`);
+  getRecords(prtTypes: PrtType[] = []): Observable<PatientRecord[]> {
+    let params = new HttpParams();
+    for (const prtType of prtTypes) {
+      params = params.append('prtType', prtType);
+    }
+    return this.http.get<PatientRecord[]>(`${this.baseUrl}/records`, { params });
   }
 }

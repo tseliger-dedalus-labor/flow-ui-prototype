@@ -1,9 +1,11 @@
 package com.flowprototype.backend.patient;
 
+import com.flowprototype.backend.flow.model.PrtType;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -132,11 +134,14 @@ public class PatientDataController {
     /**
      * Liefert alle Mock-Records einschließlich ihres Navigationskontexts.
      *
-     * @return Vollständige Recordliste für das Reportcenter.
+     * @param prtType Optionale Liste der gewünschten Record-Typen.
+     * @return Vollständige oder nach Typ gefilterte Recordliste.
      */
     @GetMapping("/records")
-    public List<PatientDataService.PatientRecord> records() {
-        return patientData.records();
+    public List<PatientDataService.PatientRecord> records(
+        @RequestParam(required = false) List<PrtType> prtType
+    ) {
+        return patientData.records(prtType == null ? List.of() : prtType);
     }
 
     /**

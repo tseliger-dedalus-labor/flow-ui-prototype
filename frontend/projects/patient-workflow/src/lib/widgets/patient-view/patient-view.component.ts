@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output } from '@angular/core';
-import { forkJoin, finalize, Subscription } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
+import { PrtType } from 'flow-platform';
 import { AContentPresenter } from 'ui-framework';
 import { PatientApiService, PatientFinding, PatientOrder } from '../../patient-api.service';
 
@@ -37,14 +38,30 @@ export class PatientViewComponent extends AContentPresenter implements OnChanges
     this.orders = [];
     this.findings = [];
     this.loading = true;
-    this.loadSubscription = forkJoin({
-      orders: this.api.getOrders(this.patientId, this.caseId),
-      findings: this.api.getFindings(this.patientId, this.caseId)
-    })
+    this.loadSubscription = this.api.getRecords([
+      PrtType.PRTTYPE_ORDER,
+      PrtType.PRTTYPE_REPORT
+    ])
       .pipe(finalize(() => this.loading = false))
-      .subscribe(({ orders, findings }) => {
-        this.orders = orders;
-        this.findings = findings;
+      .subscribe((records) => {
+        const caseRecords = records.filter(record =>
+          record.PatientID === this.patientId && record.CaseID === this.caseId
+        );
+        this.orders = caseRecords
+          .filter(record => record.prtType === PrtType.PRTTYPE_ORDER)
+          .map(record => ({
+            RecordId: record.RecordID,
+            text: record.text,
+            status: record.status,
+            createdAt: record.createdAt
+          }));
+        this.findings = caseRecords
+          .filter(record => record.prtType === PrtType.PRTTYPE_REPORT)
+          .map(record => ({
+            RecordId: record.RecordID,
+            text: record.text,
+            createdAt: record.createdAt
+          }));
       });
   }
 

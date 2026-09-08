@@ -218,9 +218,9 @@ Die generierten Manifeste bleiben versionierte Paket-Assets. Das veröffentlicht
 - `GET /api/patients/{patientId}/cases/{caseId}/orders`
 - `GET /api/patients/{patientId}/cases/{caseId}/orders/{recordId}`
 - `GET /api/patients/{id}/transfusions`
-- `GET /api/records`
+- `GET /api/records[?prtType=PRTTYPE_ORDER&prtType=PRTTYPE_REPORT]`
 
-Jeder Eintrag von `/api/records` enthält ein typisiertes `prtType`-Feld. Aufträge werden als `PRTTYPE_ORDER` ausgeliefert; weitere Record-Arten verwenden entsprechend `PRTTYPE_REPORT`, `PRTTYPE_DOCUMENT` oder `PRTTYPE_TRAFU`.
+Ohne Query-Parameter liefert `/api/records` alle Aufträge, Befunde und Transfusionen. Der wiederholbare optionale Parameter `prtType` schränkt die Antwort auf einen oder mehrere Typen ein. Jeder Eintrag enthält dazu ein typisiertes `prtType`-Feld (`PRTTYPE_ORDER`, `PRTTYPE_REPORT`, `PRTTYPE_DOCUMENT` oder `PRTTYPE_TRAFU`).
 
 ### Terminplanung
 - `GET /api/wards/{id}/appointments`

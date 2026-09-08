@@ -16,14 +16,24 @@ const records: ReportcenterRecord[] = [
     prtType: PrtType.PRTTYPE_ORDER
   },
   {
-    RecordID: 'ORD-p-200-F-2-001',
+    RecordID: 'FND-p-200-F-2-001',
     CaseID: 'F-2',
     PatientID: 'p-200',
     patientName: 'Erik Stern',
     text: 'Sonografie',
-    status: 'Geplant',
+    status: 'Abgeschlossen',
     createdAt: '2026-09-08',
-    prtType: PrtType.PRTTYPE_ORDER
+    prtType: PrtType.PRTTYPE_REPORT
+  },
+  {
+    RecordID: 'p-200-t-1',
+    CaseID: '',
+    PatientID: 'p-200',
+    patientName: 'Erik Stern',
+    text: 'EK-Konserve',
+    status: 'Dokumentiert',
+    createdAt: '2026-09-08',
+    prtType: PrtType.PRTTYPE_TRAFU
   }
 ];
 
@@ -44,11 +54,14 @@ describe('ReportcenterComponent', () => {
 
     fixture.detectChanges();
 
-    expect(TestBed.inject(ReportcenterApiService).getRecords).toHaveBeenCalled();
+    expect(TestBed.inject(ReportcenterApiService).getRecords).toHaveBeenCalledOnceWith();
     expect(fixture.nativeElement.textContent).toContain('ORD-p-100-F-1-001');
-    expect(fixture.nativeElement.textContent).toContain('ORD-p-200-F-2-001');
+    expect(fixture.nativeElement.textContent).toContain('FND-p-200-F-2-001');
+    expect(fixture.nativeElement.textContent).toContain('p-200-t-1');
     expect(fixture.nativeElement.textContent).toContain('Anna Weber');
     expect(fixture.nativeElement.textContent).toContain('Auftrag');
+    expect(fixture.nativeElement.textContent).toContain('Befund');
+    expect(fixture.nativeElement.textContent).toContain('Transfusion');
   });
 
   it('emits record, case and patient identifiers for navigation', () => {

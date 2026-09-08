@@ -3,6 +3,8 @@ package com.flowprototype.backend.patient;
 import com.flowprototype.backend.flow.model.PrtType;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -48,13 +50,29 @@ class PatientDataServiceTest {
     void returnsAllRecordsWithNavigationContext() {
         var records = service.records();
 
-        assertThat(records).hasSize(64);
-        assertThat(records).allSatisfy(record -> assertThat(record.prtType())
-            .isEqualTo(PrtType.PRTTYPE_ORDER));
+        assertThat(records).hasSize(134);
+        assertThat(records).filteredOn(record -> record.prtType() == PrtType.PRTTYPE_ORDER).hasSize(64);
+        assertThat(records).filteredOn(record -> record.prtType() == PrtType.PRTTYPE_REPORT).hasSize(48);
+        assertThat(records).filteredOn(record -> record.prtType() == PrtType.PRTTYPE_TRAFU).hasSize(22);
         assertThat(records).anySatisfy(record -> {
             assertThat(record.PatientID()).isEqualTo("p-100");
             assertThat(record.CaseID()).isEqualTo("F-2026-1001");
             assertThat(record.RecordID()).isEqualTo("ORD-p-100-F-2026-1001-001");
         });
+    }
+
+    @Test
+    void filtersRecordsByOneOrMorePrintTypes() {
+        var records = service.records(List.of(
+            PrtType.PRTTYPE_ORDER,
+            PrtType.PRTTYPE_REPORT,
+            PrtType.PRTTYPE_ORDER
+        ));
+
+        assertThat(records).hasSize(112);
+        assertThat(records).extracting(PatientDataService.PatientRecord::prtType)
+            .containsOnly(PrtType.PRTTYPE_ORDER, PrtType.PRTTYPE_REPORT);
+        assertThat(service.records(List.of(PrtType.PRTTYPE_TRAFU))).hasSize(22);
+        assertThat(service.records(List.of(PrtType.PRTTYPE_DOCUMENT))).isEmpty();
     }
 }

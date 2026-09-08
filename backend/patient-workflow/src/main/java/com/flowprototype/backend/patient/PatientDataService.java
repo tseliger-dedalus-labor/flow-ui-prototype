@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -181,15 +182,32 @@ public class PatientDataService {
     }
 
     /**
-     * Liefert alle Beispielaufträge mit ihrem Patienten- und Fallkontext.
+     * Liefert alle Beispiel-Records mit ihrem Patienten- und Fallkontext.
      *
      * @return Vollständige, nach RecordID sortierte Liste für das Reportcenter.
      */
     public List<PatientRecord> records() {
-        return PATIENTS_BY_WARD.values().stream()
+        return records(List.of());
+    }
+
+    /**
+     * Liefert alle Beispiel-Records der gewünschten Typen.
+     *
+     * @param prtTypes Optionale Record-Typen; eine leere Liste liefert alle Typen.
+     * @return Nach RecordID sortierte Recordliste.
+     */
+    public List<PatientRecord> records(List<PrtType> prtTypes) {
+        var requestedTypes = Set.copyOf(prtTypes);
+        var patients = PATIENTS_BY_WARD.values().stream()
             .flatMap(List::stream)
-            .flatMap(patient -> patient.cases().stream()
-                .flatMap(patientCase -> records(patient, patientCase)))
+            .toList();
+
+        return Stream.concat(
+                patients.stream().flatMap(patient -> patient.cases().stream()
+                    .flatMap(patientCase -> caseRecords(patient, patientCase))),
+                patients.stream().flatMap(this::transfusionRecords)
+            )
+            .filter(record -> requestedTypes.isEmpty() || requestedTypes.contains(record.prtType()))
             .sorted((left, right) -> left.RecordID().compareTo(right.RecordID()))
             .toList();
     }
@@ -281,16 +299,41 @@ public class PatientDataService {
         );
     }
 
-    private Stream<PatientRecord> records(PatientSummary patient, PatientCase patientCase) {
-        return orders(patient.id(), patientCase.id()).stream().map(order -> new PatientRecord(
-            order.get("RecordId"),
-            patientCase.id(),
+    private Stream<PatientRecord> caseRecords(PatientSummary patient, PatientCase patientCase) {
+        var orderRecords = orders(patient.id(), patientCase.id()).stream().map(order -> new PatientRecord(
+                order.get("RecordId"),
+                patientCase.id(),
+                patient.id(),
+                patient.name(),
+                order.get("text"),
+                order.get("status"),
+                order.get("createdAt"),
+                PrtType.PRTTYPE_ORDER
+            ));
+        var findingRecords = findings(patient.id(), patientCase.id()).stream().map(finding -> new PatientRecord(
+                finding.get("RecordId"),
+                patientCase.id(),
+                patient.id(),
+                patient.name(),
+                finding.get("text"),
+                "Abgeschlossen",
+                finding.get("createdAt"),
+                PrtType.PRTTYPE_REPORT
+            ));
+
+        return Stream.concat(orderRecords, findingRecords);
+    }
+
+    private Stream<PatientRecord> transfusionRecords(PatientSummary patient) {
+        return transfusions(patient.id()).stream().map(transfusion -> new PatientRecord(
+            transfusion.get("id"),
+            "",
             patient.id(),
             patient.name(),
-            order.get("text"),
-            order.get("status"),
-            order.get("createdAt"),
-            PrtType.PRTTYPE_ORDER
+            transfusion.get("text"),
+            "Dokumentiert",
+            "2026-09-06",
+            PrtType.PRTTYPE_TRAFU
         ));
     }
 
