@@ -135,7 +135,7 @@ public class PatientDataController {
      * @return Vollständige Recordliste für das Reportcenter.
      */
     @GetMapping("/records")
-    public List<Map<String, String>> records() {
+    public List<PatientDataService.PatientRecord> records() {
         return patientData.records();
     }
 

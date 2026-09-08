@@ -1,5 +1,6 @@
 package com.flowprototype.backend.patient;
 
+import com.flowprototype.backend.flow.model.PrtType;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -72,6 +73,20 @@ public class PatientDataService {
      * @param cases Zugeordnete Fälle.
      */
     public record PatientSummary(String id, String name, List<PatientCase> cases) {}
+
+    /**
+     * Typisierter Record für das Reportcenter.
+     */
+    public record PatientRecord(
+        String RecordID,
+        String CaseID,
+        String PatientID,
+        String patientName,
+        String text,
+        String status,
+        String createdAt,
+        PrtType prtType
+    ) {}
 
     /**
      * Liefert die verfügbaren Beispielstationen.
@@ -170,12 +185,12 @@ public class PatientDataService {
      *
      * @return Vollständige, nach RecordID sortierte Liste für das Reportcenter.
      */
-    public List<Map<String, String>> records() {
+    public List<PatientRecord> records() {
         return PATIENTS_BY_WARD.values().stream()
             .flatMap(List::stream)
             .flatMap(patient -> patient.cases().stream()
                 .flatMap(patientCase -> records(patient, patientCase)))
-            .sorted((left, right) -> left.get("RecordID").compareTo(right.get("RecordID")))
+            .sorted((left, right) -> left.RecordID().compareTo(right.RecordID()))
             .toList();
     }
 
@@ -266,15 +281,16 @@ public class PatientDataService {
         );
     }
 
-    private Stream<Map<String, String>> records(PatientSummary patient, PatientCase patientCase) {
-        return orders(patient.id(), patientCase.id()).stream().map(order -> Map.of(
-            "RecordID", order.get("RecordId"),
-            "CaseID", patientCase.id(),
-            "PatientID", patient.id(),
-            "patientName", patient.name(),
-            "text", order.get("text"),
-            "status", order.get("status"),
-            "createdAt", order.get("createdAt")
+    private Stream<PatientRecord> records(PatientSummary patient, PatientCase patientCase) {
+        return orders(patient.id(), patientCase.id()).stream().map(order -> new PatientRecord(
+            order.get("RecordId"),
+            patientCase.id(),
+            patient.id(),
+            patient.name(),
+            order.get("text"),
+            order.get("status"),
+            order.get("createdAt"),
+            PrtType.PRTTYPE_ORDER
         ));
     }
 

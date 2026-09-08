@@ -1,5 +1,6 @@
 package com.flowprototype.backend.patient;
 
+import com.flowprototype.backend.flow.model.PrtType;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,11 +49,12 @@ class PatientDataServiceTest {
         var records = service.records();
 
         assertThat(records).hasSize(64);
-        assertThat(records).allSatisfy(record -> assertThat(record)
-            .containsKeys("RecordID", "CaseID", "PatientID", "patientName", "text", "status", "createdAt"));
-        assertThat(records).anySatisfy(record -> assertThat(record)
-            .containsEntry("PatientID", "p-100")
-            .containsEntry("CaseID", "F-2026-1001")
-            .containsEntry("RecordID", "ORD-p-100-F-2026-1001-001"));
+        assertThat(records).allSatisfy(record -> assertThat(record.prtType())
+            .isEqualTo(PrtType.PRTTYPE_ORDER));
+        assertThat(records).anySatisfy(record -> {
+            assertThat(record.PatientID()).isEqualTo("p-100");
+            assertThat(record.CaseID()).isEqualTo("F-2026-1001");
+            assertThat(record.RecordID()).isEqualTo("ORD-p-100-F-2026-1001-001");
+        });
     }
 }

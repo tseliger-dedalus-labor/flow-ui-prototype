@@ -7,6 +7,7 @@
         <th>CaseID</th>
         <th>PatientID</th>
         <th>Patient</th>
+        <th>Typ</th>
         <th>Bezeichnung</th>
         <th>Status</th>
         <th>Datum</th>
@@ -21,13 +22,14 @@
           <td>{{ record.CaseID }}</td>
           <td>{{ record.PatientID }}</td>
           <td>{{ record.patientName }}</td>
+          <td>{{ recordTypeLabel(record.prtType) }}</td>
           <td>{{ record.text }}</td>
           <td>{{ record.status }}</td>
           <td>{{ record.createdAt }}</td>
         </tr>
       } @empty {
         <tr>
-          <td colspan="7">Keine Records verfügbar.</td>
+          <td colspan="8">Keine Records verfügbar.</td>
         </tr>
       }
     </tbody>

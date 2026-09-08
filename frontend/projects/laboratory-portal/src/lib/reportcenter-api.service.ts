@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
-import { FLOW_UI_API_BASE_URL } from 'flow-platform';
+import { FLOW_UI_API_BASE_URL, PrtType } from 'flow-platform';
 import { Observable } from 'rxjs';
 
 export interface ReportcenterRecord {
@@ -11,6 +11,7 @@ export interface ReportcenterRecord {
   text: string;
   status: string;
   createdAt: string;
+  prtType: PrtType;
 }
 
 @Injectable({ providedIn: 'root' })
