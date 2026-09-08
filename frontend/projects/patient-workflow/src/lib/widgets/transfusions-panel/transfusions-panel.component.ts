@@ -15,6 +15,7 @@ import { AContentPresenter } from 'ui-framework';
 })
 export class TransfusionsPanelComponent extends AContentPresenter implements OnChanges, OnDestroy {
   @Input({ required: true }) patientId = '';
+  @Input() RecordId = '';
   items: PatientRecord[] = [];
   private loadSubscription?: Subscription;
 
@@ -32,7 +33,10 @@ export class TransfusionsPanelComponent extends AContentPresenter implements OnC
       this.loadSubscription = this.api.getRecords([PrtType.PRTTYPE_TRAFU])
         .pipe(finalize(() => this.loading = false))
         .subscribe((records) => {
-          this.items = records.filter(record => record.PatientID === this.patientId);
+          this.items = records.filter(record =>
+            record.PatientID === this.patientId
+              && (!this.RecordId || record.RecordID === this.RecordId)
+          );
         });
       return;
     }

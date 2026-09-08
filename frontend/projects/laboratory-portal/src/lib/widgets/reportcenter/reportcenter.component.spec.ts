@@ -64,7 +64,7 @@ describe('ReportcenterComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Transfusion');
   });
 
-  it('emits record, case and patient identifiers for navigation', () => {
+  it('emits record, case, patient and print type for navigation', () => {
     const fixture = TestBed.createComponent(ReportcenterComponent);
     const selected = jasmine.createSpy('selected');
     fixture.componentInstance.recordSelected.subscribe(selected);
@@ -75,7 +75,8 @@ describe('ReportcenterComponent', () => {
     expect(selected).toHaveBeenCalledOnceWith({
       RecordID: 'ORD-p-100-F-1-001',
       CaseID: 'F-1',
-      PatientID: 'p-100'
+      PatientID: 'p-100',
+      prtType: PrtType.PRTTYPE_ORDER
     });
   });
 });

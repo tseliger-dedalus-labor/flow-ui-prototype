@@ -46,4 +46,14 @@ describe('TransfusionsPanelComponent', () => {
     // Ein leerer Patient-Kontext muss die vorherigen Transfusionsdaten entfernen.
     expect(fixture.componentInstance.items).toEqual([]);
   });
+
+  it('opens only the selected transfusion when a RecordId is provided', () => {
+    const fixture = TestBed.createComponent(TransfusionsPanelComponent);
+    fixture.componentRef.setInput('patientId', 'p-1');
+    fixture.componentRef.setInput('RecordId', 't-1');
+
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.items.map(item => item.RecordID)).toEqual(['t-1']);
+  });
 });

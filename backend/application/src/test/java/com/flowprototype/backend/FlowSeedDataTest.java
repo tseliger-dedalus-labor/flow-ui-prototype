@@ -2,6 +2,8 @@ package com.flowprototype.backend;
 
 import com.flowprototype.backend.flow.FlowMapper;
 import com.flowprototype.backend.flow.model.FlowDefinition;
+import com.flowprototype.backend.flow.model.IxtDisplayType;
+import com.flowprototype.backend.flow.model.PrtType;
 import com.flowprototype.backend.persistence.FlowEntity;
 import com.flowprototype.backend.persistence.FlowRepository;
 import org.junit.jupiter.api.Test;
@@ -86,11 +88,21 @@ class FlowSeedDataTest {
             });
         assertThat(definitions).filteredOn(definition -> definition.getId().equals("flow-reportcenter"))
             .singleElement()
-            .satisfies(definition -> assertThat(definition.getNodes())
-                .filteredOn(node -> node.getId().equals("report"))
-                .singleElement()
-                .extracting("componentId")
-                .isEqualTo("orders-panel"));
+            .satisfies(definition -> {
+                var transition = definition.getNodes().stream()
+                    .filter(node -> node.getId().equals("reportcenter"))
+                    .findFirst()
+                    .orElseThrow()
+                    .getTransitions()
+                    .getFirst();
+                assertThat(transition.getPrtTypeDisplayTypes()).containsExactlyInAnyOrderEntriesOf(java.util.Map.of(
+                    PrtType.PRTTYPE_ORDER, IxtDisplayType.DISPTYPE_FORM,
+                    PrtType.PRTTYPE_REPORT, IxtDisplayType.DISPTYPE_REPORT,
+                    PrtType.PRTTYPE_TRAFU, IxtDisplayType.DISPTYPE_WEC_INDEX_TRAFU
+                ));
+                assertThat(definition.getNodes()).extracting("componentId")
+                    .contains("orders-panel", "findings-panel", "transfusions-panel");
+            });
     }
 
     @Test

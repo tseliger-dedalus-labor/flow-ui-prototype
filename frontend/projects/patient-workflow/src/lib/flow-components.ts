@@ -255,6 +255,12 @@ export const FLOW_COMPONENTS = [
         semanticType: 'PATIENT_ID',
         required: true,
         allowedValues: []
+      },
+      {
+        name: 'RecordId',
+        semanticType: 'RECORD_ID',
+        required: false,
+        allowedValues: []
       }
     ],
     outputs: []

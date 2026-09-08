@@ -15,6 +15,7 @@ export class ReportcenterComponent extends AContentPresenter implements OnInit, 
     RecordID: string;
     CaseID: string;
     PatientID: string;
+    prtType: PrtType;
   }>();
 
   records: ReportcenterRecord[] = [];
@@ -35,7 +36,8 @@ export class ReportcenterComponent extends AContentPresenter implements OnInit, 
     this.recordSelected.emit({
       RecordID: record.RecordID,
       CaseID: record.CaseID,
-      PatientID: record.PatientID
+      PatientID: record.PatientID,
+      prtType: record.prtType
     });
   }
 

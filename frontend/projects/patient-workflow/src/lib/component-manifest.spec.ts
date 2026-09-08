@@ -38,6 +38,8 @@ describe('patient workflow component manifest', () => {
       .toEqual(['patientId', 'caseId', 'RecordId']);
     expect(patientWorkflowComponent('findings-panel').inputs.map((input) => input.name))
       .toEqual(['patientId', 'caseId', 'RecordId']);
+    expect(patientWorkflowComponent('transfusions-panel').inputs.map((input) => input.name))
+      .toEqual(['patientId', 'RecordId']);
   });
 
   it('rejects registrations without metadata', () => {

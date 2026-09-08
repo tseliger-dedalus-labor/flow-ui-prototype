@@ -9,9 +9,11 @@ import {
   FlowDefinition,
   FlowTransition,
   FlowNode,
+  IxtDisplayType,
   InputBinding,
   InputDescriptor,
   OutputDescriptor,
+  PrtType,
   TOOL_MODULES,
   Tool,
   ValidationIssue,
@@ -37,6 +39,7 @@ const EDITOR_SCOPE = 'flow-editor';
 export class EditorPageComponent implements OnInit, OnDestroy {
   readonly tools: Tool[] = ['WebclientTool', 'AppointmentTool', 'ReportcenterTool'];
   readonly toolModules = TOOL_MODULES;
+  readonly prtTypes = Object.values(PrtType);
   flows: Array<{ id: string; name: string }> = [];
   registry: ComponentDescriptor[] = [];
   flow?: FlowDefinition;
@@ -352,6 +355,31 @@ export class EditorPageComponent implements OnInit, OnDestroy {
 
   removeTransition(node: FlowNode, index: number): void {
     node.transitions.splice(index, 1);
+    this.validationTrigger.next();
+  }
+
+  displayTypeTargets(): Array<{ displayType: IxtDisplayType; label: string }> {
+    const targets = new Map<IxtDisplayType, string>();
+    for (const node of this.contentNodes()) {
+      const descriptor = this.descriptor(node.componentId);
+      if (descriptor?.displayType && !targets.has(descriptor.displayType)) {
+        targets.set(descriptor.displayType, `${descriptor.displayType} (${descriptor.title})`);
+      }
+    }
+    return [...targets].map(([displayType, label]) => ({ displayType, label }));
+  }
+
+  setPrtTypeDisplayType(
+    transition: FlowTransition,
+    prtType: PrtType,
+    displayType: IxtDisplayType | ''
+  ): void {
+    transition.prtTypeDisplayTypes ??= {};
+    if (displayType) {
+      transition.prtTypeDisplayTypes[prtType] = displayType;
+    } else {
+      delete transition.prtTypeDisplayTypes[prtType];
+    }
     this.validationTrigger.next();
   }
 

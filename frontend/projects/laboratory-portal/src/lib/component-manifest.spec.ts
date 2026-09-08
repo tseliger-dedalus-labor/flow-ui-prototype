@@ -14,7 +14,12 @@ describe('laboratory portal component manifest', () => {
     expect(reportcenter.outputs).toEqual([
       {
         name: 'recordSelected',
-        payload: { RecordID: 'RECORD_ID', CaseID: 'CASE_ID', PatientID: 'PATIENT_ID' }
+        payload: {
+          RecordID: 'RECORD_ID',
+          CaseID: 'CASE_ID',
+          PatientID: 'PATIENT_ID',
+          prtType: 'PRT_TYPE'
+        }
       }
     ]);
   });

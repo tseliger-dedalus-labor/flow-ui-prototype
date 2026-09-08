@@ -38,6 +38,10 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
   ) {
     // Multi-Provider registrieren alle Widgets lose gekoppelt; die Runtime löst nur über componentId auf.
     this.componentMap = Object.fromEntries((widgets ?? []).map((widget) => [widget.componentId, widget]));
+    this.engine.registerDisplayTypes?.((widgets ?? []).map((widget) => ({
+      componentId: widget.componentId,
+      displayType: widget.descriptor.displayType
+    })));
   }
 
   /**

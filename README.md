@@ -20,6 +20,8 @@ Frontend-Module beschreiben ihre Flow-Komponenten in typisierten TypeScript-Defi
 
 Flow-Komponenten können zusätzlich direkt an den lokalen Mock des ixserv-Typs `IxtDisplayType` gebunden werden. Der Mock spiegelt Namen und Datenbankwerte aus `Constants.XmfIxservType.IxtDisplayType`, erzeugt aber keine Abhängigkeit auf ixserv. Beim Aufbau der zentralen Komponenten-Registry bricht der Anwendungsstart ab, wenn derselbe `IxtDisplayType` mehr als einer Komponente zugeordnet wurde. Komponenten ohne Zuordnung, beispielsweise reine Layout-Komponenten, bleiben zulässig. Der ebenfalls lokal definierte `PrtType` stellt `PRTTYPE_NONE`, `PRTTYPE_ORDER`, `PRTTYPE_REPORT`, `PRTTYPE_DOCUMENT` und `PRTTYPE_TRAFU` in Backend und Frontend bereit, ohne ix.serv direkt zu importieren.
 
+Transitionen können mit `prtTypeDisplayTypes` Record-Typen auf registrierte Anzeigearten abbilden. Die Runtime löst beispielsweise `PRTTYPE_ORDER` über `DISPTYPE_FORM` zum passenden Flow-Knoten auf; der Flow-Editor bietet dafür je Transition auswählbare Zuordnungen an. Das statische `targetNodeId` bleibt als Rückfallziel erhalten.
+
 Jedes `pom.xml` beziehungsweise `projects/*/package.json` enthält eine eigene Artefaktversion. Abhängigkeiten zwischen Modulen referenzieren explizite Versionen und können bei Releases einzeln angehoben werden.
 
 ## Datenmodell (Backend)

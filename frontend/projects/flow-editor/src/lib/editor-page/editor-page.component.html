@@ -240,6 +240,21 @@
                       }
                     </p>
                   }
+                  <fieldset>
+                    <legend>Record-Typ-Ziele</legend>
+                    @for (prtType of prtTypes; track prtType) {
+                      <label>{{ prtType }}
+                        <select
+                          [ngModel]="transition.prtTypeDisplayTypes?.[prtType] ?? ''"
+                          (ngModelChange)="setPrtTypeDisplayType(transition, prtType, $event)">
+                          <option value="">Statisches Ziel verwenden</option>
+                          @for (target of displayTypeTargets(); track target.displayType) {
+                            <option [value]="target.displayType">{{ target.label }}</option>
+                          }
+                        </select>
+                      </label>
+                    }
+                  </fieldset>
                   <label>Context-Mapping (key:value, pro Zeile)</label>
                   <textarea
                     [ngModel]="mappingAsText(transition.contextMapping)"

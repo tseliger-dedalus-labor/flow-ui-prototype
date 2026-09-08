@@ -222,32 +222,30 @@ public class FlowSeedData implements CommandLineRunner {
         reportcenter.setComponentId("reportcenter");
         FlowTransition toReport = new FlowTransition();
         toReport.setOnOutput("recordSelected");
-        toReport.setTargetNodeId("report");
         toReport.setContextMapping(Map.of(
             "RecordId", "$event.RecordID",
             "caseId", "$event.CaseID",
             "patientId", "$event.PatientID"
         ));
+        toReport.setPrtTypeDisplayTypes(Map.of(
+            PrtType.PRTTYPE_ORDER, IxtDisplayType.DISPTYPE_FORM,
+            PrtType.PRTTYPE_REPORT, IxtDisplayType.DISPTYPE_REPORT,
+            PrtType.PRTTYPE_TRAFU, IxtDisplayType.DISPTYPE_WEC_INDEX_TRAFU
+        ));
         reportcenter.setTransitions(List.of(toReport));
 
-        FlowNode report = new FlowNode();
-        report.setId("report");
-        report.setComponentId("orders-panel");
-        InputBinding reportRecord = new InputBinding();
-        reportRecord.setSource(BindingSource.CONTEXT);
-        reportRecord.setContextKey("RecordId");
-        InputBinding reportCase = new InputBinding();
-        reportCase.setSource(BindingSource.CONTEXT);
-        reportCase.setContextKey("caseId");
-        InputBinding reportPatient = new InputBinding();
-        reportPatient.setSource(BindingSource.CONTEXT);
-        reportPatient.setContextKey("patientId");
-        report.setInputBindings(Map.of(
-            "RecordId", reportRecord,
-            "caseId", reportCase,
-            "patientId", reportPatient
+        FlowNode reportOrder = recordPanel("reportOrder", "orders-panel");
+        FlowNode reportFinding = recordPanel("reportFinding", "findings-panel");
+        FlowNode reportTransfusion = panel("reportTransfusion", "transfusions-panel");
+        InputBinding transfusionRecord = new InputBinding();
+        transfusionRecord.setSource(BindingSource.CONTEXT);
+        transfusionRecord.setContextKey("RecordId");
+        reportTransfusion.setInputBindings(Map.of(
+            "patientId", reportTransfusion.getInputBindings().get("patientId"),
+            "RecordId", transfusionRecord
         ));
-        reportcenterFlow.setNodes(List.of(reportcenter, report));
+        toReport.setTargetNodeId(reportOrder.getId());
+        reportcenterFlow.setNodes(List.of(reportcenter, reportOrder, reportFinding, reportTransfusion));
 
         // Persistiert die Beispielflows im produktiven Format, also mit relationalen Metadaten und JSON-Definition.
         repository.saveAll(Stream.of(
@@ -278,7 +276,12 @@ public class FlowSeedData implements CommandLineRunner {
                 .filter(node -> "patient-view".equals(node.getComponentId()))
                 .anyMatch(node -> node.getChildren() != null && !node.getChildren().isEmpty());
             case "flow-reportcenter" -> definition.getNodes().stream()
-                .anyMatch(node -> "order-view".equals(node.getComponentId()));
+                .anyMatch(node -> "order-view".equals(node.getComponentId()))
+                || definition.getNodes().stream()
+                    .filter(node -> "reportcenter".equals(node.getComponentId()))
+                    .flatMap(node -> node.getTransitions().stream())
+                    .allMatch(transition -> transition.getPrtTypeDisplayTypes() == null
+                        || transition.getPrtTypeDisplayTypes().isEmpty());
             default -> false;
         };
     }

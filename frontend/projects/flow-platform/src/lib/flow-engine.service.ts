@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { IxtDisplayType } from './ixt-display-type';
 import { FlowDefinition, FlowNode, FlowSidebar, SidebarMode } from './models';
+import { PrtType } from './prt-type';
 
 export interface FlowSidebarPanel {
   node: FlowNode;
@@ -20,6 +22,7 @@ export interface FlowEngineState {
 export class FlowEngineService {
   private definition?: FlowDefinition;
   private nodeMap = new Map<string, FlowNode>();
+  private componentIdByDisplayType = new Map<IxtDisplayType, string>();
   // Bei einer gefundenen Transition wird der aktuell angezeigte Knoten samt Kontext-Snapshot für "Zurück" gespeichert.
   private history: Array<{ nodeId: string; context: Record<string, unknown> }> = [];
 
@@ -45,6 +48,17 @@ export class FlowEngineService {
   readonly context$ = this.contextSubject.asObservable();
   /** Beobachtet den für die URL-Persistenz vorgesehenen Navigationszustand. */
   readonly state$ = this.stateSubject.asObservable();
+
+  /**
+   * Registriert die im aktuellen Tool verfügbaren Komponenten für DisplayType-basierte Ziele.
+   */
+  registerDisplayTypes(entries: Array<{ componentId: string; displayType?: IxtDisplayType }>): void {
+    this.componentIdByDisplayType = new Map(
+      entries
+        .filter((entry): entry is { componentId: string; displayType: IxtDisplayType } => !!entry.displayType)
+        .map((entry) => [entry.displayType, entry.componentId])
+    );
+  }
 
   /**
    * Initialisiert den Engine-Zustand mit einer neuen Flow-Definition und setzt Navigation sowie Kontext zurück.
@@ -103,7 +117,7 @@ export class FlowEngineService {
     // Der bisherige Zustand wird nach gefundener Transition vor dem Zustandswechsel archiviert.
     this.history.push({ nodeId: currentNode.id, context: { ...this.contextSubject.value } });
     this.contextSubject.next(context);
-    const targetNode = this.nodeMap.get(transition.targetNodeId) ?? null;
+    const targetNode = this.resolveTargetNode(transition, payload);
     this.currentNodeSubject.next(targetNode);
     this.updateSidebar(targetNode);
     this.emitState();
@@ -184,6 +198,20 @@ export class FlowEngineService {
       const sidebar = sidebars.get(node.id);
       return sidebar ? [{ node, sidebar }] : [];
     });
+  }
+
+  private resolveTargetNode(
+    transition: FlowNode['transitions'][number],
+    payload: unknown
+  ): FlowNode | null {
+    if (isRecord(payload) && typeof payload['prtType'] === 'string') {
+      const displayType = transition.prtTypeDisplayTypes?.[payload['prtType'] as PrtType];
+      const componentId = displayType && this.componentIdByDisplayType.get(displayType);
+      if (componentId) {
+        return this.definition?.nodes.find((node) => node.componentId === componentId) ?? null;
+      }
+    }
+    return this.nodeMap.get(transition.targetNodeId) ?? null;
   }
 
   private emitState(): void {

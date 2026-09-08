@@ -1,6 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
-import { ComponentDescriptor, FlowApiService, FlowDefinition, FlowNode, ViewRouterService } from 'flow-platform';
+import {
+  ComponentDescriptor,
+  FlowApiService,
+  FlowDefinition,
+  FlowNode,
+  FlowTransition,
+  IxtDisplayType,
+  PrtType,
+  ViewRouterService
+} from 'flow-platform';
 import { EditorPageComponent } from './editor-page.component';
 
 /** API-Doppel mit kontrolliertem Validierungsverhalten für die Editor-Interaktion. */
@@ -248,7 +257,11 @@ describe('EditorPageComponent', () => {
       children: [],
       transitions: []
     };
-    const transition = { onOutput: 'selected', targetNodeId: 'target', contextMapping: {} };
+    const transition: FlowTransition = {
+      onOutput: 'selected',
+      targetNodeId: 'target',
+      contextMapping: {}
+    };
     source.transitions.push(transition);
     component.flow = {
       id: 'flow',
@@ -535,6 +548,28 @@ describe('EditorPageComponent', () => {
 
     // Nur Ziele mit kompatiblen semantischen Eingaben dürfen vorgeschlagen werden.
     expect(component.compatibleTargets(source, 'selected').map((node) => node.id)).toEqual(['s', 'm', 'c']);
+  });
+
+  it('configures display type targets by PrtType on a transition', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    const transition: FlowTransition = {
+      onOutput: 'selected',
+      targetNodeId: 'target',
+      contextMapping: {}
+    };
+
+    component.setPrtTypeDisplayType(
+      transition,
+      PrtType.PRTTYPE_ORDER,
+      IxtDisplayType.DISPTYPE_FORM
+    );
+
+    expect(transition.prtTypeDisplayTypes).toEqual({
+      [PrtType.PRTTYPE_ORDER]: IxtDisplayType.DISPTYPE_FORM
+    });
+    component.setPrtTypeDisplayType(transition, PrtType.PRTTYPE_ORDER, '');
+    expect(transition.prtTypeDisplayTypes).toEqual({});
   });
 
   it('restores the selected flow and node from the linked editor state', () => {
