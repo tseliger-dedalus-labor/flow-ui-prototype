@@ -723,10 +723,10 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     if (!this.selectedFlowId) {
       return;
     }
-    this.viewRouter.write(EDITOR_SCOPE, {
+    void Promise.resolve(this.viewRouter.write(EDITOR_SCOPE, {
       flowId: this.selectedFlowId,
       nodeId: this.selectedNodeId
-    } satisfies RoutedEditorState);
+    } satisfies RoutedEditorState)).catch(() => undefined);
   }
 }
 

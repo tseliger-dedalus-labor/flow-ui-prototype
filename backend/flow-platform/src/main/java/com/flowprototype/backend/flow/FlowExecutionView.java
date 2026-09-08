@@ -9,11 +9,13 @@ import java.util.Map;
  */
 public record FlowExecutionView(
     String executionId,
+    String resumeToken,
     String flowId,
     long version,
     FlowDefinition definition,
     String currentNodeId,
     Map<String, Object> context,
     Map<String, Map<String, Object>> resolvedInputsByNode,
-    boolean canGoBack
+    boolean canGoBack,
+    Map<String, Object> viewScopes
 ) {}

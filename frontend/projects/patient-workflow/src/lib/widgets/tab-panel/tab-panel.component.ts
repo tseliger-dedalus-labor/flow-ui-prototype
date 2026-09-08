@@ -214,10 +214,10 @@ export class TabPanelComponent extends AContentPresenter implements EmbeddedFlow
     if (!this.containerId) {
       return;
     }
-    this.viewRouter.write(`${FLOW_TABS_SCOPE_PREFIX}${this.containerId}`, {
+    void Promise.resolve(this.viewRouter.write(`${FLOW_TABS_SCOPE_PREFIX}${this.containerId}`, {
       activeKey: this.activeKey,
       dynamicTabs: this.dynamicTabs.map(({ key, title, node }) => ({ key, title, node }))
-    } satisfies RoutedTabPanelState);
+    } satisfies RoutedTabPanelState)).catch(() => undefined);
   }
 }
 

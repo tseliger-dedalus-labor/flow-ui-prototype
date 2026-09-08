@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { PrtType } from 'flow-platform';
+import { PrtType, ViewRouterService } from 'flow-platform';
 import { ReportcenterApiService, ReportcenterRecord } from '../../reportcenter-api.service';
 import { ReportcenterComponent } from './reportcenter.component';
 
@@ -41,11 +41,25 @@ class ApiServiceMock {
   getRecords = jasmine.createSpy('getRecords').and.returnValue(of(records));
 }
 
+class ViewRouterServiceMock {
+  state: unknown;
+  writes: unknown[] = [];
+
+  read() { return this.state; }
+  write(_scope: string, state: unknown) {
+    this.writes.push(state);
+    return Promise.resolve('/reportcenter?view=signed');
+  }
+}
+
 describe('ReportcenterComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ReportcenterComponent],
-      providers: [{ provide: ReportcenterApiService, useClass: ApiServiceMock }]
+      providers: [
+        { provide: ReportcenterApiService, useClass: ApiServiceMock },
+        { provide: ViewRouterService, useClass: ViewRouterServiceMock }
+      ]
     }).compileComponents();
   });
 
@@ -75,5 +89,33 @@ describe('ReportcenterComponent', () => {
     expect(selected).toHaveBeenCalledOnceWith({
       RecordID: 'ORD-p-100-F-1-001'
     });
+  });
+
+  it('creates a shareable view state for multiple selected records', async () => {
+    const fixture = TestBed.createComponent(ReportcenterComponent);
+    const viewRouter = TestBed.inject(ViewRouterService) as unknown as ViewRouterServiceMock;
+    fixture.detectChanges();
+
+    fixture.componentInstance.toggleRecord(records[1].RecordID, true);
+    fixture.componentInstance.toggleRecord(records[0].RecordID, true);
+    fixture.componentInstance.createValidationLink();
+    await fixture.whenStable();
+
+    expect(viewRouter.writes).toEqual([{
+      recordIds: ['FND-p-200-F-2-001', 'ORD-p-100-F-1-001']
+    }]);
+    expect(fixture.componentInstance.validationLink).toContain('view=signed');
+  });
+
+  it('restores only record identifiers that are still available', () => {
+    const viewRouter = TestBed.inject(ViewRouterService) as unknown as ViewRouterServiceMock;
+    viewRouter.state = {
+      recordIds: ['FND-p-200-F-2-001', 'missing-record']
+    };
+    const fixture = TestBed.createComponent(ReportcenterComponent);
+
+    fixture.detectChanges();
+
+    expect([...fixture.componentInstance.selectedRecordIds]).toEqual(['FND-p-200-F-2-001']);
   });
 });

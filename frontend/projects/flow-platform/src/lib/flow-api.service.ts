@@ -51,6 +51,21 @@ export class FlowApiService {
     return this.http.get<FlowExecutionView>(`${this.baseUrl}/flows/executions/${encodeURIComponent(executionId)}`);
   }
 
+  resumeExecution(token: string): Observable<FlowExecutionView> {
+    return this.http.post<FlowExecutionView>(`${this.baseUrl}/flows/resume`, { token });
+  }
+
+  createFlowLink(
+    executionId: string,
+    path: string,
+    viewScopes: Record<string, unknown>
+  ): Observable<{ token: string }> {
+    return this.http.post<{ token: string }>(
+      `${this.baseUrl}/flows/executions/${encodeURIComponent(executionId)}/link`,
+      { path, viewScopes }
+    );
+  }
+
   transition(
     executionId: string,
     expectedVersion: number,

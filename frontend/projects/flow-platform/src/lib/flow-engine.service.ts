@@ -10,7 +10,8 @@ export interface FlowSidebarPanel {
 
 export interface FlowEngineState {
   flowId: string;
-  executionId: string;
+  executionId?: string;
+  resumeToken: string;
 }
 
 /**
@@ -43,8 +44,8 @@ export class FlowEngineService {
     return this.api.startExecution(flowId).pipe(tap((view) => this.apply(view)));
   }
 
-  restore(executionId: string): Observable<FlowExecutionView> {
-    return this.api.getExecution(executionId).pipe(tap((view) => this.apply(view)));
+  restore(resumeToken: string): Observable<FlowExecutionView> {
+    return this.api.resumeExecution(resumeToken).pipe(tap((view) => this.apply(view)));
   }
 
   transition(outputName: string, payload: unknown): void {
@@ -98,14 +99,18 @@ export class FlowEngineService {
 
   snapshot(): FlowEngineState | null {
     return this.execution
-      ? { flowId: this.execution.flowId, executionId: this.execution.executionId }
+      ? {
+          flowId: this.execution.flowId,
+          executionId: this.execution.executionId,
+          resumeToken: this.execution.resumeToken
+        }
       : null;
   }
 
   static isState(value: unknown): value is FlowEngineState {
     return isRecord(value)
       && typeof value['flowId'] === 'string'
-      && typeof value['executionId'] === 'string';
+      && typeof value['resumeToken'] === 'string';
   }
 
   private apply(view: FlowExecutionView): void {
@@ -119,7 +124,11 @@ export class FlowEngineService {
     this.sidebarModeSubject.next(view.definition.sidebarMode ?? 'SINGLE');
     this.sidebarPanelsSubject.next(this.collectSidebarPanels(view.definition.nodes, view.definition.sidebar));
     this.contextSubject.next({ ...view.context });
-    this.stateSubject.next({ flowId: view.flowId, executionId: view.executionId });
+    this.stateSubject.next({
+      flowId: view.flowId,
+      executionId: view.executionId,
+      resumeToken: view.resumeToken
+    });
   }
 
   private collectSidebarPanels(nodes: FlowNode[], fallback?: FlowSidebar): FlowSidebarPanel[] {

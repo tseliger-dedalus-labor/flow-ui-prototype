@@ -1,8 +1,20 @@
 <section class="reportcenter">
   <h3>Reportcenter</h3>
+  <div class="share-actions">
+    <button type="button" (click)="createValidationLink()" [disabled]="selectedRecordIds.size === 0">
+      Link zur Validierung erstellen ({{ selectedRecordIds.size }})
+    </button>
+    @if (validationLink) {
+      <a [href]="validationLink">Teilbaren Link öffnen</a>
+    }
+    @if (linkError) {
+      <span>{{ linkError }}</span>
+    }
+  </div>
   <table>
     <thead>
       <tr>
+        <th>Auswahl</th>
         <th>RecordID</th>
         <th>CaseID</th>
         <th>PatientID</th>
@@ -17,6 +29,13 @@
       @for (record of records; track record.RecordID) {
         <tr>
           <td>
+            <input
+              type="checkbox"
+              [checked]="selectedRecordIds.has(record.RecordID)"
+              (change)="toggleRecord(record.RecordID, $any($event.target).checked)"
+              [attr.aria-label]="'Befund ' + record.RecordID + ' auswählen'">
+          </td>
+          <td>
             <button type="button" (click)="openRecord(record)">{{ record.RecordID }}</button>
           </td>
           <td>{{ record.CaseID }}</td>
@@ -29,7 +48,7 @@
         </tr>
       } @empty {
         <tr>
-          <td colspan="8">Keine Records verfügbar.</td>
+          <td colspan="9">Keine Records verfügbar.</td>
         </tr>
       }
     </tbody>

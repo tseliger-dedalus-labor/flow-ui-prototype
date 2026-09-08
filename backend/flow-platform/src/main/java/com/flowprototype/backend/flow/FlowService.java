@@ -96,6 +96,7 @@ public class FlowService {
         if (definition.getId() == null || definition.getId().isBlank()) {
             definition.setId("flow-" + UUID.randomUUID());
         }
+        definition.setVersion(0);
         if (repository.existsById(definition.getId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Flow-ID ist bereits vergeben");
         }
@@ -119,13 +120,13 @@ public class FlowService {
     public FlowDefinition update(String id, FlowDefinition definition) {
         FlowEntity existing = repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Flow nicht gefunden"));
         definition.setId(id);
+        definition.setVersion(existing.getVersion());
         ValidationResult result = validationService.validate(definition);
         if (!result.isValid()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Flow ungültig: " + result.getIssues().get(0).getMessage());
         }
         // Der fachliche Aktivstatus wird aus dem bestehenden Datensatz übernommen und nicht implizit durch Nutzlasten des Editors geändert.
         FlowEntity updated = mapper.toEntity(definition, existing.isActive());
-        repository.save(updated);
-        return mapper.toDefinition(updated);
+        return mapper.toDefinition(repository.save(updated));
     }
 }

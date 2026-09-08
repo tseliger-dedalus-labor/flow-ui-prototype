@@ -76,6 +76,19 @@ public class FlowController {
         return executionService.get(executionId);
     }
 
+    @PostMapping("/resume")
+    public FlowExecutionView resume(@RequestBody FlowResumeRequest request) {
+        return executionService.resume(request.token());
+    }
+
+    @PostMapping("/executions/{executionId}/link")
+    public FlowLinkView createLink(
+        @PathVariable String executionId,
+        @RequestBody FlowLinkRequest request
+    ) {
+        return executionService.createLink(executionId, request);
+    }
+
     @PostMapping("/executions/{executionId}/outputs")
     public FlowExecutionView transition(
         @PathVariable String executionId,

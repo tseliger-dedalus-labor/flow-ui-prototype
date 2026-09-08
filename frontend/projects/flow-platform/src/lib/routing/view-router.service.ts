@@ -1,6 +1,7 @@
 import { Injectable, OnDestroy, Optional } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subscription, filter } from 'rxjs';
+import { FlowApiService } from '../flow-api.service';
 
 const VIEW_STATE_QUERY_PARAM = 'view';
 const VIEW_STATE_VERSION = 1;
@@ -20,17 +21,33 @@ interface LegacyRoutedViewState extends RoutedViewState {
   path: string;
 }
 
+interface PortableFlowState {
+  schemaVersion: number;
+  flowId: string;
+  path: string;
+}
+
+interface RuntimeLinkState {
+  flowId: string;
+  executionId?: string;
+  resumeToken: string;
+}
+
 /**
- * Speichert modulübergreifende UI-Zustände versioniert und kompakt Base64URL-kodiert in der aktuellen URL.
- * Zustände sind an den aktuellen Routenpfad gebunden; ältere JSON-Links bleiben lesbar.
+ * Speichert modulübergreifende UI-Zustände versioniert in der aktuellen URL.
+ * Runtime-Zustände werden serverseitig verschlüsselt und signiert; ältere JSON-Links bleiben lesbar.
  */
 @Injectable({ providedIn: 'root' })
 export class ViewRouterService implements OnDestroy {
   private path = '';
   private scopes: Record<string, unknown> = {};
+  private updateSequence = 0;
   private readonly routerSubscription?: Subscription;
 
-  constructor(@Optional() private readonly router: Router | null) {
+  constructor(
+    @Optional() private readonly router: Router | null,
+    @Optional() private readonly api: FlowApiService | null
+  ) {
     if (!this.router) {
       return;
     }
@@ -51,13 +68,13 @@ export class ViewRouterService implements OnDestroy {
   /**
    * Aktualisiert einen Zustandsbereich, ohne für jeden UI-Schritt einen Browser-History-Eintrag anzulegen.
    */
-  write(scope: string, state: unknown): void {
+  write(scope: string, state: unknown): Promise<string> {
     if (!this.router) {
-      return;
+      return Promise.resolve('');
     }
     this.synchronizeRoute();
     this.scopes = { ...this.scopes, [scope]: state };
-    this.updateUrl();
+    return this.updateUrl();
   }
 
   /**
@@ -75,7 +92,18 @@ export class ViewRouterService implements OnDestroy {
       return;
     }
     this.scopes = remaining;
-    this.updateUrl();
+    void this.updateUrl().catch(() => undefined);
+  }
+
+  /**
+   * Übernimmt komponentenspezifische Zustände erst nach erfolgreicher serverseitiger Token-Prüfung.
+   */
+  applyVerifiedScopes(viewScopes: Record<string, unknown>): void {
+    const runtime = this.scopes['tool-runtime'];
+    this.scopes = {
+      ...viewScopes,
+      ...(runtime ? { 'tool-runtime': runtime } : {})
+    };
   }
 
   ngOnDestroy(): void {
@@ -92,6 +120,8 @@ export class ViewRouterService implements OnDestroy {
     if (!this.router) {
       return;
     }
+    this.updateSequence++;
+    const activeRuntime = this.scopes['tool-runtime'];
     this.path = this.routePath(url);
     this.scopes = {};
     const serialized = this.router.parseUrl(url).queryParams[VIEW_STATE_QUERY_PARAM];
@@ -99,6 +129,25 @@ export class ViewRouterService implements OnDestroy {
       return;
     }
     try {
+      if (serialized.includes('.')) {
+        const parsed = this.decodePortableToken(serialized);
+        if (parsed.path === this.path) {
+          const executionId = isRuntimeLinkState(activeRuntime)
+            && activeRuntime.flowId === parsed.flowId
+            ? activeRuntime.executionId
+            : undefined;
+          this.scopes = {
+            'tool-runtime': {
+              flowId: parsed.flowId,
+              resumeToken: serialized,
+              ...(executionId ? { executionId } : {})
+            } satisfies RuntimeLinkState
+          };
+        } else {
+          console.warn('Der gespeicherte Ansichtslink gehört zu einer anderen Route.');
+        }
+        return;
+      }
       const parsed = this.decode(serialized);
       if (this.isCompactRoutedViewState(parsed) && parsed.p === this.path) {
         this.scopes = parsed.s;
@@ -112,9 +161,31 @@ export class ViewRouterService implements OnDestroy {
     }
   }
 
-  private updateUrl(): void {
+  private updateUrl(): Promise<string> {
     if (!this.router) {
-      return;
+      return Promise.resolve('');
+    }
+    const runtime = this.scopes['tool-runtime'];
+    if (this.api && isRuntimeLinkState(runtime) && runtime.executionId) {
+      const sequence = ++this.updateSequence;
+      const viewScopes = Object.fromEntries(
+        Object.entries(this.scopes).filter(([scope]) => scope !== 'tool-runtime')
+      );
+      return new Promise((resolve, reject) => {
+        this.api!.createFlowLink(runtime.executionId!, this.path, viewScopes).subscribe({
+          next: ({ token }) => {
+            if (sequence !== this.updateSequence) {
+              resolve(this.router!.url);
+              return;
+            }
+            this.navigateWithView(token).then(resolve, reject);
+          },
+          error: (error) => {
+            console.error('Der Ansichtslink konnte nicht signiert werden.', error);
+            reject(error);
+          }
+        });
+      });
     }
     const tree = this.router.parseUrl(this.router.url);
     const state: CompactRoutedViewState = {
@@ -126,9 +197,18 @@ export class ViewRouterService implements OnDestroy {
       ...tree.queryParams,
       [VIEW_STATE_QUERY_PARAM]: this.encode(state)
     };
-    void this.router.navigateByUrl(tree, { replaceUrl: true }).catch((error) => {
-      console.error('Der Ansichtslink konnte nicht aktualisiert werden.', error);
-    });
+    return this.router.navigateByUrl(tree, { replaceUrl: true })
+      .then(() => this.router!.url)
+      .catch((error) => {
+        console.error('Der Ansichtslink konnte nicht aktualisiert werden.', error);
+        throw error;
+      });
+  }
+
+  private navigateWithView(view: string): Promise<string> {
+    const tree = this.router!.parseUrl(this.router!.url);
+    tree.queryParams = { ...tree.queryParams, [VIEW_STATE_QUERY_PARAM]: view };
+    return this.router!.navigateByUrl(tree, { replaceUrl: true }).then(() => this.router!.url);
   }
 
   private routePath(url: string): string {
@@ -160,6 +240,17 @@ export class ViewRouterService implements OnDestroy {
     return JSON.parse(new TextDecoder().decode(bytes));
   }
 
+  private decodePortableToken(token: string): PortableFlowState {
+    const parsed = this.decode(token.split('.', 1)[0]);
+    if (!isRecord(parsed)
+      || parsed['schemaVersion'] !== 1
+      || typeof parsed['flowId'] !== 'string'
+      || typeof parsed['path'] !== 'string') {
+      throw new Error('Ungültiger portabler Ansichtslink');
+    }
+    return parsed as unknown as PortableFlowState;
+  }
+
   private isCompactRoutedViewState(value: unknown): value is CompactRoutedViewState {
     if (!isRecord(value)) {
       return false;
@@ -177,6 +268,13 @@ export class ViewRouterService implements OnDestroy {
       && typeof value['path'] === 'string'
       && isRecord(value['scopes']);
   }
+}
+
+function isRuntimeLinkState(value: unknown): value is RuntimeLinkState {
+  return isRecord(value)
+    && typeof value['flowId'] === 'string'
+    && typeof value['resumeToken'] === 'string'
+    && (value['executionId'] === undefined || typeof value['executionId'] === 'string');
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
