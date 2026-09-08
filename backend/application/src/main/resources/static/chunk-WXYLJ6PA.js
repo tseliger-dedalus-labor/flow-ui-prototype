@@ -1,0 +1,1 @@
+import{a,b,c,d,e,f}from"./chunk-PK32YM5L.js";import"./chunk-UTIMCJE2.js";import"./chunk-UAWKUHZO.js";export{a as PatientApiService,e as RuntimePageComponent,f as USER_UI_ROUTES,c as patientWorkflowComponent,b as patientWorkflowComponentManifest,d as providePatientWorkflowWidgets};
