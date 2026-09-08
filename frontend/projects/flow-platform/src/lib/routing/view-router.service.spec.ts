@@ -116,6 +116,28 @@ describe('ViewRouterService', () => {
     expect(restored.read('component')).toEqual({ selectedId: 'record-1' });
   });
 
+  it('uses a regular route state when portable links are unavailable', async () => {
+    const router = new RouterMock();
+    const api = jasmine.createSpyObj<FlowApiService>('api', ['createFlowLink']);
+    const service = new ViewRouterService(router as unknown as Router, api);
+
+    await service.write('tool-runtime', {
+      flowId: 'flow-normal',
+      executionId: 'run-1',
+      resumeToken: ''
+    });
+    await service.write('component', { selectedId: 'record-1' });
+
+    expect(api.createFlowLink).not.toHaveBeenCalled();
+    const restored = new ViewRouterService(router as unknown as Router, null);
+    expect(restored.read('tool-runtime')).toEqual({
+      flowId: 'flow-normal',
+      executionId: 'run-1',
+      resumeToken: ''
+    });
+    expect(restored.read('component')).toEqual({ selectedId: 'record-1' });
+  });
+
   it('does not apply a delayed signed state after navigating to another route', async () => {
     const router = new RouterMock();
     const response = new Subject<{ token: string }>();

@@ -144,4 +144,25 @@ describe('RuntimePageComponent', () => {
     expect(engine.restoredExecutionIds).toEqual(['resume-orders.signature']);
     expect(viewRouter.clearedPrefixes).toEqual([]);
   });
+
+  it('starts a flow instead of restoring an unsigned runtime state', () => {
+    const fixture = TestBed.createComponent(RuntimePageComponent);
+    const api = TestBed.inject(FlowApiService) as unknown as ApiServiceMock;
+    const engine = TestBed.inject(FlowEngineService) as unknown as FlowEngineServiceMock;
+    const viewRouter = TestBed.inject(ViewRouterService) as unknown as ViewRouterServiceMock;
+    api.failList = false;
+    api.flows = [
+      { id: 'flow-normal', name: 'Standardfluss', tool: 'WebclientTool', active: true }
+    ];
+    viewRouter.state = {
+      flowId: 'flow-normal',
+      executionId: 'run-normal',
+      resumeToken: ''
+    };
+
+    fixture.detectChanges();
+
+    expect(engine.startedFlowIds).toEqual(['flow-normal']);
+    expect(engine.restoredExecutionIds).toEqual([]);
+  });
 });
