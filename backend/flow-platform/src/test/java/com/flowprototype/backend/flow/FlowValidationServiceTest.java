@@ -49,7 +49,10 @@ class FlowValidationServiceTest {
             new ComponentDescriptor("demographics-sidebar", "Stammdaten Sidebar", PresenterType.SIDEBAR, false,
                 List.of(new InputDescriptor("patientId", SemanticType.PATIENT_ID, true, List.of())), List.of())
         );
-        validator = new FlowValidationService(new ComponentRegistryService(List.of(provider)));
+        validator = new FlowValidationService(
+            new ComponentRegistryService(List.of(provider)),
+            new FlowTransitionResolverRegistry(List.of())
+        );
     }
 
     @Test
@@ -96,6 +99,18 @@ class FlowValidationServiceTest {
         wards.getTransitions().get(0).setOnOutput("notThere");
         ValidationResult result = validator.validate(def);
         assertFalse(result.isValid());
+    }
+
+    @Test
+    void unknownTransitionResolverFails() {
+        FlowDefinition def = buildValid();
+        FlowNode wards = def.getNodes().stream().filter(n -> n.getId().equals("wards")).findFirst().orElseThrow();
+        wards.getTransitions().getFirst().setResolverId("missing-resolver");
+
+        ValidationResult result = validator.validate(def);
+
+        assertFalse(result.isValid());
+        assertTrue(result.getIssues().stream().anyMatch(issue -> issue.getMessage().contains("nicht registriert")));
     }
 
     @Test

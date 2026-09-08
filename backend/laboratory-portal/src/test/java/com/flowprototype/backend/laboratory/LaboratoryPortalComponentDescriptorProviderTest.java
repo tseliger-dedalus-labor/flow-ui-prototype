@@ -20,9 +20,7 @@ class LaboratoryPortalComponentDescriptorProviderTest {
         assertThat(descriptor.getOutputs()).singleElement().satisfies(output -> {
             assertThat(output.getName()).isEqualTo("recordSelected");
             assertThat(output.getPayload())
-                .containsEntry("RecordID", SemanticType.RECORD_ID)
-                .containsEntry("CaseID", SemanticType.CASE_ID)
-                .containsEntry("PatientID", SemanticType.PATIENT_ID);
+                .containsExactlyInAnyOrderEntriesOf(java.util.Map.of("RecordID", SemanticType.RECORD_ID));
         });
     }
 }

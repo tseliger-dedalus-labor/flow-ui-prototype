@@ -2,6 +2,7 @@ package com.flowprototype.backend;
 
 import com.flowprototype.backend.flow.FlowMapper;
 import com.flowprototype.backend.flow.model.*;
+import com.flowprototype.backend.patient.PatientRecordTransitionResolver;
 import com.flowprototype.backend.persistence.FlowEntity;
 import com.flowprototype.backend.persistence.FlowRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -217,10 +218,11 @@ public class FlowSeedData implements CommandLineRunner {
         reportcenter.setComponentId("reportcenter");
         FlowTransition toReport = new FlowTransition();
         toReport.setOnOutput("recordSelected");
+        toReport.setResolverId(PatientRecordTransitionResolver.ID);
         toReport.setContextMapping(Map.of(
-            "RecordId", "$event.RecordID",
-            "caseId", "$event.CaseID",
-            "patientId", "$event.PatientID"
+            "RecordId", "$event.RecordId",
+            "caseId", "$event.caseId",
+            "patientId", "$event.patientId"
         ));
         toReport.setPrtTypeDisplayTypes(Map.of(
             PrtType.PRTTYPE_ORDER, IxtDisplayType.DISPTYPE_FORM,
@@ -281,8 +283,11 @@ public class FlowSeedData implements CommandLineRunner {
                 || definition.getNodes().stream()
                     .filter(node -> "reportcenter".equals(node.getComponentId()))
                     .flatMap(node -> node.getTransitions().stream())
-                    .allMatch(transition -> transition.getPrtTypeDisplayTypes() == null
-                        || transition.getPrtTypeDisplayTypes().isEmpty());
+                    .anyMatch(transition ->
+                        transition.getPrtTypeDisplayTypes() == null
+                            || transition.getPrtTypeDisplayTypes().isEmpty()
+                            || !PatientRecordTransitionResolver.ID.equals(transition.getResolverId())
+                    );
             default -> false;
         };
     }

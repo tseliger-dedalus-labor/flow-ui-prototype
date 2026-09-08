@@ -6,11 +6,6 @@ import { FlowEngineService, FlowEngineState, FlowSidebarPanel } from '../flow-en
 import { FlowNode, FlowSidebar, FlowSummary, SidebarMode, Tool } from '../models';
 import { ViewRouterService } from '../routing/view-router.service';
 
-interface RoutedToolRuntimeState {
-  flowId: string;
-  engine: FlowEngineState;
-}
-
 const TOOL_RUNTIME_SCOPE = 'tool-runtime';
 const FLOW_TABS_SCOPE_PREFIX = 'flow-tabs:';
 
@@ -74,7 +69,7 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
           this.error = 'Für dieses Tool ist kein Flow verfügbar.';
           this.loading = false;
         } else if (restoredFlowExists) {
-          this.loadFlow(restoredState!.engine);
+          this.restoreFlow(restoredState!.executionId);
         } else if (flows.length === 1) {
           this.startFlow();
         } else {
@@ -96,7 +91,7 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
     this.loadFlow();
   }
 
-  private loadFlow(restoredState?: FlowEngineState): void {
+  private loadFlow(): void {
     if (!this.selectedFlowId) {
       this.loading = false;
       return;
@@ -104,9 +99,8 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
     this.error = '';
     this.flowStarted = false;
     this.loading = true;
-    this.api.getFlow(this.selectedFlowId).subscribe({
-      next: (definition) => {
-        this.engine.initialize(definition, restoredState);
+    this.engine.start(this.selectedFlowId).subscribe({
+      next: () => {
         this.flowStarted = true;
         this.loading = false;
         const state = this.engine.snapshot();
@@ -121,6 +115,18 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
     });
   }
 
+  private restoreFlow(executionId: string): void {
+    this.error = '';
+    this.loading = true;
+    this.engine.restore(executionId).subscribe({
+      next: () => {
+        this.flowStarted = true;
+        this.loading = false;
+      },
+      error: () => this.loadFlow()
+    });
+  }
+
   /**
    * Delegiert den Rücksprung an die Flow-Engine.
    */
@@ -132,27 +138,15 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
     this.engineStateSubscription.unsubscribe();
   }
 
-  private readRestoredState(): RoutedToolRuntimeState | null {
+  private readRestoredState(): FlowEngineState | null {
     const value = this.viewRouter.read(TOOL_RUNTIME_SCOPE);
-    if (!isRecord(value)
-      || typeof value['flowId'] !== 'string'
-      || !FlowEngineService.isState(value['engine'])) {
+    if (!FlowEngineService.isState(value)) {
       return null;
     }
-    return {
-      flowId: value['flowId'],
-      engine: value['engine']
-    };
+    return value;
   }
 
   private persistState(engine: FlowEngineState): void {
-    this.viewRouter.write(TOOL_RUNTIME_SCOPE, {
-      flowId: this.selectedFlowId,
-      engine
-    } satisfies RoutedToolRuntimeState);
+    this.viewRouter.write(TOOL_RUNTIME_SCOPE, engine);
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

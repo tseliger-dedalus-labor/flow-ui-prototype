@@ -113,6 +113,12 @@ class FlowSeedDataTest {
                     .orElseThrow()
                     .getTransitions()
                     .getFirst();
+                assertThat(transition.getResolverId()).isEqualTo("patient-record");
+                assertThat(transition.getContextMapping()).containsExactlyInAnyOrderEntriesOf(java.util.Map.of(
+                    "RecordId", "$event.RecordId",
+                    "caseId", "$event.caseId",
+                    "patientId", "$event.patientId"
+                ));
                 assertThat(transition.getPrtTypeDisplayTypes()).containsExactlyInAnyOrderEntriesOf(java.util.Map.of(
                     PrtType.PRTTYPE_ORDER, IxtDisplayType.DISPTYPE_FORM,
                     PrtType.PRTTYPE_REPORT, IxtDisplayType.DISPTYPE_REPORT,

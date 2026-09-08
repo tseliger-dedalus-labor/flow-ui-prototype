@@ -2,7 +2,7 @@ import { Component, EventEmitter, Inject, Input, OnChanges, OnDestroy, Optional,
 import { APresenter, type PresenterType } from 'ui-framework';
 
 import { Subscription } from 'rxjs';
-import { EmbeddedFlowContainer, FlowNode, InputBinding } from '../../models';
+import { EmbeddedFlowContainer, FlowNode } from '../../models';
 import { FlowEngineService } from '../../flow-engine.service';
 import { PermissionService } from '../../permission.service';
 import { FLOW_WIDGET, FlowWidgetRegistration } from '../flow-widget';
@@ -38,10 +38,6 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
   ) {
     // Multi-Provider registrieren alle Widgets lose gekoppelt; die Runtime löst nur über componentId auf.
     this.componentMap = Object.fromEntries((widgets ?? []).map((widget) => [widget.componentId, widget]));
-    this.engine.registerDisplayTypes?.((widgets ?? []).map((widget) => ({
-      componentId: widget.componentId,
-      displayType: widget.descriptor.displayType
-    })));
   }
 
   /**
@@ -81,8 +77,8 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
       this.renderedPresenter.visible = true;
     }
     // Input-Bindings werden erst nach der Instanziierung gesetzt, damit Standalone-Komponenten unverändert bleiben können.
-    for (const [name, binding] of Object.entries(this.node.inputBindings ?? {})) {
-      ref.setInput(name, this.resolveBinding(binding));
+    for (const [name, value] of Object.entries(this.engine.inputsFor(this.node.id))) {
+      ref.setInput(name, value);
     }
 
     const instance = ref.instance as Record<string, unknown>;
@@ -101,16 +97,6 @@ export class FlowRendererComponent implements OnChanges, OnDestroy {
         );
       }
     }
-  }
-
-  /**
-   * Liest einen Binding-Wert entweder direkt aus dem Kontext oder aus der statischen Konfiguration.
-   */
-  private resolveBinding(binding: InputBinding): unknown {
-    if (binding.source === 'CONTEXT') {
-      return this.context[binding.contextKey ?? ''];
-    }
-    return binding.staticValue;
   }
 
   /**

@@ -71,6 +71,8 @@ export interface InputBinding {
 export interface FlowTransition {
   onOutput: string;
   targetNodeId: string;
+  /** Optionaler serverseitiger Resolver für fachliche Datenanreicherung. */
+  resolverId?: string;
   contextMapping: Record<string, string>;
   /** Überschreibt das statische Ziel für Events mit einem gemappten PrtType. */
   prtTypeDisplayTypes?: Partial<Record<PrtType, IxtDisplayType>>;
@@ -155,6 +157,18 @@ export interface FlowSummary {
   name: string;
   tool: Tool;
   active: boolean;
+}
+
+/** Renderbare Sicht einer serverseitig verwalteten Flow-Ausführung. */
+export interface FlowExecutionView {
+  executionId: string;
+  flowId: string;
+  version: number;
+  definition: FlowDefinition;
+  currentNodeId: string;
+  context: Record<string, unknown>;
+  resolvedInputsByNode: Record<string, Record<string, unknown>>;
+  canGoBack: boolean;
 }
 
 /**

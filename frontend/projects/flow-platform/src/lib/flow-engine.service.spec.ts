@@ -1,348 +1,89 @@
+import { of } from 'rxjs';
+import { FlowApiService } from './flow-api.service';
 import { FlowEngineService } from './flow-engine.service';
-import { IxtDisplayType } from './ixt-display-type';
-import { FlowDefinition, FlowNode } from './models';
-import { PrtType } from './prt-type';
+import { FlowDefinition, FlowExecutionView } from './models';
 
-/**
- * Schützt die Laufzeitmaschine der Flow-Plattform.
- * Die Suite verifiziert Kontextweitergabe, Zurück-Navigation und Sidebar-Verhalten als
- * Kernvertrag für Rendering, Validierung und Editor-Vorschau.
- */
 describe('FlowEngineService', () => {
-  let service: FlowEngineService;
-
-  beforeEach(() => {
-    service = new FlowEngineService();
-  });
-
-  it('applies $event and $context mappings on transition', () => {
-    const flow: FlowDefinition = {
-      id: 'f',
-      name: 'flow',
-      tool: 'WebclientTool',
-      entryNodeId: 'start',
-      nodes: [
-        {
-          id: 'start',
-          componentId: 'ward-list',
-          inputBindings: {},
-          children: [],
-          transitions: [{ onOutput: 'wardSelected', targetNodeId: 'next', contextMapping: { wardId: '$event.wardId' } }]
-        },
-        {
-          id: 'next',
-          componentId: 'patient-list',
-          inputBindings: {},
-          children: [],
-          transitions: [{
-            onOutput: 'patientSelected',
-            targetNodeId: 'end',
-            contextMapping: {
-              copiedWard: '$context.wardId',
-              patientId: '$event.patientId',
-              caseId: '$event.caseId'
-            }
-          }]
-        },
-        {
-          id: 'end',
-          componentId: 'patient-view',
-          inputBindings: {},
-          children: [],
-          transitions: []
-        }
-      ]
-    };
-
-    service.initialize(flow);
-    service.transition('wardSelected', { wardId: 'ward-a' });
-    // Der Kontext des vorherigen Schritts muss für nachfolgende Transitionen erhalten bleiben.
-    service.transition('patientSelected', { patientId: 'p-1', caseId: 'F-1' });
-
-    let context!: Record<string, unknown>;
-    service.context$.subscribe((value) => context = value);
-    expect(context['wardId']).toBe('ward-a');
-    expect(context['copiedWard']).toBe('ward-a');
-    expect(context['patientId']).toBe('p-1');
-    expect(context['caseId']).toBe('F-1');
-  });
-
-  it('restores node and context on goBack', () => {
-    const flow: FlowDefinition = {
-      id: 'f',
-      name: 'flow',
-      tool: 'WebclientTool',
-      entryNodeId: 'start',
-      nodes: [
-        {
-          id: 'start',
-          componentId: 'ward-list',
-          inputBindings: {},
-          children: [],
-          transitions: [{ onOutput: 'wardSelected', targetNodeId: 'next', contextMapping: { wardId: '$event.wardId' } }]
-        },
-        { id: 'next', componentId: 'patient-list', inputBindings: {}, children: [], transitions: [] }
-      ]
-    };
-
-    service.initialize(flow);
-    service.transition('wardSelected', { wardId: 'ward-a' });
-    service.goBack();
-
-    const nodeIds: Array<string | null> = [];
-    let context!: Record<string, unknown>;
-    service.currentNode$.subscribe((node) => nodeIds.push(node?.id ?? null));
-    service.context$.subscribe((value) => context = value);
-
-    expect(nodeIds[nodeIds.length - 1]).toBe('start');
-    expect(context['wardId']).toBeUndefined();
-  });
-
-  it('supports transitions emitted by a persistent sidebar node', () => {
-    const flow: FlowDefinition = {
-      id: 'f',
-      name: 'flow',
-      tool: 'WebclientTool',
-      entryNodeId: 'wards',
-      sidebar: {
-        nodeId: 'wards',
-        position: 'LEFT',
-        width: 280
+  const flow: FlowDefinition = {
+    id: 'flow',
+    name: 'Flow',
+    tool: 'WebclientTool',
+    entryNodeId: 'start',
+    nodes: [
+      {
+        id: 'start',
+        componentId: 'ward-list',
+        inputBindings: {},
+        children: [],
+        transitions: [{ onOutput: 'selected', targetNodeId: 'detail', contextMapping: {} }]
       },
-      nodes: [
-        {
-          id: 'wards',
-          componentId: 'ward-list',
-          inputBindings: {},
-          children: [],
-          transitions: [{ onOutput: 'wardSelected', targetNodeId: 'patients', contextMapping: { wardId: '$event.wardId' } }]
-        },
-        {
-          id: 'patients',
-          componentId: 'patient-list',
-          inputBindings: {},
-          children: [],
-          transitions: []
-        }
-      ]
-    };
+      {
+        id: 'detail',
+        componentId: 'patient-view',
+        inputBindings: {},
+        children: [],
+        transitions: []
+      }
+    ]
+  };
 
-    service.initialize(flow);
-    service.transitionFrom('wards', 'wardSelected', { wardId: 'ward-a' });
-    // Die Sidebar darf beim Nachladen des Hauptknotens denselben persistenten Kontext behalten.
-    service.transitionFrom('wards', 'wardSelected', { wardId: 'ward-b' });
+  function view(currentNodeId: string, version: number, canGoBack = false): FlowExecutionView {
+    return {
+      executionId: 'run-1',
+      flowId: flow.id,
+      version,
+      definition: flow,
+      currentNodeId,
+      context: currentNodeId === 'detail' ? { patientId: 'p-1' } : {},
+      resolvedInputsByNode: currentNodeId === 'detail'
+        ? { detail: { patientId: 'p-1' } }
+        : {},
+      canGoBack
+    };
+  }
+
+  it('uses the server response as the authoritative transition state', () => {
+    const api = jasmine.createSpyObj<FlowApiService>('api', ['startExecution', 'transition', 'back', 'getExecution']);
+    api.startExecution.and.returnValue(of(view('start', 0)));
+    api.transition.and.returnValue(of(view('detail', 1, true)));
+    const service = new FlowEngineService(api);
+
+    service.start('flow').subscribe();
+    service.transition('selected', { patientId: 'client-value' });
 
     let nodeId: string | undefined;
-    let sidebarNodeId: string | undefined;
-    let context!: Record<string, unknown>;
+    let context: Record<string, unknown> = {};
     service.currentNode$.subscribe((node) => nodeId = node?.id);
-    service.sidebarNode$.subscribe((node) => sidebarNodeId = node?.id);
     service.context$.subscribe((value) => context = value);
-
-    expect(nodeId).toBe('patients');
-    expect(sidebarNodeId).toBe('wards');
-    expect(context['wardId']).toBe('ward-b');
-  });
-
-  it('switches the sidebar with the active main node and restores it on back', () => {
-    const flow: FlowDefinition = {
-      id: 'f',
-      name: 'flow',
-      tool: 'WebclientTool',
-      entryNodeId: 'wards',
-      nodes: [
-        {
-          id: 'wards',
-          componentId: 'ward-list',
-          inputBindings: {},
-          children: [],
-          transitions: [{ onOutput: 'wardSelected', targetNodeId: 'patients', contextMapping: { wardId: '$event.wardId' } }]
-        },
-        {
-          id: 'patients',
-          componentId: 'patient-list',
-          inputBindings: {},
-          children: [],
-          sidebar: { nodeId: 'wards', position: 'LEFT', width: 280 },
-          transitions: [{ onOutput: 'patientSelected', targetNodeId: 'detail', contextMapping: { patientId: '$event.patientId' } }]
-        },
-        {
-          id: 'detail',
-          componentId: 'patient-view',
-          inputBindings: {},
-          children: [],
-          sidebar: { nodeId: 'patients', position: 'LEFT', width: 320 },
-          transitions: []
-        }
-      ]
-    };
-
-    service.initialize(flow);
-    service.transition('wardSelected', { wardId: 'ward-a' });
-
-    let sidebarNodeId: string | undefined;
-    service.sidebarNode$.subscribe((node) => sidebarNodeId = node?.id);
-    expect(sidebarNodeId).toBe('wards');
-
-    service.transition('patientSelected', { patientId: 'p-1' });
-    expect(sidebarNodeId).toBe('patients');
-
-    service.goBack();
-    expect(sidebarNodeId).toBe('wards');
-  });
-
-  it('exposes every configured sidebar panel in collapse mode', () => {
-    const flow: FlowDefinition = {
-      id: 'f',
-      name: 'flow',
-      tool: 'WebclientTool',
-      entryNodeId: 'patients',
-      sidebarMode: 'COLLAPSE',
-      nodes: [
-        {
-          id: 'patients',
-          componentId: 'patient-list',
-          inputBindings: {},
-          children: [],
-          sidebar: { nodeId: 'wards-sidebar', position: 'LEFT', width: 280, ariaLabel: 'Stationen' },
-          transitions: []
-        },
-        {
-          id: 'detail',
-          componentId: 'patient-view',
-          inputBindings: {},
-          children: [],
-          sidebar: { nodeId: 'patients-sidebar', position: 'LEFT', width: 280, ariaLabel: 'Patienten' },
-          transitions: []
-        },
-        { id: 'wards-sidebar', componentId: 'ward-list', inputBindings: {}, children: [], transitions: [] },
-        { id: 'patients-sidebar', componentId: 'patient-list-sidebar', inputBindings: {}, children: [], transitions: [] }
-      ]
-    };
-
-    let panelIds: string[] = [];
-    let mode = '';
-    service.sidebarPanels$.subscribe((panels) => panelIds = panels.map((panel) => panel.node.id));
-    service.sidebarMode$.subscribe((value) => mode = value);
-
-    service.initialize(flow);
-
-    expect(mode).toBe('COLLAPSE');
-    expect(panelIds).toEqual(['wards-sidebar', 'patients-sidebar']);
-  });
-
-  it('keeps the sidebar completely absent when neither flow nor node configures one', () => {
-    const flow: FlowDefinition = {
-      id: 'f',
-      name: 'flow',
-      tool: 'WebclientTool',
-      entryNodeId: 'only',
-      nodes: [
-        {
-          id: 'only',
-          componentId: 'patient-view',
-          inputBindings: {},
-          children: [],
-          transitions: []
-        }
-      ]
-    };
-
-    service.initialize(flow);
-
-    let sidebarNode: FlowNode | null | undefined;
-    let sidebar: FlowDefinition['sidebar'] | null | undefined;
-    service.sidebarNode$.subscribe((value) => sidebarNode = value);
-    service.sidebar$.subscribe((value) => sidebar = value);
-
-    expect(sidebarNode).toBeNull();
-    expect(sidebar).toBeNull();
-  });
-
-  it('restores the active node, context and back history from a routed state', () => {
-    const flow: FlowDefinition = {
-      id: 'f',
-      name: 'flow',
-      tool: 'WebclientTool',
-      entryNodeId: 'start',
-      nodes: [
-        {
-          id: 'start',
-          componentId: 'ward-list',
-          inputBindings: {},
-          children: [],
-          transitions: []
-        },
-        {
-          id: 'detail',
-          componentId: 'patient-view',
-          inputBindings: {},
-          children: [],
-          transitions: []
-        }
-      ]
-    };
-
-    service.initialize(flow, {
-      currentNodeId: 'detail',
-      context: { patientId: 'p-1', caseId: 'F-1' },
-      history: [{ nodeId: 'start', context: { wardId: 'ward-a' } }]
-    });
-
-    expect(service.snapshot()).toEqual({
-      currentNodeId: 'detail',
-      context: { patientId: 'p-1', caseId: 'F-1' },
-      history: [{ nodeId: 'start', context: { wardId: 'ward-a' } }]
-    });
+    expect(api.transition).toHaveBeenCalledWith('run-1', 0, 'start', 'selected', { patientId: 'client-value' });
+    expect(nodeId).toBe('detail');
+    expect(context).toEqual({ patientId: 'p-1' });
+    expect(service.inputsFor('detail')).toEqual({ patientId: 'p-1' });
     expect(service.canGoBack()).toBeTrue();
+  });
+
+  it('restores an execution by opaque identifier and keeps only identity in routed state', () => {
+    const api = jasmine.createSpyObj<FlowApiService>('api', ['startExecution', 'transition', 'back', 'getExecution']);
+    api.getExecution.and.returnValue(of(view('detail', 3, true)));
+    const service = new FlowEngineService(api);
+
+    service.restore('run-1').subscribe();
+
+    expect(service.snapshot()).toEqual({ flowId: 'flow', executionId: 'run-1' });
+    expect(FlowEngineService.isState(service.snapshot())).toBeTrue();
+    expect(FlowEngineService.isState({ flowId: 'flow', context: {} })).toBeFalse();
+  });
+
+  it('delegates back navigation with optimistic versioning', () => {
+    const api = jasmine.createSpyObj<FlowApiService>('api', ['startExecution', 'transition', 'back', 'getExecution']);
+    api.getExecution.and.returnValue(of(view('detail', 3, true)));
+    api.back.and.returnValue(of(view('start', 4)));
+    const service = new FlowEngineService(api);
+    service.restore('run-1').subscribe();
 
     service.goBack();
 
-    expect(service.snapshot()).toEqual({
-      currentNodeId: 'start',
-      context: { wardId: 'ward-a' },
-      history: []
-    });
-  });
-
-  it('routes a record to the node registered for its mapped display type', () => {
-      const flow: FlowDefinition = {
-        id: 'records',
-        name: 'Records',
-        tool: 'ReportcenterTool',
-        entryNodeId: 'records',
-        nodes: [
-          {
-            id: 'records',
-            componentId: 'reportcenter',
-            inputBindings: {},
-            children: [],
-            transitions: [{
-              onOutput: 'recordSelected',
-              targetNodeId: 'order',
-              contextMapping: { RecordId: '$event.RecordID' },
-              prtTypeDisplayTypes: {
-                [PrtType.PRTTYPE_ORDER]: IxtDisplayType.DISPTYPE_FORM,
-                [PrtType.PRTTYPE_REPORT]: IxtDisplayType.DISPTYPE_REPORT
-              }
-            }]
-          },
-          { id: 'order', componentId: 'orders-panel', inputBindings: {}, children: [], transitions: [] },
-          { id: 'finding', componentId: 'findings-panel', inputBindings: {}, children: [], transitions: [] }
-        ]
-      };
-      service.registerDisplayTypes([
-        { componentId: 'orders-panel', displayType: IxtDisplayType.DISPTYPE_FORM },
-        { componentId: 'findings-panel', displayType: IxtDisplayType.DISPTYPE_REPORT }
-      ]);
-      service.initialize(flow);
-
-      service.transition('recordSelected', {
-        RecordID: 'FND-1',
-        prtType: PrtType.PRTTYPE_REPORT
-      });
-
-      expect(service.snapshot()?.currentNodeId).toBe('finding');
-      expect(service.snapshot()?.context['RecordId']).toBe('FND-1');
+    expect(api.back).toHaveBeenCalledOnceWith('run-1', 3);
+    expect(service.canGoBack()).toBeFalse();
   });
 });

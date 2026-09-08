@@ -17,14 +17,19 @@ import java.util.stream.Collectors;
 @Service
 public class FlowValidationService {
     private final ComponentRegistryService registry;
+    private final FlowTransitionResolverRegistry resolverRegistry;
 
     /**
      * Erstellt den Prüfdienst mit Zugriff auf das globale Komponentenverzeichnis.
      *
      * @param registry Komponentenverzeichnis aller bekannten Komponenten.
      */
-    public FlowValidationService(ComponentRegistryService registry) {
+    public FlowValidationService(
+        ComponentRegistryService registry,
+        FlowTransitionResolverRegistry resolverRegistry
+    ) {
         this.registry = registry;
+        this.resolverRegistry = resolverRegistry;
     }
 
     /**
@@ -188,7 +193,12 @@ public class FlowValidationService {
 
                 // Jede Transition erzeugt ihren eigenen Kontextzustand, der Ereignisnutzlast und vorhandenen Kontext kombiniert.
                 Map<String, SemanticType> postTransitionContext = new HashMap<>(availableContext);
-                OutputDescriptor outputDescriptor = outputs.get(transition.getOnOutput());
+                OutputDescriptor outputDescriptor = resolvedOutputDescriptor(
+                    transition,
+                    outputs.get(transition.getOnOutput()),
+                    "nodes." + node.getId() + ".transitions",
+                    issues
+                );
                 Map<PrtType, IxtDisplayType> typeMappings = prtTypeDisplayTypesOf(transition);
                 if (!typeMappings.isEmpty() && !outputDescriptor.getPayload().containsValue(SemanticType.PRT_TYPE)) {
                     issues.add(new ValidationIssue(
@@ -346,7 +356,12 @@ public class FlowValidationService {
             if (transition == null) {
                 continue;
             }
-            OutputDescriptor output = outputs.get(transition.getOnOutput());
+            OutputDescriptor output = resolvedOutputDescriptor(
+                transition,
+                outputs.get(transition.getOnOutput()),
+                "nodes." + sourceNode.getId() + ".transitions",
+                null
+            );
             if (output == null) {
                 continue;
             }
@@ -499,7 +514,12 @@ public class FlowValidationService {
             if (transition == null) {
                 continue;
             }
-            OutputDescriptor output = outputs.get(transition.getOnOutput());
+            OutputDescriptor output = resolvedOutputDescriptor(
+                transition,
+                outputs.get(transition.getOnOutput()),
+                path + ".transitions",
+                issues
+            );
             FlowNode target = nodes.get(transition.getTargetNodeId());
             if (output == null || target == null) {
                 continue;
@@ -577,6 +597,7 @@ public class FlowValidationService {
         if (expression == null) {
             return null;
         }
+
         if (expression.startsWith("$event.")) {
             String key = expression.substring("$event.".length());
             return outputDescriptor.getPayload().get(key);
@@ -586,6 +607,37 @@ public class FlowValidationService {
             return currentContext.get(key);
         }
         return SemanticType.STRING;
+    }
+
+    private OutputDescriptor resolvedOutputDescriptor(
+        FlowTransition transition,
+        OutputDescriptor output,
+        String path,
+        List<ValidationIssue> issues
+    ) {
+        if (output == null || transition.getResolverId() == null || transition.getResolverId().isBlank()) {
+            return output;
+        }
+        Optional<FlowTransitionResolver> configuredResolver = resolverRegistry.byId(transition.getResolverId());
+        if (configuredResolver.isEmpty()) {
+            if (issues != null) {
+                issues.add(new ValidationIssue(path, "Transition-Resolver '" + transition.getResolverId() + "' ist nicht registriert."));
+            }
+            return output;
+        }
+        FlowTransitionResolver resolver = configuredResolver.get();
+        for (Map.Entry<String, SemanticType> required : resolver.inputTypes().entrySet()) {
+            SemanticType actual = output.getPayload().get(required.getKey());
+            if (issues != null && (actual == null || !isCompatible(actual, required.getValue()))) {
+                issues.add(new ValidationIssue(
+                    path,
+                    "Transition-Resolver '" + resolver.id() + "' erhält Output-Feld '" + required.getKey() + "' nicht typkompatibel."
+                ));
+            }
+        }
+        Map<String, SemanticType> enrichedPayload = new HashMap<>(output.getPayload());
+        enrichedPayload.putAll(resolver.outputTypes());
+        return new OutputDescriptor(output.getName(), enrichedPayload);
     }
 
     private void validateNodeStructure(

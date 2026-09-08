@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { FLOW_UI_API_BASE_URL } from './api-base-url';
-import { ComponentDescriptor, FlowDefinition, FlowSummary, Tool, ValidationResult } from './models';
+import { ComponentDescriptor, FlowDefinition, FlowExecutionView, FlowSummary, Tool, ValidationResult } from './models';
 
 /**
  * Kapselt die HTTP-Grenze zum Flow-Backend und liefert bereits typisierte Domänenmodelle.
@@ -41,6 +41,34 @@ export class FlowApiService {
    */
   getEffectiveFlow(): Observable<FlowDefinition> {
     return this.http.get<FlowDefinition>(`${this.baseUrl}/flows/effective`);
+  }
+
+  startExecution(flowId: string): Observable<FlowExecutionView> {
+    return this.http.post<FlowExecutionView>(`${this.baseUrl}/flows/${encodeURIComponent(flowId)}/executions`, {});
+  }
+
+  getExecution(executionId: string): Observable<FlowExecutionView> {
+    return this.http.get<FlowExecutionView>(`${this.baseUrl}/flows/executions/${encodeURIComponent(executionId)}`);
+  }
+
+  transition(
+    executionId: string,
+    expectedVersion: number,
+    sourceNodeId: string,
+    outputName: string,
+    payload: unknown
+  ): Observable<FlowExecutionView> {
+    return this.http.post<FlowExecutionView>(
+      `${this.baseUrl}/flows/executions/${encodeURIComponent(executionId)}/outputs`,
+      { expectedVersion, sourceNodeId, outputName, payload }
+    );
+  }
+
+  back(executionId: string, expectedVersion: number): Observable<FlowExecutionView> {
+    return this.http.post<FlowExecutionView>(
+      `${this.baseUrl}/flows/executions/${encodeURIComponent(executionId)}/back`,
+      { expectedVersion }
+    );
   }
 
   /**
