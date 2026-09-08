@@ -1,5 +1,6 @@
 import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
-import { PatientApiService } from '../../patient-api.service';
+import { PrtType } from 'flow-platform';
+import { PatientApiService, PatientRecord } from '../../patient-api.service';
 import { finalize, Subscription } from 'rxjs';
 import { AContentPresenter } from 'ui-framework';
 
@@ -14,7 +15,8 @@ import { AContentPresenter } from 'ui-framework';
 })
 export class TransfusionsPanelComponent extends AContentPresenter implements OnChanges, OnDestroy {
   @Input({ required: true }) patientId = '';
-  items: Array<{ id: string; text: string }> = [];
+  @Input() RecordId = '';
+  items: PatientRecord[] = [];
   private loadSubscription?: Subscription;
 
   constructor(private readonly api: PatientApiService) {
@@ -28,9 +30,14 @@ export class TransfusionsPanelComponent extends AContentPresenter implements OnC
     this.loadSubscription?.unsubscribe();
     if (this.patientId) {
       this.loading = true;
-      this.loadSubscription = this.api.getTransfusions(this.patientId)
+      this.loadSubscription = this.api.getRecords([PrtType.PRTTYPE_TRAFU])
         .pipe(finalize(() => this.loading = false))
-        .subscribe((data) => this.items = data);
+        .subscribe((records) => {
+          this.items = records.filter(record =>
+            record.PatientID === this.patientId
+              && (!this.RecordId || record.RecordID === this.RecordId)
+          );
+        });
       return;
     }
     this.loading = false;

@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Legt beim Start Beispiel-Flows an, falls die Datenbank noch leer ist.
@@ -91,6 +93,7 @@ public class FlowSeedData implements CommandLineRunner {
         caseBinding.setContextKey("caseId");
         patientView.setInputBindings(Map.of("patientId", patientBinding, "caseId", caseBinding));
         patientView.setSidebar(sidebar("patientsSidebar", "Patientenauswahl"));
+        patientView.setTransitions(List.of(recordTypeTransition("order")));
 
         FlowNode wardsSidebar = new FlowNode();
         wardsSidebar.setId("wardsSidebar");
@@ -103,19 +106,13 @@ public class FlowSeedData implements CommandLineRunner {
         patientsSidebar.setInputBindings(Map.of("wardId", wardBinding, "mode", modeBinding));
         patientsSidebar.setTransitions(List.of(toPatient));
 
-        FlowNode stack = new FlowNode();
-        stack.setId("patientStack");
-        stack.setComponentId("stack-layout");
+        FlowNode order = recordPanel("order", "orders-panel");
+        order.setSidebar(sidebar("patientsSidebar", "Patientenauswahl"));
+        FlowNode finding = recordPanel("finding", "findings-panel");
+        finding.setSidebar(sidebar("patientsSidebar", "Patientenauswahl"));
 
-        FlowNode demographics = casePanel("demographics", "demographics-panel");
-        FlowNode findings = panel("findings", "findings-panel");
-        stack.setChildren(List.of(demographics, findings));
-        patientView.setChildren(List.of(stack));
-
-        // Die Knoten bleiben absichtlich sowohl hier als flache Liste als auch über Kindknotenverweise referenzierbar,
-        // weil Validierung, Persistenz und Editor jeden Knoten global per ID adressieren.
         normalFlow.setNodes(List.of(
-            wards, patients, patientView, stack, demographics, findings, wardsSidebar, patientsSidebar
+            wards, patients, patientView, order, finding, wardsSidebar, patientsSidebar
         ));
 
         // Alternative Sicht für denselben Navigationspfad mit anderem fachlichen Fokus im Patientendetail.
@@ -157,6 +154,7 @@ public class FlowSeedData implements CommandLineRunner {
         InputBinding case2 = new InputBinding(); case2.setSource(BindingSource.CONTEXT); case2.setContextKey("caseId");
         patientView2.setInputBindings(Map.of("patientId", pid2, "caseId", case2));
         patientView2.setSidebar(sidebar("patients2Sidebar", "Patientenauswahl"));
+        patientView2.setTransitions(List.of(recordTypeTransition("order2")));
 
         FlowNode wards2Sidebar = new FlowNode();
         wards2Sidebar.setId("wards2Sidebar");
@@ -169,16 +167,13 @@ public class FlowSeedData implements CommandLineRunner {
         patients2Sidebar.setInputBindings(Map.of("wardId", ward2, "mode", mode2));
         patients2Sidebar.setTransitions(List.of(toPatient2));
 
-        FlowNode layout2 = new FlowNode();
-        layout2.setId("layout2");
-        layout2.setComponentId("tab-panel");
-        FlowNode orders = casePanel("orders", "orders-panel");
-        FlowNode transfusions = panel("transfusions", "transfusions-panel");
-        layout2.setChildren(List.of(orders, transfusions));
-        patientView2.setChildren(List.of(layout2));
+        FlowNode order2 = recordPanel("order2", "orders-panel");
+        order2.setSidebar(sidebar("patients2Sidebar", "Patientenauswahl"));
+        FlowNode finding2 = recordPanel("finding2", "findings-panel");
+        finding2.setSidebar(sidebar("patients2Sidebar", "Patientenauswahl"));
 
         ordersFlow.setNodes(List.of(
-            wards2, patients2, patientView2, layout2, orders, transfusions, wards2Sidebar, patients2Sidebar
+            wards2, patients2, patientView2, order2, finding2, wards2Sidebar, patients2Sidebar
         ));
 
         FlowDefinition appointmentsFlow = new FlowDefinition();
@@ -222,41 +217,74 @@ public class FlowSeedData implements CommandLineRunner {
         reportcenter.setComponentId("reportcenter");
         FlowTransition toReport = new FlowTransition();
         toReport.setOnOutput("recordSelected");
-        toReport.setTargetNodeId("report");
         toReport.setContextMapping(Map.of(
             "RecordId", "$event.RecordID",
             "caseId", "$event.CaseID",
             "patientId", "$event.PatientID"
         ));
+        toReport.setPrtTypeDisplayTypes(Map.of(
+            PrtType.PRTTYPE_ORDER, IxtDisplayType.DISPTYPE_FORM,
+            PrtType.PRTTYPE_REPORT, IxtDisplayType.DISPTYPE_REPORT,
+            PrtType.PRTTYPE_TRAFU, IxtDisplayType.DISPTYPE_WEC_INDEX_TRAFU
+        ));
         reportcenter.setTransitions(List.of(toReport));
 
-        FlowNode report = new FlowNode();
-        report.setId("report");
-        report.setComponentId("order-view");
-        InputBinding reportRecord = new InputBinding();
-        reportRecord.setSource(BindingSource.CONTEXT);
-        reportRecord.setContextKey("RecordId");
-        InputBinding reportCase = new InputBinding();
-        reportCase.setSource(BindingSource.CONTEXT);
-        reportCase.setContextKey("caseId");
-        InputBinding reportPatient = new InputBinding();
-        reportPatient.setSource(BindingSource.CONTEXT);
-        reportPatient.setContextKey("patientId");
-        report.setInputBindings(Map.of(
-            "RecordId", reportRecord,
-            "caseId", reportCase,
-            "patientId", reportPatient
+        FlowNode reportOrder = recordPanel("reportOrder", "orders-panel");
+        FlowNode reportFinding = recordPanel("reportFinding", "findings-panel");
+        FlowNode reportTransfusion = panel("reportTransfusion", "transfusions-panel");
+        InputBinding transfusionRecord = new InputBinding();
+        transfusionRecord.setSource(BindingSource.CONTEXT);
+        transfusionRecord.setContextKey("RecordId");
+        reportTransfusion.setInputBindings(Map.of(
+            "patientId", reportTransfusion.getInputBindings().get("patientId"),
+            "RecordId", transfusionRecord
         ));
-        reportcenterFlow.setNodes(List.of(reportcenter, report));
+        toReport.setTargetNodeId(reportOrder.getId());
+        reportcenterFlow.setNodes(List.of(reportcenter, reportOrder, reportFinding, reportTransfusion));
 
         // Persistiert die Beispielflows im produktiven Format, also mit relationalen Metadaten und JSON-Definition.
-        FlowEntity first = mapper.toEntity(normalFlow, emptyRepository);
-        FlowEntity second = mapper.toEntity(ordersFlow, false);
-        FlowEntity third = mapper.toEntity(appointmentsFlow, false);
-        FlowEntity fourth = mapper.toEntity(reportcenterFlow, false);
-        repository.saveAll(List.of(first, second, third, fourth).stream()
-            .filter(flow -> !repository.existsById(flow.getId()))
+        repository.saveAll(Stream.of(
+                seedEntity(normalFlow, emptyRepository),
+                seedEntity(ordersFlow, false),
+                seedEntity(appointmentsFlow, false),
+                seedEntity(reportcenterFlow, false)
+            )
+            .flatMap(Optional::stream)
             .toList());
+    }
+
+    /**
+     * Ergänzt fehlende Standardflows und ersetzt nur bekannte, durch die Komponentenänderung veraltete Varianten.
+     */
+    private Optional<FlowEntity> seedEntity(FlowDefinition definition, boolean activeByDefault) {
+        if (!repository.existsById(definition.getId())) {
+            return Optional.of(mapper.toEntity(definition, activeByDefault));
+        }
+        return repository.findById(definition.getId())
+            .filter(entity -> requiresCaseRecordMigration(mapper.toDefinition(entity)))
+            .map(entity -> mapper.toEntity(definition, entity.isActive()));
+    }
+
+    private boolean requiresCaseRecordMigration(FlowDefinition definition) {
+        return switch (definition.getId()) {
+            case "flow-normal", "flow-orders" -> definition.getNodes().stream()
+                .filter(node -> "patient-view".equals(node.getComponentId()))
+                .anyMatch(node ->
+                    node.getChildren() != null && !node.getChildren().isEmpty()
+                        || node.getTransitions().stream().allMatch(transition ->
+                            transition.getPrtTypeDisplayTypes() == null
+                                || transition.getPrtTypeDisplayTypes().isEmpty()
+                        )
+                );
+            case "flow-reportcenter" -> definition.getNodes().stream()
+                .anyMatch(node -> "order-view".equals(node.getComponentId()))
+                || definition.getNodes().stream()
+                    .filter(node -> "reportcenter".equals(node.getComponentId()))
+                    .flatMap(node -> node.getTransitions().stream())
+                    .allMatch(transition -> transition.getPrtTypeDisplayTypes() == null
+                        || transition.getPrtTypeDisplayTypes().isEmpty());
+            default -> false;
+        };
     }
 
     /**
@@ -296,6 +324,37 @@ public class FlowSeedData implements CommandLineRunner {
         patientCase.setContextKey("caseId");
         node.setInputBindings(Map.of("patientId", patient, "caseId", patientCase));
         return node;
+    }
+
+    /**
+     * Baut einen fallbezogenen Detailknoten für einen ausgewählten Record.
+     */
+    private FlowNode recordPanel(String id, String componentId) {
+        FlowNode node = casePanel(id, componentId);
+        InputBinding record = new InputBinding();
+        record.setSource(BindingSource.CONTEXT);
+        record.setContextKey("RecordId");
+        node.setInputBindings(Map.of(
+            "patientId", node.getInputBindings().get("patientId"),
+            "caseId", node.getInputBindings().get("caseId"),
+            "RecordId", record
+        ));
+        return node;
+    }
+
+    /**
+     * Erzeugt eine Navigation von einem Eintrag der Patientenansicht zu dessen Detailpanel.
+     */
+    private FlowTransition recordTypeTransition(String targetNodeId) {
+        FlowTransition transition = new FlowTransition();
+        transition.setOnOutput("recordSelected");
+        transition.setTargetNodeId(targetNodeId);
+        transition.setContextMapping(Map.of("RecordId", "$event.RecordId"));
+        transition.setPrtTypeDisplayTypes(Map.of(
+            PrtType.PRTTYPE_ORDER, IxtDisplayType.DISPTYPE_FORM,
+            PrtType.PRTTYPE_REPORT, IxtDisplayType.DISPTYPE_REPORT
+        ));
+        return transition;
     }
 
     /**

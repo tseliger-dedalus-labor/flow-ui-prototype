@@ -21,7 +21,8 @@ class PatientComponentDescriptorProviderTest {
 
         assertThat(descriptors).extracting("id")
             .contains("ward-list-content", "ward-list-sidebar", "patient-list-content",
-                "patient-list-sidebar", "patient-view", "tab-panel", "order-view", "demographics-panel");
+                "patient-list-sidebar", "patient-view", "tab-panel", "orders-panel", "findings-panel", "demographics-panel")
+            .doesNotContain("order-view");
         assertThat(descriptors).filteredOn(descriptor -> descriptor.getId().equals("patient-list-content"))
             .singleElement()
             .satisfies(descriptor -> {
@@ -38,13 +39,18 @@ class PatientComponentDescriptorProviderTest {
             .isEqualTo(PresenterType.SIDEBAR);
         assertThat(descriptors).filteredOn(descriptor -> descriptor.getId().equals("patient-view"))
             .singleElement()
-            .satisfies(descriptor -> assertThat(descriptor.getInputs())
-                .anySatisfy(input -> assertThat(input.getSemanticType()).isEqualTo(SemanticType.CASE_ID)));
+            .satisfies(descriptor -> {
+                assertThat(descriptor.isContainer()).isFalse();
+                assertThat(descriptor.getInputs())
+                    .anySatisfy(input -> assertThat(input.getSemanticType()).isEqualTo(SemanticType.CASE_ID));
+                assertThat(descriptor.getOutputs()).extracting("name")
+                    .containsExactly("recordSelected");
+            });
         assertThat(descriptors).filteredOn(descriptor -> descriptor.getId().equals("transfusions-panel"))
             .singleElement()
             .extracting("displayType")
             .isEqualTo(IxtDisplayType.DISPTYPE_WEC_INDEX_TRAFU);
-        assertThat(descriptors).filteredOn(descriptor -> descriptor.getId().equals("order-view"))
+        assertThat(descriptors).filteredOn(descriptor -> descriptor.getId().equals("orders-panel"))
             .singleElement()
             .satisfies(descriptor -> assertThat(descriptor.getInputs())
                 .anySatisfy(input -> {

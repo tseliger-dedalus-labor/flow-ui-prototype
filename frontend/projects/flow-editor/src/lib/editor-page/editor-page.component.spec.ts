@@ -1,6 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
-import { ComponentDescriptor, FlowApiService, FlowDefinition, FlowNode, ViewRouterService } from 'flow-platform';
+import {
+  ComponentDescriptor,
+  FlowApiService,
+  FlowDefinition,
+  FlowNode,
+  FlowTransition,
+  IxtDisplayType,
+  PrtType,
+  ViewRouterService
+} from 'flow-platform';
 import { EditorPageComponent } from './editor-page.component';
 
 /** API-Doppel mit kontrolliertem Validierungsverhalten für die Editor-Interaktion. */
@@ -248,7 +257,11 @@ describe('EditorPageComponent', () => {
       children: [],
       transitions: []
     };
-    const transition = { onOutput: 'selected', targetNodeId: 'target', contextMapping: {} };
+    const transition: FlowTransition = {
+      onOutput: 'selected',
+      targetNodeId: 'target',
+      contextMapping: {}
+    };
     source.transitions.push(transition);
     component.flow = {
       id: 'flow',
@@ -307,8 +320,103 @@ describe('EditorPageComponent', () => {
     }]);
     fixture.detectChanges();
 
-    expect(panel.inputBindings['patientId']).toEqual({ source: 'STATIC', staticValue: '' });
+    expect(panel.inputBindings['patientId']).toEqual({ source: 'CONTEXT', contextKey: 'patientId' });
     expect(fixture.nativeElement.textContent).toContain('patientId');
+  });
+
+  it('shows and edits descriptor bindings of container children', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+    const child: FlowNode = {
+      id: 'details',
+      componentId: 'details-panel',
+      inputBindings: { patientId: { source: 'STATIC', staticValue: '' } },
+      children: [],
+      transitions: []
+    };
+    const container: FlowNode = {
+      id: 'tabs',
+      componentId: 'tab-panel',
+      inputBindings: {},
+      children: [child],
+      transitions: []
+    };
+    component.registry = [
+      { id: 'tab-panel', title: 'Tab-Panel', presenter: 'CONTENT', container: true, inputs: [], outputs: [] },
+      {
+        id: 'details-panel',
+        title: 'Details',
+        presenter: 'CONTENT',
+        container: false,
+        inputs: [
+          { name: 'patientId', semanticType: 'PATIENT_ID', required: true, allowedValues: [] },
+          { name: 'mode', semanticType: 'MODE', required: true, allowedValues: ['normal', 'findings'] }
+        ],
+        outputs: []
+      }
+    ];
+    component.flow = {
+      id: 'flow',
+      name: 'Test',
+      tool: 'WebclientTool',
+      entryNodeId: container.id,
+      nodes: [container, child]
+    };
+    component.ensureInputBindings(child);
+    component.selectedNodeId = container.id;
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Bindings der Kindknoten');
+    expect(fixture.nativeElement.textContent).toContain('patientId');
+    expect(child.inputBindings).toEqual({
+      patientId: { source: 'CONTEXT', contextKey: 'patientId' },
+      mode: { source: 'STATIC', staticValue: 'normal' }
+    });
+  });
+
+  it('uses the globally editable node for a serialized container child', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    const api = TestBed.inject(FlowApiService) as unknown as ApiServiceMock;
+    api.flows = [{ id: 'flow', name: 'Flow', tool: 'WebclientTool', active: true }];
+    api.registryResponse = new Subject<ComponentDescriptor[]>();
+    api.flowResponse = new Subject<FlowDefinition>();
+
+    fixture.detectChanges();
+    api.flowResponse.next({
+      id: 'flow',
+      name: 'Flow',
+      tool: 'WebclientTool',
+      entryNodeId: 'tabs',
+      nodes: [
+        {
+          id: 'tabs',
+          componentId: 'tab-panel',
+          inputBindings: {},
+          children: [{ id: 'details', componentId: 'details-panel', inputBindings: {}, children: [], transitions: [] }],
+          transitions: []
+        },
+        { id: 'details', componentId: 'details-panel', inputBindings: {}, children: [], transitions: [] }
+      ]
+    });
+    api.registryResponse.next([
+      { id: 'tab-panel', title: 'Tab-Panel', presenter: 'CONTENT', container: true, inputs: [], outputs: [] },
+      {
+        id: 'details-panel',
+        title: 'Details',
+        presenter: 'CONTENT',
+        container: false,
+        inputs: [{ name: 'patientId', semanticType: 'PATIENT_ID', required: true, allowedValues: [] }],
+        outputs: []
+      }
+    ]);
+
+    const [container, child] = component.flow!.nodes;
+    expect(container.children[0]).toBe(child);
+    expect(container.children[0].inputBindings['patientId'])
+      .toEqual({ source: 'CONTEXT', contextKey: 'patientId' });
   });
 
   it('creates and removes sidebar configuration', () => {
@@ -440,6 +548,28 @@ describe('EditorPageComponent', () => {
 
     // Nur Ziele mit kompatiblen semantischen Eingaben dürfen vorgeschlagen werden.
     expect(component.compatibleTargets(source, 'selected').map((node) => node.id)).toEqual(['s', 'm', 'c']);
+  });
+
+  it('configures display type targets by PrtType on a transition', () => {
+    const fixture = TestBed.createComponent(EditorPageComponent);
+    const component = fixture.componentInstance;
+    const transition: FlowTransition = {
+      onOutput: 'selected',
+      targetNodeId: 'target',
+      contextMapping: {}
+    };
+
+    component.setPrtTypeDisplayType(
+      transition,
+      PrtType.PRTTYPE_ORDER,
+      IxtDisplayType.DISPTYPE_FORM
+    );
+
+    expect(transition.prtTypeDisplayTypes).toEqual({
+      [PrtType.PRTTYPE_ORDER]: IxtDisplayType.DISPTYPE_FORM
+    });
+    component.setPrtTypeDisplayType(transition, PrtType.PRTTYPE_ORDER, '');
+    expect(transition.prtTypeDisplayTypes).toEqual({});
   });
 
   it('restores the selected flow and node from the linked editor state', () => {

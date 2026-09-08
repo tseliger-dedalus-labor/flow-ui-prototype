@@ -1,11 +1,12 @@
 import { IxtDisplayType } from './ixt-display-type';
+import { PrtType } from './prt-type';
 export type { Tool } from 'ui-framework';
 import type { PresenterType, Tool } from 'ui-framework';
 
 /**
  * Fachliche Typisierung für Flow-Inputs und Output-Payloads.
  */
-export type SemanticType = 'STRING' | 'MODE' | 'WARD_ID' | 'PATIENT_ID' | 'CASE_ID' | 'RECORD_ID';
+export type SemanticType = 'STRING' | 'MODE' | 'WARD_ID' | 'PATIENT_ID' | 'CASE_ID' | 'RECORD_ID' | 'PRT_TYPE';
 /**
  * Herkunft eines Input-Bindings innerhalb einer Flow-Definition.
  */
@@ -71,6 +72,8 @@ export interface FlowTransition {
   onOutput: string;
   targetNodeId: string;
   contextMapping: Record<string, string>;
+  /** Überschreibt das statische Ziel für Events mit einem gemappten PrtType. */
+  prtTypeDisplayTypes?: Partial<Record<PrtType, IxtDisplayType>>;
 }
 
 /**

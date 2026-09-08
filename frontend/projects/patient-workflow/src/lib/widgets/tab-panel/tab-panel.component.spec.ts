@@ -63,7 +63,7 @@ describe('TabPanelComponent', () => {
         {
           provide: FLOW_WIDGET,
           useValue: {
-            componentId: 'order-view',
+            componentId: 'detail-panel',
             descriptor: { title: 'Auftrag', presenter: 'CONTENT' },
             component: TestOrderComponent
           },
@@ -153,6 +153,6 @@ function dynamicOrder(RecordId: string) {
   return {
     key: `order:F-1:${RecordId}`,
     title: `Auftrag ${RecordId}`,
-    node: child(`order-${RecordId}`, 'order-view')
+    node: child(`order-${RecordId}`, 'detail-panel')
   };
 }

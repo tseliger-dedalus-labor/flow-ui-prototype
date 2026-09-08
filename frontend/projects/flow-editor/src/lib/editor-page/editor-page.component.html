@@ -135,12 +135,75 @@
                     <option value="CONTEXT">Aus Flow-Kontext</option>
                   </select>
                   @if (node.inputBindings[input.name].source === 'STATIC') {
-                    <input [(ngModel)]="node.inputBindings[input.name].staticValue" (ngModelChange)="triggerValidation()" placeholder="statischer Wert" />
+                   @if (input.allowedValues.length) {
+                     <select [(ngModel)]="node.inputBindings[input.name].staticValue" (ngModelChange)="triggerValidation()">
+                       @for (value of input.allowedValues; track value) {
+                         <option [value]="value">{{ value }}</option>
+                       }
+                     </select>
+                   } @else {
+                     <input [(ngModel)]="node.inputBindings[input.name].staticValue" (ngModelChange)="triggerValidation()" placeholder="statischer Wert" />
+                   }
                   }
                   @if (node.inputBindings[input.name].source === 'CONTEXT') {
                     <input [(ngModel)]="node.inputBindings[input.name].contextKey" (ngModelChange)="triggerValidation()" placeholder="context key" />
                   }
                 </div>
+              }
+              @if (desc.outputs.length) {
+               <h4>Output-Definitionen</h4>
+               <div class="descriptor-list">
+                 @for (output of desc.outputs; track output.name) {
+                   <div class="descriptor-entry">
+                     <strong>{{ output.name }}</strong>
+                     <span>
+                       @for (field of output.payload | keyvalue; track field.key; let last = $last) {
+                         {{ field.key }}: {{ field.value }}{{ last ? '' : ', ' }}
+                       }
+                     </span>
+                   </div>
+                 }
+               </div>
+              }
+              @if (desc.container && node.children.length) {
+               <h4>Bindings der Kindknoten</h4>
+               <p class="section-description">Diese Bindings werden direkt an die jeweiligen Panels weitergegeben.</p>
+               @for (child of node.children; track child.id) {
+                 @if (descriptor(child.componentId); as childDesc) {
+                   <section class="child-bindings">
+                     <div class="binding-title">
+                       <strong>{{ childDesc.title }}</strong>
+                       <span>{{ child.id }}</span>
+                     </div>
+                     @for (input of childDesc.inputs; track input.name) {
+                       <div class="binding">
+                         <div class="binding-title">
+                           <strong>{{ input.name }}</strong>
+                           <span>{{ input.semanticType }}{{ input.required ? ' · Pflichtfeld' : '' }}</span>
+                         </div>
+                         <select [(ngModel)]="child.inputBindings[input.name].source" (ngModelChange)="triggerValidation()">
+                           <option value="STATIC">Statischer Wert</option>
+                           <option value="CONTEXT">Aus Flow-Kontext</option>
+                         </select>
+                         @if (child.inputBindings[input.name].source === 'STATIC') {
+                           @if (input.allowedValues.length) {
+                             <select [(ngModel)]="child.inputBindings[input.name].staticValue" (ngModelChange)="triggerValidation()">
+                               @for (value of input.allowedValues; track value) {
+                                 <option [value]="value">{{ value }}</option>
+                               }
+                             </select>
+                           } @else {
+                             <input [(ngModel)]="child.inputBindings[input.name].staticValue" (ngModelChange)="triggerValidation()" placeholder="statischer Wert" />
+                           }
+                         }
+                         @if (child.inputBindings[input.name].source === 'CONTEXT') {
+                           <input [(ngModel)]="child.inputBindings[input.name].contextKey" (ngModelChange)="triggerValidation()" placeholder="context key" />
+                         }
+                       </div>
+                     }
+                   </section>
+                 }
+               }
               }
               <div class="section-heading">
                 <div>
@@ -177,6 +240,21 @@
                       }
                     </p>
                   }
+                  <fieldset>
+                    <legend>Record-Typ-Ziele</legend>
+                    @for (prtType of prtTypes; track prtType) {
+                      <label>{{ prtType }}
+                        <select
+                          [ngModel]="transition.prtTypeDisplayTypes?.[prtType] ?? ''"
+                          (ngModelChange)="setPrtTypeDisplayType(transition, prtType, $event)">
+                          <option value="">Statisches Ziel verwenden</option>
+                          @for (target of displayTypeTargets(); track target.displayType) {
+                            <option [value]="target.displayType">{{ target.label }}</option>
+                          }
+                        </select>
+                      </label>
+                    }
+                  </fieldset>
                   <label>Context-Mapping (key:value, pro Zeile)</label>
                   <textarea
                     [ngModel]="mappingAsText(transition.contextMapping)"

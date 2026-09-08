@@ -1,3 +1,33 @@
 <h2>Patientenansicht</h2>
 <p>Aktiver Patient: {{ patientId }}</p>
 <p>Aktiver Fall: {{ caseId }}</p>
+<section>
+  <h3>Aufträge</h3>
+  <ul>
+    @for (order of orders; track order.RecordId) {
+      <li>
+        <button type="button" (click)="openRecord(order.RecordId, prtType.PRTTYPE_ORDER)">
+          <strong>{{ order.text }}</strong>
+          <span>{{ order.status }} · {{ order.createdAt }}</span>
+        </button>
+      </li>
+    } @empty {
+      <li>Keine Aufträge vorhanden.</li>
+    }
+  </ul>
+</section>
+<section>
+  <h3>Befunde</h3>
+  <ul>
+    @for (finding of findings; track finding.RecordId) {
+      <li>
+        <button type="button" (click)="openRecord(finding.RecordId, prtType.PRTTYPE_REPORT)">
+          <strong>{{ finding.text }}</strong>
+          <span>{{ finding.createdAt }}</span>
+        </button>
+      </li>
+    } @empty {
+      <li>Keine Befunde vorhanden.</li>
+    }
+  </ul>
+</section>

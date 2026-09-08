@@ -18,7 +18,9 @@ Backend und Frontend sind als getrennt baubare, versionierte Artefakte organisie
 
 Frontend-Module beschreiben ihre Flow-Komponenten in typisierten TypeScript-Definitionen und registrieren sie über den Multi-Provider `FLOW_WIDGET`. Daraus wird ein versioniertes `*.components.json`-Manifest generiert, beim Paketbau mit ausgeliefert und von den korrespondierenden Backend-Modulen über `ComponentDescriptorProvider` in die Registry geladen. Dadurch verwenden Renderer, Backend-Validierung und Editor dieselbe Metadatenquelle.
 
-Flow-Komponenten können zusätzlich direkt an den lokalen Mock des ixserv-Typs `IxtDisplayType` gebunden werden. Der Mock spiegelt Namen und Datenbankwerte aus `Constants.XmfIxservType.IxtDisplayType`, erzeugt aber keine Abhängigkeit auf ixserv. Beim Aufbau der zentralen Komponenten-Registry bricht der Anwendungsstart ab, wenn derselbe `IxtDisplayType` mehr als einer Komponente zugeordnet wurde. Komponenten ohne Zuordnung, beispielsweise reine Layout-Komponenten, bleiben zulässig.
+Flow-Komponenten können zusätzlich direkt an den lokalen Mock des ixserv-Typs `IxtDisplayType` gebunden werden. Der Mock spiegelt Namen und Datenbankwerte aus `Constants.XmfIxservType.IxtDisplayType`, erzeugt aber keine Abhängigkeit auf ixserv. Beim Aufbau der zentralen Komponenten-Registry bricht der Anwendungsstart ab, wenn derselbe `IxtDisplayType` mehr als einer Komponente zugeordnet wurde. Komponenten ohne Zuordnung, beispielsweise reine Layout-Komponenten, bleiben zulässig. Der ebenfalls lokal definierte `PrtType` stellt `PRTTYPE_NONE`, `PRTTYPE_ORDER`, `PRTTYPE_REPORT`, `PRTTYPE_DOCUMENT` und `PRTTYPE_TRAFU` in Backend und Frontend bereit, ohne ix.serv direkt zu importieren.
+
+Transitionen können mit `prtTypeDisplayTypes` Record-Typen auf registrierte Anzeigearten abbilden. Die Runtime löst beispielsweise `PRTTYPE_ORDER` über `DISPTYPE_FORM` zum passenden Flow-Knoten auf; der Flow-Editor bietet dafür je Transition auswählbare Zuordnungen an. Das statische `targetNodeId` bleibt als Rückfallziel erhalten.
 
 Jedes `pom.xml` beziehungsweise `projects/*/package.json` enthält eine eigene Artefaktversion. Abhängigkeiten zwischen Modulen referenzieren explizite Versionen und können bei Releases einzeln angehoben werden.
 
@@ -191,9 +193,9 @@ Die generierten Manifeste bleiben versionierte Paket-Assets. Das veröffentlicht
 1. Flow auswählen
 2. Knoten auswählen
 3. Komponente wählen
-4. Input-Bindings (STATIC/CONTEXT) setzen
-5. Transitionen und Context-Mappings bearbeiten
-6. Kindknoten für Container zusammenstellen
+4. Vom Component Descriptor vorbelegte Input-Bindings prüfen oder anpassen
+5. Vorbelegte Output-Definitionen, Transitionen und Context-Mappings bearbeiten
+6. Kindknoten für Container zusammenstellen; deren Bindings sind direkt am Tab- oder Stack-Container bearbeitbar
 7. Optionalen Sidebar-Knoten, Position und Breite konfigurieren
 8. Live-Validierung prüfen
 9. Speichern via Backend
@@ -213,9 +215,14 @@ Die generierten Manifeste bleiben versionierte Paket-Assets. Das veröffentlicht
 - `GET /api/wards`
 - `GET /api/wards/{id}/patients`
 - `GET /api/patients/{id}`
-- `GET /api/patients/{id}/findings`
-- `GET /api/patients/{id}/orders`
+- `GET /api/patients/{patientId}/cases/{caseId}/findings`
+- `GET /api/patients/{patientId}/cases/{caseId}/findings/{recordId}`
+- `GET /api/patients/{patientId}/cases/{caseId}/orders`
+- `GET /api/patients/{patientId}/cases/{caseId}/orders/{recordId}`
 - `GET /api/patients/{id}/transfusions`
+- `GET /api/records[?prtType=PRTTYPE_ORDER&prtType=PRTTYPE_REPORT]`
+
+Ohne Query-Parameter liefert `/api/records` alle Aufträge, Befunde und Transfusionen. Der wiederholbare optionale Parameter `prtType` schränkt die Antwort auf einen oder mehrere Typen ein. Jeder Eintrag enthält dazu ein typisiertes `prtType`-Feld (`PRTTYPE_ORDER`, `PRTTYPE_REPORT`, `PRTTYPE_DOCUMENT` oder `PRTTYPE_TRAFU`).
 
 ### Terminplanung
 - `GET /api/wards/{id}/appointments`

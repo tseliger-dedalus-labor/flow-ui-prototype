@@ -1,8 +1,11 @@
 <article class="panel">
-  <h3>Befunde</h3>
-  <ul>
-    @for (item of items; track item) {
-      <li>{{ item.text }}</li>
-    }
-  </ul>
+  <h3>Befund</h3>
+  @if (finding) {
+    <dl>
+      <div><dt>RecordId</dt><dd>{{ finding.RecordId }}</dd></div>
+      <div><dt>Inhalt</dt><dd>{{ finding.text }}</dd></div>
+      <div><dt>Erstellt am</dt><dd>{{ finding.createdAt }}</dd></div>
+      <div><dt>Fall</dt><dd>{{ caseId }}</dd></div>
+    </dl>
+  }
 </article>

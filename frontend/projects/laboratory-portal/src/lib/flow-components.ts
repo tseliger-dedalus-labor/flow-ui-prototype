@@ -15,7 +15,8 @@ export const FLOW_COMPONENTS = [
         payload: {
          RecordID: 'RECORD_ID',
          CaseID: 'CASE_ID',
-         PatientID: 'PATIENT_ID'
+         PatientID: 'PATIENT_ID',
+         prtType: 'PRT_TYPE'
         }
       }
     ]

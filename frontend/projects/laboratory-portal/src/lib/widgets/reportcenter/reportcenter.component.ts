@@ -1,6 +1,7 @@
 import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
 import { finalize, Subscription } from 'rxjs';
 import { AContentPresenter } from 'ui-framework';
+import { PrtType } from 'flow-platform';
 import { ReportcenterApiService, ReportcenterRecord } from '../../reportcenter-api.service';
 
 @Component({
@@ -14,6 +15,7 @@ export class ReportcenterComponent extends AContentPresenter implements OnInit, 
     RecordID: string;
     CaseID: string;
     PatientID: string;
+    prtType: PrtType;
   }>();
 
   records: ReportcenterRecord[] = [];
@@ -34,8 +36,24 @@ export class ReportcenterComponent extends AContentPresenter implements OnInit, 
     this.recordSelected.emit({
       RecordID: record.RecordID,
       CaseID: record.CaseID,
-      PatientID: record.PatientID
+      PatientID: record.PatientID,
+      prtType: record.prtType
     });
+  }
+
+  recordTypeLabel(prtType: PrtType): string {
+    switch (prtType) {
+      case PrtType.PRTTYPE_ORDER:
+        return 'Auftrag';
+      case PrtType.PRTTYPE_REPORT:
+        return 'Befund';
+      case PrtType.PRTTYPE_DOCUMENT:
+        return 'Dokument';
+      case PrtType.PRTTYPE_TRAFU:
+        return 'Transfusion';
+      case PrtType.PRTTYPE_NONE:
+        return 'Keine Angabe';
+    }
   }
 
   ngOnDestroy(): void {

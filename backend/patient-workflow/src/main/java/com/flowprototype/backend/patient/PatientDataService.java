@@ -1,11 +1,13 @@
 package com.flowprototype.backend.patient;
 
+import com.flowprototype.backend.flow.model.PrtType;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -74,6 +76,20 @@ public class PatientDataService {
     public record PatientSummary(String id, String name, List<PatientCase> cases) {}
 
     /**
+     * Typisierter Record für das Reportcenter.
+     */
+    public record PatientRecord(
+        String RecordID,
+        String CaseID,
+        String PatientID,
+        String patientName,
+        String text,
+        String status,
+        String createdAt,
+        PrtType prtType
+    ) {}
+
+    /**
      * Liefert die verfügbaren Beispielstationen.
      *
      * @return Stationsliste.
@@ -112,17 +128,27 @@ public class PatientDataService {
     }
 
     /**
-     * Liefert Beispielbefunde zu einem Patienten.
+     * Liefert Beispielbefunde zu einem Patientenfall.
      *
      * @param patientId Technische Patienten-ID.
+     * @param caseId Technische Fall-ID.
      * @return Befundliste.
      */
-    public List<Map<String, String>> findings(String patientId) {
+    public List<Map<String, String>> findings(String patientId, String caseId) {
         return List.of(
-            Map.of("id", patientId + "-f-1", "text", "Blutbild vom 02.09.2026: Werte im erwarteten Bereich"),
-            Map.of("id", patientId + "-f-2", "text", "Radiologie vom 03.09.2026: Verlaufskontrolle ohne neuen Befund"),
-            Map.of("id", patientId + "-f-3", "text", "Ärztliche Visite vom 04.09.2026: klinischer Zustand stabil")
+            finding(patientId, caseId, "001", "Blutbild: Werte im erwarteten Bereich", "2026-09-02"),
+            finding(patientId, caseId, "002", "Radiologie: Verlaufskontrolle ohne neuen Befund", "2026-09-03"),
+            finding(patientId, caseId, "003", "Ärztliche Visite: klinischer Zustand stabil", "2026-09-04")
         );
+    }
+
+    /**
+     * Liefert einen einzelnen Befund innerhalb eines Patientenfalls.
+     */
+    public Optional<Map<String, String>> finding(String patientId, String caseId, String recordId) {
+        return findings(patientId, caseId).stream()
+            .filter(finding -> recordId.equals(finding.get("RecordId")))
+            .findFirst();
     }
 
     /**
@@ -156,16 +182,33 @@ public class PatientDataService {
     }
 
     /**
-     * Liefert alle Beispielaufträge mit ihrem Patienten- und Fallkontext.
+     * Liefert alle Beispiel-Records mit ihrem Patienten- und Fallkontext.
      *
      * @return Vollständige, nach RecordID sortierte Liste für das Reportcenter.
      */
-    public List<Map<String, String>> records() {
-        return PATIENTS_BY_WARD.values().stream()
+    public List<PatientRecord> records() {
+        return records(List.of());
+    }
+
+    /**
+     * Liefert alle Beispiel-Records der gewünschten Typen.
+     *
+     * @param prtTypes Optionale Record-Typen; eine leere Liste liefert alle Typen.
+     * @return Nach RecordID sortierte Recordliste.
+     */
+    public List<PatientRecord> records(List<PrtType> prtTypes) {
+        var requestedTypes = Set.copyOf(prtTypes);
+        var patients = PATIENTS_BY_WARD.values().stream()
             .flatMap(List::stream)
-            .flatMap(patient -> patient.cases().stream()
-                .flatMap(patientCase -> records(patient, patientCase)))
-            .sorted((left, right) -> left.get("RecordID").compareTo(right.get("RecordID")))
+            .toList();
+
+        return Stream.concat(
+                patients.stream().flatMap(patient -> patient.cases().stream()
+                    .flatMap(patientCase -> caseRecords(patient, patientCase))),
+                patients.stream().flatMap(this::transfusionRecords)
+            )
+            .filter(record -> requestedTypes.isEmpty() || requestedTypes.contains(record.prtType()))
+            .sorted((left, right) -> left.RecordID().compareTo(right.RecordID()))
             .toList();
     }
 
@@ -242,15 +285,55 @@ public class PatientDataService {
         );
     }
 
-    private Stream<Map<String, String>> records(PatientSummary patient, PatientCase patientCase) {
-        return orders(patient.id(), patientCase.id()).stream().map(order -> Map.of(
-            "RecordID", order.get("RecordId"),
-            "CaseID", patientCase.id(),
-            "PatientID", patient.id(),
-            "patientName", patient.name(),
-            "text", order.get("text"),
-            "status", order.get("status"),
-            "createdAt", order.get("createdAt")
+    private static Map<String, String> finding(
+        String patientId,
+        String caseId,
+        String sequence,
+        String text,
+        String createdAt
+    ) {
+        return Map.of(
+            "RecordId", "FND-" + patientId + "-" + caseId + "-" + sequence,
+            "text", text,
+            "createdAt", createdAt
+        );
+    }
+
+    private Stream<PatientRecord> caseRecords(PatientSummary patient, PatientCase patientCase) {
+        var orderRecords = orders(patient.id(), patientCase.id()).stream().map(order -> new PatientRecord(
+                order.get("RecordId"),
+                patientCase.id(),
+                patient.id(),
+                patient.name(),
+                order.get("text"),
+                order.get("status"),
+                order.get("createdAt"),
+                PrtType.PRTTYPE_ORDER
+            ));
+        var findingRecords = findings(patient.id(), patientCase.id()).stream().map(finding -> new PatientRecord(
+                finding.get("RecordId"),
+                patientCase.id(),
+                patient.id(),
+                patient.name(),
+                finding.get("text"),
+                "Abgeschlossen",
+                finding.get("createdAt"),
+                PrtType.PRTTYPE_REPORT
+            ));
+
+        return Stream.concat(orderRecords, findingRecords);
+    }
+
+    private Stream<PatientRecord> transfusionRecords(PatientSummary patient) {
+        return transfusions(patient.id()).stream().map(transfusion -> new PatientRecord(
+            transfusion.get("id"),
+            "",
+            patient.id(),
+            patient.name(),
+            transfusion.get("text"),
+            "Dokumentiert",
+            "2026-09-06",
+            PrtType.PRTTYPE_TRAFU
         ));
     }
 

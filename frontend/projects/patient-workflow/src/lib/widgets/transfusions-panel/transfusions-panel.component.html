@@ -1,7 +1,7 @@
 <article class="panel">
   <h3>Transfusionen</h3>
   <ul>
-    @for (item of items; track item) {
+    @for (item of items; track item.RecordID) {
       <li>{{ item.text }}</li>
     }
   </ul>

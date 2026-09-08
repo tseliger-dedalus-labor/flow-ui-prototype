@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { KeyValuePipe } from '@angular/common';
 
 import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, debounceTime } from 'rxjs';
@@ -8,9 +9,11 @@ import {
   FlowDefinition,
   FlowTransition,
   FlowNode,
+  IxtDisplayType,
   InputBinding,
   InputDescriptor,
   OutputDescriptor,
+  PrtType,
   TOOL_MODULES,
   Tool,
   ValidationIssue,
@@ -29,13 +32,14 @@ const EDITOR_SCOPE = 'flow-editor';
  */
 @Component({
     selector: 'app-editor-page',
-    imports: [FormsModule],
+    imports: [FormsModule, KeyValuePipe],
     templateUrl: './editor-page.component.html',
     styleUrl: './editor-page.component.scss'
 })
 export class EditorPageComponent implements OnInit, OnDestroy {
   readonly tools: Tool[] = ['WebclientTool', 'AppointmentTool', 'ReportcenterTool'];
   readonly toolModules = TOOL_MODULES;
+  readonly prtTypes = Object.values(PrtType);
   flows: Array<{ id: string; name: string }> = [];
   registry: ComponentDescriptor[] = [];
   flow?: FlowDefinition;
@@ -65,7 +69,9 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     const restoredState = this.readRestoredState();
     this.api.getRegistry().subscribe((registry) => {
       this.registry = registry;
-      this.flow?.nodes.forEach((node) => this.ensureInputBindings(node));
+      if (this.flow) {
+        this.prepareNodes(this.flow);
+      }
     });
     this.api.getFlows().subscribe((flows) => {
       this.flows = flows.map((flow) => ({ id: flow.id, name: flow.name }));
@@ -93,7 +99,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
       }
       this.flow = structuredClone(flow);
       this.isNewFlow = false;
-      this.flow.nodes.forEach((node) => this.ensureInputBindings(node));
+      this.prepareNodes(this.flow);
       this.selectedNodeId = preferredNodeId
         && this.flow.nodes.some((node) => node.id === preferredNodeId)
         ? preferredNodeId
@@ -281,10 +287,15 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     const nextBindings: Record<string, { source: 'STATIC' | 'CONTEXT'; staticValue?: unknown; contextKey?: string }> = {};
     // Nicht mehr vorhandene Inputs werden bewusst verworfen, damit die Flow-Definition dem Descriptor entspricht.
     for (const input of descriptor.inputs) {
-      nextBindings[input.name] = existing[input.name] ?? {
-        source: 'STATIC',
-        staticValue: input.allowedValues[0] ?? ''
+      const existingBinding = existing[input.name];
+      const descriptorDefault = {
+        ...(input.allowedValues.length > 0
+          ? { source: 'STATIC' as const, staticValue: input.allowedValues[0] }
+          : { source: 'CONTEXT' as const, contextKey: input.name })
       };
+      nextBindings[input.name] = existingBinding && !this.isEmptyBinding(existingBinding)
+        ? existingBinding
+        : descriptorDefault;
     }
     node.inputBindings = nextBindings;
     this.validationTrigger.next();
@@ -344,6 +355,31 @@ export class EditorPageComponent implements OnInit, OnDestroy {
 
   removeTransition(node: FlowNode, index: number): void {
     node.transitions.splice(index, 1);
+    this.validationTrigger.next();
+  }
+
+  displayTypeTargets(): Array<{ displayType: IxtDisplayType; label: string }> {
+    const targets = new Map<IxtDisplayType, string>();
+    for (const node of this.contentNodes()) {
+      const descriptor = this.descriptor(node.componentId);
+      if (descriptor?.displayType && !targets.has(descriptor.displayType)) {
+        targets.set(descriptor.displayType, `${descriptor.displayType} (${descriptor.title})`);
+      }
+    }
+    return [...targets].map(([displayType, label]) => ({ displayType, label }));
+  }
+
+  setPrtTypeDisplayType(
+    transition: FlowTransition,
+    prtType: PrtType,
+    displayType: IxtDisplayType | ''
+  ): void {
+    transition.prtTypeDisplayTypes ??= {};
+    if (displayType) {
+      transition.prtTypeDisplayTypes[prtType] = displayType;
+    } else {
+      delete transition.prtTypeDisplayTypes[prtType];
+    }
     this.validationTrigger.next();
   }
 
@@ -436,6 +472,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     request.subscribe({
       next: (saved) => {
         this.flow = saved;
+        this.prepareNodes(this.flow);
         this.isNewFlow = false;
         this.selectedFlowId = saved.id;
         const existingSummary = this.flows.find((flow) => flow.id === saved.id);
@@ -444,7 +481,6 @@ export class EditorPageComponent implements OnInit, OnDestroy {
         } else {
           this.flows.push({ id: saved.id, name: saved.name });
         }
-        this.flow.nodes.forEach((node) => this.ensureInputBindings(node));
         const preferredNodeId = this.selectedNodeId;
         const fallbackNodeId = this.flow.nodes[0]?.id ?? '';
         this.selectedNodeId = this.flow.nodes.some((node) => node.id === preferredNodeId) ? preferredNodeId : fallbackNodeId;
@@ -618,6 +654,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     if (!this.flow) {
       return;
     }
+
     for (const source of this.flow.nodes) {
       for (const transition of source.transitions ?? []) {
         if (transition.targetNodeId === target.id) {
@@ -625,6 +662,17 @@ export class EditorPageComponent implements OnInit, OnDestroy {
         }
       }
     }
+  }
+
+  /**
+   * Verknüpft serialisierte Kindknoten wieder mit ihren global bearbeitbaren Knoten und ergänzt Descriptor-Bindings.
+   */
+  private prepareNodes(flow: FlowDefinition): void {
+    const nodesById = new Map(flow.nodes.map((node) => [node.id, node]));
+    for (const node of flow.nodes) {
+      node.children = (node.children ?? []).map((child) => nodesById.get(child.id) ?? child);
+    }
+    flow.nodes.forEach((node) => this.ensureInputBindings(node));
   }
 
   private matchingOutputKey(input: InputDescriptor, output: OutputDescriptor): string | undefined {

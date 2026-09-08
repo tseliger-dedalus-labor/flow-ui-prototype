@@ -70,7 +70,7 @@ public class FlowValidationService {
 
         Map<String, ComponentDescriptor> descriptorsById = registry.getAll().stream().collect(Collectors.toMap(ComponentDescriptor::getId, Function.identity()));
         Map<String, Map<String, SemanticType>> contextByNode = computeContextTypes(definition, nodes, descriptorsById, issues);
-        Set<String> mainNodeIds = mainNodeIds(definition);
+        Set<String> mainNodeIds = mainNodeIds(definition, descriptorsById);
         Set<String> childNodeIds = childNodeIds(definition);
         Set<String> sidebarNodeIds = flowNodes.stream()
             .map(FlowNode::getSidebar)
@@ -177,8 +177,8 @@ public class FlowValidationService {
                     issues.add(new ValidationIssue("nodes." + node.getId() + ".transitions", "Transition referenziert unbekannten Output '" + transition.getOnOutput() + "'."));
                     continue;
                 }
-                FlowNode target = nodes.get(transition.getTargetNodeId());
-                if (target == null) {
+                FlowNode staticTarget = nodes.get(transition.getTargetNodeId());
+                if (staticTarget == null) {
                     issues.add(new ValidationIssue("nodes." + node.getId() + ".transitions", "Transition-Ziel '" + transition.getTargetNodeId() + "' existiert nicht."));
                     continue;
                 }
@@ -189,6 +189,13 @@ public class FlowValidationService {
                 // Jede Transition erzeugt ihren eigenen Kontextzustand, der Ereignisnutzlast und vorhandenen Kontext kombiniert.
                 Map<String, SemanticType> postTransitionContext = new HashMap<>(availableContext);
                 OutputDescriptor outputDescriptor = outputs.get(transition.getOnOutput());
+                Map<PrtType, IxtDisplayType> typeMappings = prtTypeDisplayTypesOf(transition);
+                if (!typeMappings.isEmpty() && !outputDescriptor.getPayload().containsValue(SemanticType.PRT_TYPE)) {
+                    issues.add(new ValidationIssue(
+                        "nodes." + node.getId() + ".transitions",
+                        "PrtType-Ziele benötigen ein Output-Feld vom Typ PRT_TYPE."
+                    ));
+                }
                 for (Map.Entry<String, String> mapping : contextMappingOf(transition).entrySet()) {
                     SemanticType mappedType = mappedType(mapping.getValue(), outputDescriptor, availableContext);
                     if (mappedType == null) {
@@ -198,9 +205,28 @@ public class FlowValidationService {
                     }
                 }
 
-                ComponentDescriptor targetDescriptor = descriptorsById.get(target.getComponentId());
-                if (targetDescriptor != null) {
-                    Map<String, InputBinding> targetBindings = target.getInputBindings() == null ? Map.of() : target.getInputBindings();
+                List<FlowNode> targets = transitionTargets(transition, nodes, descriptorsById);
+                for (IxtDisplayType displayType : typeMappings.values()) {
+                    boolean existsInFlow = targets.stream()
+                        .map(FlowNode::getComponentId)
+                        .map(descriptorsById::get)
+                        .filter(Objects::nonNull)
+                        .anyMatch(targetDescriptor -> displayType == targetDescriptor.getDisplayType());
+                    if (!existsInFlow) {
+                        issues.add(new ValidationIssue(
+                            "nodes." + node.getId() + ".transitions",
+                            "Für IxtDisplayType '" + displayType + "' existiert kein Zielknoten im Flow."
+                        ));
+                    }
+                }
+                for (FlowNode target : targets) {
+                    ComponentDescriptor targetDescriptor = descriptorsById.get(target.getComponentId());
+                    if (targetDescriptor == null) {
+                        continue;
+                    }
+                    Map<String, InputBinding> targetBindings = target.getInputBindings() == null
+                        ? Map.of()
+                        : target.getInputBindings();
                     for (InputDescriptor requiredInput : targetDescriptor.getInputs().stream().filter(InputDescriptor::isRequired).toList()) {
                         InputBinding targetBinding = targetBindings.get(requiredInput.getName());
                         if (targetBinding == null) {
@@ -233,7 +259,7 @@ public class FlowValidationService {
     private Map<String, Map<String, SemanticType>> computeContextTypes(FlowDefinition definition, Map<String, FlowNode> nodes, Map<String, ComponentDescriptor> descriptorsById, List<ValidationIssue> issues) {
         Map<String, Map<String, SemanticType>> contextByNode = new HashMap<>();
         Set<String> reportedConflicts = new HashSet<>();
-        Set<String> mainNodeIds = mainNodeIds(definition);
+        Set<String> mainNodeIds = mainNodeIds(definition, descriptorsById);
         if (definition.getEntryNodeId() == null || !nodes.containsKey(definition.getEntryNodeId())) {
             return contextByNode;
         }
@@ -320,9 +346,8 @@ public class FlowValidationService {
             if (transition == null) {
                 continue;
             }
-            FlowNode targetNode = nodes.get(transition.getTargetNodeId());
             OutputDescriptor output = outputs.get(transition.getOnOutput());
-            if (targetNode == null || output == null) {
+            if (output == null) {
                 continue;
             }
             Map<String, SemanticType> candidate = new HashMap<>(currentContext);
@@ -332,7 +357,9 @@ public class FlowValidationService {
                     candidate.put(mapping.getKey(), mappedType);
                 }
             }
-            changed |= mergeContext(targetNode, candidate, contextByNode, reportedConflicts, issues);
+            for (FlowNode targetNode : transitionTargets(transition, nodes, descriptorsById)) {
+                changed |= mergeContext(targetNode, candidate, contextByNode, reportedConflicts, issues);
+            }
         }
         return changed;
     }
@@ -340,7 +367,10 @@ public class FlowValidationService {
     /**
      * Ermittelt alle Knoten, die als aktiver Hauptinhalt auftreten können.
      */
-    private Set<String> mainNodeIds(FlowDefinition definition) {
+    private Set<String> mainNodeIds(
+        FlowDefinition definition,
+        Map<String, ComponentDescriptor> descriptorsById
+    ) {
         Set<String> ids = new HashSet<>();
         if (definition.getEntryNodeId() != null) {
             ids.add(definition.getEntryNodeId());
@@ -352,7 +382,41 @@ public class FlowValidationService {
             .map(FlowTransition::getTargetNodeId)
             .filter(Objects::nonNull)
             .forEach(ids::add);
+        Set<IxtDisplayType> dynamicDisplayTypes = definition.getNodes().stream()
+            .filter(Objects::nonNull)
+            .flatMap(node -> transitionsOf(node).stream())
+            .filter(Objects::nonNull)
+            .flatMap(transition -> prtTypeDisplayTypesOf(transition).values().stream())
+            .collect(Collectors.toSet());
+        definition.getNodes().stream()
+            .filter(Objects::nonNull)
+            .filter(node -> {
+                ComponentDescriptor descriptor = descriptorsById.get(node.getComponentId());
+                return descriptor != null && dynamicDisplayTypes.contains(descriptor.getDisplayType());
+            })
+            .map(FlowNode::getId)
+            .forEach(ids::add);
         return ids;
+    }
+
+    private List<FlowNode> transitionTargets(
+        FlowTransition transition,
+        Map<String, FlowNode> nodes,
+        Map<String, ComponentDescriptor> descriptorsById
+    ) {
+        LinkedHashMap<String, FlowNode> targets = new LinkedHashMap<>();
+        FlowNode staticTarget = nodes.get(transition.getTargetNodeId());
+        if (staticTarget != null) {
+            targets.put(staticTarget.getId(), staticTarget);
+        }
+        Set<IxtDisplayType> displayTypes = new HashSet<>(prtTypeDisplayTypesOf(transition).values());
+        nodes.values().stream()
+            .filter(node -> {
+                ComponentDescriptor descriptor = descriptorsById.get(node.getComponentId());
+                return descriptor != null && displayTypes.contains(descriptor.getDisplayType());
+            })
+            .forEach(node -> targets.put(node.getId(), node));
+        return List.copyOf(targets.values());
     }
 
     /**
@@ -575,6 +639,10 @@ public class FlowValidationService {
 
     private Map<String, String> contextMappingOf(FlowTransition transition) {
         return transition.getContextMapping() == null ? Map.of() : transition.getContextMapping();
+    }
+
+    private Map<PrtType, IxtDisplayType> prtTypeDisplayTypesOf(FlowTransition transition) {
+        return transition.getPrtTypeDisplayTypes() == null ? Map.of() : transition.getPrtTypeDisplayTypes();
     }
 
     /**

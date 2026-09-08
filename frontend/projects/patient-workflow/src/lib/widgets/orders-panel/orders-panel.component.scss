@@ -5,14 +5,21 @@
   background: #fff;
 }
 
-ul {
-  list-style: none;
-  padding: 0;
+dl {
+  margin-bottom: 0;
 }
 
-button {
-  width: 100%;
-  margin-bottom: .5rem;
-  padding: .75rem;
-  text-align: left;
+dl div {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: .75rem;
+  margin-top: .5rem;
+}
+
+dt {
+  font-weight: 600;
+}
+
+dd {
+  margin: 0;
 }

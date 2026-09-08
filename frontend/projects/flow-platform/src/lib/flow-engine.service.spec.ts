@@ -1,5 +1,7 @@
 import { FlowEngineService } from './flow-engine.service';
+import { IxtDisplayType } from './ixt-display-type';
 import { FlowDefinition, FlowNode } from './models';
+import { PrtType } from './prt-type';
 
 /**
  * Schützt die Laufzeitmaschine der Flow-Plattform.
@@ -301,5 +303,46 @@ describe('FlowEngineService', () => {
       context: { wardId: 'ward-a' },
       history: []
     });
+  });
+
+  it('routes a record to the node registered for its mapped display type', () => {
+      const flow: FlowDefinition = {
+        id: 'records',
+        name: 'Records',
+        tool: 'ReportcenterTool',
+        entryNodeId: 'records',
+        nodes: [
+          {
+            id: 'records',
+            componentId: 'reportcenter',
+            inputBindings: {},
+            children: [],
+            transitions: [{
+              onOutput: 'recordSelected',
+              targetNodeId: 'order',
+              contextMapping: { RecordId: '$event.RecordID' },
+              prtTypeDisplayTypes: {
+                [PrtType.PRTTYPE_ORDER]: IxtDisplayType.DISPTYPE_FORM,
+                [PrtType.PRTTYPE_REPORT]: IxtDisplayType.DISPTYPE_REPORT
+              }
+            }]
+          },
+          { id: 'order', componentId: 'orders-panel', inputBindings: {}, children: [], transitions: [] },
+          { id: 'finding', componentId: 'findings-panel', inputBindings: {}, children: [], transitions: [] }
+        ]
+      };
+      service.registerDisplayTypes([
+        { componentId: 'orders-panel', displayType: IxtDisplayType.DISPTYPE_FORM },
+        { componentId: 'findings-panel', displayType: IxtDisplayType.DISPTYPE_REPORT }
+      ]);
+      service.initialize(flow);
+
+      service.transition('recordSelected', {
+        RecordID: 'FND-1',
+        prtType: PrtType.PRTTYPE_REPORT
+      });
+
+      expect(service.snapshot()?.currentNodeId).toBe('finding');
+      expect(service.snapshot()?.context['RecordId']).toBe('FND-1');
   });
 });

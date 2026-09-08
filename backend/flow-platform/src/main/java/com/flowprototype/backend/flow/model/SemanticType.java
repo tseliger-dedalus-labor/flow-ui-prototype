@@ -15,5 +15,7 @@ public enum SemanticType {
     /** Identifikator eines Patientenfalls. */
     CASE_ID,
     /** Identifikator eines fachlichen Datensatzes. */
-    RECORD_ID
+    RECORD_ID,
+    /** ix.serv-kompatibler Typ eines Records. */
+    PRT_TYPE
 }

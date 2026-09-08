@@ -192,6 +192,35 @@ button:disabled {
   background: #f8fafc;
 }
 
+.descriptor-list,
+.child-bindings {
+  margin-bottom: 1rem;
+}
+
+.descriptor-entry {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.descriptor-entry span,
+.section-description {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.child-bindings {
+  padding: 0.75rem;
+  border: 1px solid #dbe4f0;
+  border-radius: 0.5rem;
+}
+
+.child-bindings > .binding-title {
+  margin-bottom: 0.65rem;
+}
+
 .binding {
   display: grid;
   grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 0.9fr) minmax(9rem, 1.2fr);

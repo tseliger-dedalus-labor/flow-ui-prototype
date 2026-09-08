@@ -1,5 +1,6 @@
 package com.flowprototype.backend.flow.model;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,6 +15,7 @@ public class FlowTransition {
     private String onOutput;
     private String targetNodeId;
     private Map<String, String> contextMapping = new HashMap<>();
+    private Map<PrtType, IxtDisplayType> prtTypeDisplayTypes = new EnumMap<>(PrtType.class);
 
     /** Erstellt eine leere Transition für die JSON-Bindung. */
     public FlowTransition() {}
@@ -30,4 +32,10 @@ public class FlowTransition {
     public Map<String, String> getContextMapping() { return contextMapping; }
     /** @param contextMapping Mapping neuer Kontextschlüssel auf Ausdrücke aus Event oder bestehendem Kontext. */
     public void setContextMapping(Map<String, String> contextMapping) { this.contextMapping = contextMapping; }
+    /** @return Optionale dynamische DisplayType-Ziele je Record-Typ. */
+    public Map<PrtType, IxtDisplayType> getPrtTypeDisplayTypes() { return prtTypeDisplayTypes; }
+    /** @param prtTypeDisplayTypes Dynamische DisplayType-Ziele je Record-Typ. */
+    public void setPrtTypeDisplayTypes(Map<PrtType, IxtDisplayType> prtTypeDisplayTypes) {
+        this.prtTypeDisplayTypes = prtTypeDisplayTypes;
+    }
 }

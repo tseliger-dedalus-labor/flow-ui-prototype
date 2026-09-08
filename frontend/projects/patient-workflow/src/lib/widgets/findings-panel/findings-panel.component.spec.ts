@@ -5,8 +5,8 @@ import { FindingsPanelComponent } from './findings-panel.component';
 
 /** Testdoppel für das Laden patientenbezogener Befunde. */
 class ApiServiceMock {
-  getFindings() {
-    return of([{ id: 'f-1', text: 'F1' }]);
+  getFinding() {
+    return of({ RecordId: 'F-1', text: 'Befundinhalt', createdAt: '2026-09-04' });
   }
 }
 
@@ -23,15 +23,17 @@ describe('FindingsPanelComponent', () => {
     }).compileComponents();
   });
 
-  it('clears findings when patientId becomes empty', () => {
+  it('shows the selected finding content and clears it when its context becomes incomplete', () => {
     const fixture = TestBed.createComponent(FindingsPanelComponent);
     fixture.componentRef.setInput('patientId', 'p-1');
+    fixture.componentRef.setInput('caseId', 'C-1');
+    fixture.componentRef.setInput('RecordId', 'F-1');
     fixture.detectChanges();
-    expect(fixture.componentInstance.items.length).toBe(1);
+    expect(fixture.componentInstance.finding?.RecordId).toBe('F-1');
+    expect(fixture.nativeElement.textContent).toContain('Befundinhalt');
 
     fixture.componentRef.setInput('patientId', '');
     fixture.detectChanges();
-    // Ein leerer Kontext muss alle vorherigen Befunde aus dem Panel entfernen.
-    expect(fixture.componentInstance.items).toEqual([]);
+    expect(fixture.componentInstance.finding).toBeUndefined();
   });
 });

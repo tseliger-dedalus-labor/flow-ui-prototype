@@ -1,3 +1,24 @@
 :host {
   display: block;
 }
+section {
+  margin-top: 1rem;
+}
+
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+button {
+  width: 100%;
+  padding: .75rem;
+  margin-bottom: .5rem;
+  text-align: left;
+}
+
+button span {
+  display: block;
+  margin-top: .25rem;
+  color: #555;
+}
