@@ -13,9 +13,6 @@ import { ReportcenterApiService, ReportcenterRecord } from '../../reportcenter-a
 export class ReportcenterComponent extends AContentPresenter implements OnInit, OnDestroy {
   @Output() readonly recordSelected = new EventEmitter<{
     RecordID: string;
-    CaseID: string;
-    PatientID: string;
-    prtType: PrtType;
   }>();
 
   records: ReportcenterRecord[] = [];
@@ -34,10 +31,7 @@ export class ReportcenterComponent extends AContentPresenter implements OnInit, 
 
   openRecord(record: ReportcenterRecord): void {
     this.recordSelected.emit({
-      RecordID: record.RecordID,
-      CaseID: record.CaseID,
-      PatientID: record.PatientID,
-      prtType: record.prtType
+      RecordID: record.RecordID
     });
   }
 

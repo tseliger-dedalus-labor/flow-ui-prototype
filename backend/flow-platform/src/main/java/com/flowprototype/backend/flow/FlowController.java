@@ -4,6 +4,8 @@ import com.flowprototype.backend.flow.model.FlowDefinition;
 import com.flowprototype.backend.flow.model.Tool;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,14 +22,16 @@ import java.util.List;
 @RequestMapping("/api/flows")
 public class FlowController {
     private final FlowService service;
+    private final FlowExecutionService executionService;
 
     /**
      * Erstellt den Controller mit Zugriff auf die Flow-Fachdienste.
      *
      * @param service Dienst für Laden und Auswahl von Flows.
      */
-    public FlowController(FlowService service) {
+    public FlowController(FlowService service, FlowExecutionService executionService) {
         this.service = service;
+        this.executionService = executionService;
     }
 
     /**
@@ -60,6 +64,32 @@ public class FlowController {
     @GetMapping("/effective")
     public FlowDefinition effective() {
         return service.getEffective();
+    }
+
+    @PostMapping("/{id}/executions")
+    public FlowExecutionView startExecution(@PathVariable String id) {
+        return executionService.start(id);
+    }
+
+    @GetMapping("/executions/{executionId}")
+    public FlowExecutionView getExecution(@PathVariable String executionId) {
+        return executionService.get(executionId);
+    }
+
+    @PostMapping("/executions/{executionId}/outputs")
+    public FlowExecutionView transition(
+        @PathVariable String executionId,
+        @RequestBody FlowOutputRequest request
+    ) {
+        return executionService.transition(executionId, request);
+    }
+
+    @PostMapping("/executions/{executionId}/back")
+    public FlowExecutionView back(
+        @PathVariable String executionId,
+        @RequestBody FlowExecutionRequest request
+    ) {
+        return executionService.back(executionId, request);
     }
 
 }
