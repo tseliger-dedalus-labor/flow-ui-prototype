@@ -8,8 +8,8 @@ import java.util.Map;
  * Beschreibt einen gerichteten Übergang zwischen zwei Flow-Knoten.
  *
  * <p>Der Übergang reagiert auf eine benannte Ausgabe des Quellknotens und kann
- * dabei über {@code $event.*}- oder {@code $context.*}-Ausdrücke neue Kontextwerte
- * für den Zielknoten ableiten.</p>
+ * dabei über einen optionalen Fachresolver Daten anreichern und anschließend über
+ * {@code $event.*}- oder {@code $context.*}-Ausdrücke neue Kontextwerte für den Zielknoten ableiten.</p>
  */
 public class FlowTransition {
     private String onOutput;

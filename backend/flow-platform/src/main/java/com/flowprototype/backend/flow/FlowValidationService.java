@@ -360,7 +360,7 @@ public class FlowValidationService {
                 transition,
                 outputs.get(transition.getOnOutput()),
                 "nodes." + sourceNode.getId() + ".transitions",
-                issues
+                null
             );
             if (output == null) {
                 continue;
@@ -620,13 +620,15 @@ public class FlowValidationService {
         }
         Optional<FlowTransitionResolver> configuredResolver = resolverRegistry.byId(transition.getResolverId());
         if (configuredResolver.isEmpty()) {
-            issues.add(new ValidationIssue(path, "Transition-Resolver '" + transition.getResolverId() + "' ist nicht registriert."));
+            if (issues != null) {
+                issues.add(new ValidationIssue(path, "Transition-Resolver '" + transition.getResolverId() + "' ist nicht registriert."));
+            }
             return output;
         }
         FlowTransitionResolver resolver = configuredResolver.get();
         for (Map.Entry<String, SemanticType> required : resolver.inputTypes().entrySet()) {
             SemanticType actual = output.getPayload().get(required.getKey());
-            if (actual == null || !isCompatible(actual, required.getValue())) {
+            if (issues != null && (actual == null || !isCompatible(actual, required.getValue()))) {
                 issues.add(new ValidationIssue(
                     path,
                     "Transition-Resolver '" + resolver.id() + "' erhält Output-Feld '" + required.getKey() + "' nicht typkompatibel."

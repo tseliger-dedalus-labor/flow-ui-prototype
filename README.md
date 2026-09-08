@@ -20,7 +20,7 @@ Frontend-Module beschreiben ihre Flow-Komponenten in typisierten TypeScript-Defi
 
 Flow-Komponenten können zusätzlich direkt an den lokalen Mock des ixserv-Typs `IxtDisplayType` gebunden werden. Der Mock spiegelt Namen und Datenbankwerte aus `Constants.XmfIxservType.IxtDisplayType`, erzeugt aber keine Abhängigkeit auf ixserv. Beim Aufbau der zentralen Komponenten-Registry bricht der Anwendungsstart ab, wenn derselbe `IxtDisplayType` mehr als einer Komponente zugeordnet wurde. Komponenten ohne Zuordnung, beispielsweise reine Layout-Komponenten, bleiben zulässig. Der ebenfalls lokal definierte `PrtType` stellt `PRTTYPE_NONE`, `PRTTYPE_ORDER`, `PRTTYPE_REPORT`, `PRTTYPE_DOCUMENT` und `PRTTYPE_TRAFU` in Backend und Frontend bereit, ohne ix.serv direkt zu importieren.
 
-Transitionen können mit `prtTypeDisplayTypes` Record-Typen auf registrierte Anzeigearten abbilden. Die Runtime löst beispielsweise `PRTTYPE_ORDER` über `DISPTYPE_FORM` zum passenden Flow-Knoten auf; der Flow-Editor bietet dafür je Transition auswählbare Zuordnungen an. Das statische `targetNodeId` bleibt als Rückfallziel erhalten.
+Transitionen werden zur Laufzeit serverseitig ausgewertet und können mit `prtTypeDisplayTypes` Record-Typen auf registrierte Anzeigearten abbilden. Optionale, von Fachmodulen bereitgestellte `FlowTransitionResolver` laden oder transformieren Daten zwischen Komponenten-Output und Ziel-Inputs. So benötigt der Reportcenter-Output nur eine `RecordID`; das Patientenmodul ergänzt Patient, Fall und Record-Typ autoritativ auf dem Server. Das statische `targetNodeId` bleibt als Rückfallziel erhalten.
 
 Jedes `pom.xml` beziehungsweise `projects/*/package.json` enthält eine eigene Artefaktversion. Abhängigkeiten zwischen Modulen referenzieren explizite Versionen und können bei Releases einzeln angehoben werden.
 
@@ -157,7 +157,7 @@ früheren JSON-Format bleiben lesbar und werden bei der nächsten Zustandsänder
 
 Gespeichert werden:
 
-- Runtime-Routen: ausgewählter Flow, aktiver Knoten, Flow-Kontext und Rücksprunghistorie
+- Runtime-Routen: ausgewählter Flow und die opaque ID der serverseitigen Ausführung
 - Tab-Container: aktiver Tab sowie alle dynamisch geöffneten Tabs, getrennt nach Flow-Container-ID
 - Editor: ausgewählter Flow und ausgewählter Knoten
 
@@ -167,8 +167,7 @@ Flows oder Knoten werden auf die reguläre Startansicht zurückgeführt. Ein bew
 dynamische Tab-Zustände.
 
 Der Query-Parameter ist kodiert, aber nicht verschlüsselt. Zustandsbereiche dürfen deshalb keine Zugangsdaten oder
-anderen Geheimnisse enthalten. Auch große fachliche Datenmengen gehören nicht in die URL; die Runtime speichert nur
-den für die Navigation erforderlichen Kontext. Weitere Module können validierte, JSON-serialisierbare Zustandsbereiche
+anderen Geheimnisse enthalten. Fachlicher Flow-Kontext und Rücksprunghistorie verbleiben auf dem Server. Weitere Module können validierte, JSON-serialisierbare Zustandsbereiche
 über `ViewRouterService.read(...)` und `ViewRouterService.write(...)` ergänzen.
 
 ### Komponenten-Metadaten
@@ -207,6 +206,10 @@ Die generierten Manifeste bleiben versionierte Paket-Assets. Das veröffentlicht
 - `GET /api/flows` (optional mit `?tool=WebclientTool` oder `?tool=AppointmentTool`)
 - `GET /api/flows/{id}`
 - `GET /api/flows/effective`
+- `POST /api/flows/{id}/executions`
+- `GET /api/flows/executions/{executionId}`
+- `POST /api/flows/executions/{executionId}/outputs`
+- `POST /api/flows/executions/{executionId}/back`
 - `POST /api/flows`
 - `PUT /api/flows/{id}`
 - `POST /api/flows/{id}/validate`

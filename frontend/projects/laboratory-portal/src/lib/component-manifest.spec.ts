@@ -15,10 +15,7 @@ describe('laboratory portal component manifest', () => {
       {
         name: 'recordSelected',
         payload: {
-          RecordID: 'RECORD_ID',
-          CaseID: 'CASE_ID',
-          PatientID: 'PATIENT_ID',
-          prtType: 'PRT_TYPE'
+         RecordID: 'RECORD_ID'
         }
       }
     ]);

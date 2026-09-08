@@ -230,6 +230,12 @@
                       }
                     </select>
                   </label>
+                  <label>Server-Resolver
+                    <input
+                      [(ngModel)]="transition.resolverId"
+                      (ngModelChange)="setResolverId(transition, $event)"
+                      placeholder="optional" />
+                  </label>
                   @if (transition.onOutput) {
                     <p>
                       Direkt kompatible Ziele:

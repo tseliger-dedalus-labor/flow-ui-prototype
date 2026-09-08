@@ -107,25 +107,23 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
         if (state) {
           this.persistState(state);
         }
-
-        private restoreFlow(executionId: string): void {
-          this.error = '';
-          this.loading = true;
-          this.engine.restore(executionId).subscribe({
-            next: () => {
-              this.flowStarted = true;
-              this.loading = false;
-            },
-            error: () => {
-              this.loadFlow();
-            }
-          });
-        }
       },
       error: () => {
         this.error = this.loadError;
         this.loading = false;
       }
+    });
+  }
+
+  private restoreFlow(executionId: string): void {
+    this.error = '';
+    this.loading = true;
+    this.engine.restore(executionId).subscribe({
+      next: () => {
+        this.flowStarted = true;
+        this.loading = false;
+      },
+      error: () => this.loadFlow()
     });
   }
 

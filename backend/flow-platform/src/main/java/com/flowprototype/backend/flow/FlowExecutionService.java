@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -62,6 +63,9 @@ public class FlowExecutionService {
             if (source == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quellknoten nicht gefunden");
             }
+            if (!isAllowedSource(execution, source)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Quellknoten ist in der aktuellen Ansicht nicht aktiv");
+            }
             FlowTransition transition = source.getTransitions().stream()
                 .filter(candidate -> request.outputName().equals(candidate.getOnOutput()))
                 .findFirst()
@@ -71,18 +75,34 @@ public class FlowExecutionService {
             if (transition.getResolverId() != null && !transition.getResolverId().isBlank()) {
                 FlowTransitionResolver resolver = resolverRegistry.byId(transition.getResolverId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Transition-Resolver nicht gefunden"));
-                event.putAll(resolver.resolve(Map.copyOf(event), Map.copyOf(execution.context)));
+                for (String requiredField : resolver.inputTypes().keySet()) {
+                    if (!event.containsKey(requiredField) || event.get(requiredField) == null) {
+                        throw new ResponseStatusException(
+                            HttpStatus.UNPROCESSABLE_ENTITY,
+                            "Resolver-Eingabefeld fehlt: " + requiredField
+                        );
+                    }
+                }
+                event.putAll(resolver.resolve(
+                    Collections.unmodifiableMap(event),
+                    Collections.unmodifiableMap(execution.context)
+                ));
             }
 
             Map<String, Object> nextContext = new HashMap<>(execution.context);
             Map<String, String> mappings = transition.getContextMapping() == null ? Map.of() : transition.getContextMapping();
-            mappings.forEach((key, expression) -> nextContext.put(key, resolveExpression(expression, event, nextContext)));
+            mappings.forEach((key, expression) ->
+                nextContext.put(key, resolveExpression(expression, event, execution.context))
+            );
 
             FlowNode target = resolveTarget(execution.definition, transition, event);
             if (target == null) {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Zielknoten nicht gefunden");
             }
-            execution.history.push(new Snapshot(execution.currentNodeId, Map.copyOf(execution.context)));
+            execution.history.push(new Snapshot(
+                execution.currentNodeId,
+                Collections.unmodifiableMap(new LinkedHashMap<>(execution.context))
+            ));
             execution.currentNodeId = target.getId();
             execution.context = nextContext;
             execution.version++;
@@ -117,7 +137,7 @@ public class FlowExecutionService {
                 execution.version,
                 execution.definition,
                 execution.currentNodeId,
-                Map.copyOf(execution.context),
+                Collections.unmodifiableMap(new LinkedHashMap<>(execution.context)),
                 Map.copyOf(inputs),
                 !execution.history.isEmpty()
             );
@@ -133,7 +153,7 @@ public class FlowExecutionService {
                 ? context.get(binding.getContextKey())
                 : binding.getStaticValue()
         ));
-        return Map.copyOf(result);
+        return Collections.unmodifiableMap(result);
     }
 
     private FlowNode resolveTarget(FlowDefinition definition, FlowTransition transition, Map<String, Object> event) {
@@ -151,12 +171,37 @@ public class FlowExecutionService {
                             .findFirst()
                             .orElse(null);
                     }
+
                 }
             } catch (IllegalArgumentException ignored) {
                 // Unbekannte fachliche Typwerte fallen auf das statische Ziel zurück.
             }
         }
         return node(definition, transition.getTargetNodeId());
+    }
+
+    private boolean isAllowedSource(Execution execution, FlowNode source) {
+        if (source.getId().equals(execution.currentNodeId)) {
+            return true;
+        }
+        FlowNode current = node(execution.definition, execution.currentNodeId);
+        if (current == null) {
+            return false;
+        }
+        if (current.getSidebar() != null && source.getId().equals(current.getSidebar().getNodeId())) {
+            return true;
+        }
+        if (current.getSidebar() == null
+            && execution.definition.getSidebar() != null
+            && source.getId().equals(execution.definition.getSidebar().getNodeId())) {
+            return true;
+        }
+        return execution.definition.getSidebarMode() != null
+            && execution.definition.getSidebarMode().name().equals("COLLAPSE")
+            && execution.definition.getNodes().stream()
+                .map(FlowNode::getSidebar)
+                .filter(java.util.Objects::nonNull)
+                .anyMatch(sidebar -> source.getId().equals(sidebar.getNodeId()));
     }
 
     private Object resolveExpression(String expression, Map<String, Object> event, Map<String, Object> context) {

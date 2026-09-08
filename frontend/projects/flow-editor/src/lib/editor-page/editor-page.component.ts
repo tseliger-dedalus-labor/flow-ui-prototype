@@ -383,6 +383,11 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     this.validationTrigger.next();
   }
 
+  setResolverId(transition: FlowTransition, resolverId: string): void {
+    transition.resolverId = resolverId.trim() || undefined;
+    this.validationTrigger.next();
+  }
+
   /**
    * Übernimmt kompatible Felder des gewählten Outputs in Context-Mapping und Ziel-Inputs.
    */

@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { BehaviorSubject, of } from 'rxjs';
 import {
   FlowApiService,
-  FlowDefinition,
   FlowEngineService,
   FlowEngineState,
   Tool,
@@ -20,16 +19,6 @@ class ApiServiceMock {
     ]);
   }
 
-  getFlow(id: string) {
-    const definition: FlowDefinition = {
-      id,
-      name: 'Reportcenter',
-      tool: 'ReportcenterTool',
-      entryNodeId: 'reportcenter',
-      nodes: []
-    };
-    return of(definition);
-  }
 }
 
 class FlowEngineServiceMock {
@@ -42,9 +31,10 @@ class FlowEngineServiceMock {
   state$ = new BehaviorSubject<FlowEngineState | null>(null);
   initializedFlowIds: string[] = [];
 
-  initialize(flow: FlowDefinition) {
-    this.initializedFlowIds.push(flow.id);
-    this.state$.next({ currentNodeId: flow.entryNodeId, context: {}, history: [] });
+  start(flowId: string) {
+    this.initializedFlowIds.push(flowId);
+    this.state$.next({ flowId, executionId: `run-${flowId}` });
+    return of({});
   }
   snapshot() { return this.state$.value; }
   goBack() {}

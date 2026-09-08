@@ -11,6 +11,9 @@ import { AContentPresenter } from 'ui-framework';
 /** Leichter Spy-Doppel für die Runtime-Engine, damit Transitionen ohne echte Navigation überprüft werden können. */
 class FlowEngineServiceMock {
   transitionFrom = jasmine.createSpy('transitionFrom');
+  inputsFor = jasmine.createSpy('inputsFor').and.callFake((nodeId: string) =>
+    nodeId === 'view' ? { patientId: 'p-123', caseId: 'F-123' } : {}
+  );
 }
 
 /**

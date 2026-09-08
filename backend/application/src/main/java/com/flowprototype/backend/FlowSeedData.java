@@ -283,8 +283,11 @@ public class FlowSeedData implements CommandLineRunner {
                 || definition.getNodes().stream()
                     .filter(node -> "reportcenter".equals(node.getComponentId()))
                     .flatMap(node -> node.getTransitions().stream())
-                    .allMatch(transition -> transition.getPrtTypeDisplayTypes() == null
-                        || transition.getPrtTypeDisplayTypes().isEmpty());
+                    .anyMatch(transition ->
+                        transition.getPrtTypeDisplayTypes() == null
+                            || transition.getPrtTypeDisplayTypes().isEmpty()
+                            || !PatientRecordTransitionResolver.ID.equals(transition.getResolverId())
+                    );
             default -> false;
         };
     }
