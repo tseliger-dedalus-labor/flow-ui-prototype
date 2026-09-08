@@ -166,7 +166,7 @@ export class ViewRouterService implements OnDestroy {
       return Promise.resolve('');
     }
     const runtime = this.scopes['tool-runtime'];
-    if (this.api && isRuntimeLinkState(runtime) && runtime.executionId) {
+    if (this.api && isRuntimeLinkState(runtime) && runtime.executionId && runtime.resumeToken) {
       const sequence = ++this.updateSequence;
       const viewScopes = Object.fromEntries(
         Object.entries(this.scopes).filter(([scope]) => scope !== 'tool-runtime')

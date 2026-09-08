@@ -148,7 +148,7 @@ export abstract class ToolRuntimePage extends AContentPresenter implements OnIni
 
   private readRestoredState(): FlowEngineState | null {
     const value = this.viewRouter.read(TOOL_RUNTIME_SCOPE);
-    if (!FlowEngineService.isState(value)) {
+    if (!FlowEngineService.isState(value) || !value.resumeToken) {
       return null;
     }
     return value;
